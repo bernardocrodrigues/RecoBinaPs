@@ -1,0 +1,13 @@
+
+All source placed at the binaps subdirectory is authored by Fischer, J & Vreeken, J
+
+The code is the replication package and source code for the neural autoencoder called BinaPs proposed by Fischer, J &
+Vreeken, J in the paper 'Differentiable Pattern Set Mining' availiable at [3].
+
+All code is committed as found on the package except from the contents of binaps/Data/Genomes that were not included
+here. This directory held 1.2GB of raw data for one of the author's experiments. This experiment is uninteresting in the
+extension proposed by this repository.
+
+[1] http://eda.mmci.uni-saarland.de/prj/binaps/binaps-replication-v20210601.zip
+[2] http://eda.mmci.uni-saarland.de/prj/binaps/
+[3] http://eda.mmci.uni-saarland.de/pubs/2021/binaps-fischer,vreeken.pdf
