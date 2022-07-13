@@ -1,0 +1,25 @@
+FROM nvidia/cuda:11.0.3-base-ubuntu20.04
+
+## Install Python
+RUN apt update
+RUN apt install -y python3 python3-pip
+
+## Install basic data science libraries
+# Required by the BinaPs implamentation
+RUN pip install numpy
+RUN pip install scipy
+RUN pip install pandas
+RUN pip install torch
+
+# Install Jupyter and IPython support
+RUN pip install jupyterlab
+RUN pip install ipykernel
+RUN pip install ipython
+RUN python3 -m ipykernel install --name=binaps
+
+## Install R
+# To enable us to run binaps/Data/Synthetic_data/generate_toy.R
+RUN DEBIAN_FRONTEND=noninteractive apt -y install r-base
+
+RUN mkdir /workdir
+WORKDIR /workdir

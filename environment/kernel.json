@@ -1,0 +1,25 @@
+{
+    "argv": [
+        "/usr/bin/docker",
+        "run",
+        "--rm",
+        "--network=host",
+        "--runtime=nvidia",
+        "--gpus",
+        "all",
+        "-v",
+        "{connection_file}:/connection-spec",
+        "-v",
+        "[BINAPS_ROOT_DIR]:/workdir",
+        "-w",
+        "/workdir",
+        "environment_notebook-cuda",
+        "python3",
+        "-m",
+        "ipykernel_launcher",
+        "-f",
+        "/connection-spec"
+    ],
+    "display_name": "binaps",
+    "language": "python"
+}
