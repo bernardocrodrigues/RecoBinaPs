@@ -72,7 +72,12 @@ def run_binaps(data_path: str, hidden_dimension: int, epochs: int) -> None:
 
     print(cmd)
     output = run(cmd.split(" "), capture_output=True, check=True)
-    print(output.stdout.decode())
+    stdout = output.stdout.decode()
+
+    print_character_length = 300
+    print(f"{stdout[:print_character_length]} [output truncated]")
+    print("...")
+    print(f"[output truncated] {stdout[-print_character_length:]}")
 
 
 def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_file: str) -> None:
