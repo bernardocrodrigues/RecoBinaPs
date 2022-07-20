@@ -21,5 +21,8 @@ RUN python3 -m ipykernel install --name=binaps
 # To enable us to run binaps/Data/Synthetic_data/generate_toy.R
 RUN DEBIAN_FRONTEND=noninteractive apt -y install r-base
 
+# Install extension dependencies
+RUN pip install alive_progress
+
 RUN mkdir /workdir
 WORKDIR /workdir
