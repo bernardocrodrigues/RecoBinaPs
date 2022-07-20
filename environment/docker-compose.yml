@@ -10,7 +10,7 @@ services:
     tmpfs:
       - /home/$USER
     user: $UID:$GID
-    entrypoint: jupyter-lab --ip=0.0.0.0 --no-browser --allow-root --notebook-dir=/workdir
+    entrypoint: jupyter-lab --no-browser --allow-root --notebook-dir=/workdir --ip='*' --NotebookApp.token='something_secret'
     network_mode: host
   notebook-cuda:
     build: .
@@ -25,7 +25,7 @@ services:
       - /home/$USER
     user: $UID:$GID
     network_mode: host
-    entrypoint: jupyter-lab --ip=0.0.0.0 --no-browser --allow-root --notebook-dir=/workdir
+    entrypoint: jupyter-lab --no-browser --allow-root --notebook-dir=/workdir --ip='*' --NotebookApp.token='something_secret'
     deploy:
       resources:
         reservations:
