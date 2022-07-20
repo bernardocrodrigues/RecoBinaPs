@@ -12,7 +12,7 @@ complete license.
 
 - binaps: original BinaPs implementation
 - environment: a plug n' play environment for running BinaPs and/or extending it.
-- notebooks: Jupiter notebooks that explore the BinaPs capabilities
+- notebooks: Jupyter notebooks that explore the BinaPs capabilities
 - lib: helper python modules
 
 ## Plug n' Play Environment
@@ -21,7 +21,7 @@ All BinaPs dependencies along with other data science packages are organized in 
 
 ### CUDA Support
 
-If you have a CUDA capaple GPU and with to use it, you need to install [NVIDIA's container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). Follow the official installation guide.
+If you have a CUDA capable GPU and with to use it, you need to install [NVIDIA's container toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html). Follow the official installation guide.
 
 ### Building the Environment
 
