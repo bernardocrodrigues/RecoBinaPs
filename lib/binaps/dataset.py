@@ -78,7 +78,7 @@ def parse_dat_file(dat_file_path: str) -> np.array:
     return np.asarray(data)
 
 
-def devide_data(data, proportion):
+def divide_data(data, proportion):
     """ Given a numpy dataset split randomly its data elements into two datasets.
 
     Args:
