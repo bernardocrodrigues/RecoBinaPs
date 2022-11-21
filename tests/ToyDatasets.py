@@ -90,6 +90,31 @@ belohlavek_dataset_raw = np.array(
 # fmt: on
 belohlavek_binary_dataset = BinaryDataset(belohlavek_dataset_raw)
 
+# Belohlavek Dataset 2
+# Dataset taken from Belohlavek's [2] at page 9
+# fmt: off
+belohlavek_dataset_raw_2 = np.array(
+    [ #     0       1       2       3       4       5       6       7
+        [True,  True,   True,   False,  True,   False,  False,  False],  # 0
+        [True,  True,   False,  False,  False,  True,   False,  True],   # 1
+        [False, True,   False,  False,  True,   False,  True,   False],  # 2
+        [True,  True,   False,  False,  False,  True,   False,  True],   # 3
+        [True,  True,   True,   False,  True,   False,  False,  False],  # 4
+        [False, True,   False,  False,  True,   False,  True,   False],  # 5
+        [False, True,   False,  False,  True,   False,  True,   False],  # 6
+        [False, False,  False,  False,  False,  False,  True,   False],  # 7
+        [True,  True,   True,   False,  True,   False,  False,  False],  # 8
+        [False, False,  False,  False,  False,  False,  True,   False],  # 9
+        [True,  True,   True,   False,  True,   False,  False,  False],  # 10
+        [True,  True,   False,  False,  False,  True,   False,  True],  # 11
+
+
+    ],
+    dtype=bool,
+)
+# fmt: on
+belohlavek_binary_dataset_2 = BinaryDataset(belohlavek_dataset_raw_2)
+
 # Nenova Dataset
 # Dataset taken from Nenova's [3] at page 62
 # fmt: off
