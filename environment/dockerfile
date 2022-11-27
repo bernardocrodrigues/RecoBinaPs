@@ -9,7 +9,7 @@ RUN apt install -y python3 python3-pip
 RUN pip install numpy
 RUN pip install scipy
 RUN pip install pandas
-RUN pip install torch
+RUN pip install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
 
 # Install Jupyter and IPython support
 RUN pip install jupyterlab
@@ -22,7 +22,10 @@ RUN python3 -m ipykernel install --name=binaps
 RUN DEBIAN_FRONTEND=noninteractive apt -y install r-base
 
 # Install extension dependencies
-RUN pip install alive_progress
+RUN pip install rich
+RUN pip install surprise
+RUN pip install numba
+RUN pip install matplotlib
 
 RUN mkdir /workdir
 WORKDIR /workdir
