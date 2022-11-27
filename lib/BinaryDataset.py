@@ -14,6 +14,7 @@
 
 import numpy as np
 from numba import njit
+from surprise import Trainset
 
 
 @njit
@@ -73,3 +74,19 @@ class BinaryDataset(object):
         Given [2]'s nomenclature, this equivalent to the 'down' operation.
         """
         return _it(self._binary_dataset, X)
+
+    @staticmethod
+    def load_from_trainset(trainset: Trainset, threshold=1):
+        """
+        Given a existing trainset, build a binary dataset from it. Note that the item's columns and rows will follow the
+        internal trainset representation and will almost certainly differ from the original dataset from which the
+        trainset was derived. Use the trainset's to_raw_* methods to convert correctly between this spaces.
+        """
+
+        raw_dataset = np.zeros((trainset.n_users, trainset.n_items), bool)
+
+        for uid, iid, rating in trainset.all_ratings():
+            if rating >= threshold:
+                raw_dataset[uid][iid] = True
+
+        return BinaryDataset(raw_dataset)

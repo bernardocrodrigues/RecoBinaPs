@@ -1,6 +1,17 @@
 import numpy as np
 
-from tests.ToyDatasets import my_toy_binary_dataset, zaki_binary_dataset, belohlavek_binary_dataset
+from tests.ToyDatasets import (
+    convert_raw_rating_list_into_trainset,
+    my_toy_binary_dataset,
+    my_toy_dataset_raw_rating,
+    zaki_binary_dataset,
+    zaki_dataset_raw_rating,
+    belohlavek_binary_dataset,
+    belohlavek_dataset_raw_rating,
+)
+from lib.BinaryDataset import BinaryDataset
+
+CONVERT_DATASET_SHUFFLE_TIMES = 10
 
 
 def test_i_on_my_toy_binary_dataset():
@@ -119,7 +130,7 @@ def test_closed_itemsets_on_zaki_binary_dataset():
     closed_itemset = np.array([1, 2])
     assert np.array_equal(get_closure(closed_itemset), closed_itemset)
 
-    closed_itemset = np.array([1,2,4])
+    closed_itemset = np.array([1, 2, 4])
     assert np.array_equal(get_closure(closed_itemset), closed_itemset)
 
     closed_itemset = np.array([0])
@@ -140,13 +151,13 @@ def test_closed_itemsets_on_zaki_binary_dataset():
     closed_itemset = np.array([3, 4])
     assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
 
-    closed_itemset = np.array([0 ,1])
+    closed_itemset = np.array([0, 1])
     assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
 
-    closed_itemset = np.array([0 ,4])
+    closed_itemset = np.array([0, 4])
     assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
 
-    closed_itemset = np.array([2 ,4])
+    closed_itemset = np.array([2, 4])
     assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
 
     closed_itemset = np.array([0, 1, 3])
@@ -167,3 +178,46 @@ def test_i_on_belohlavek_binary_dataset():
 def test_t_on_belohlavek_binary_dataset():
     assert np.array_equal(belohlavek_binary_dataset.t(np.array([0])), [0, 2])
     assert np.array_equal(belohlavek_binary_dataset.t(np.array([1])), [2, 4])
+
+
+def assert_dataset_and_trainset_are_equal(converted_binary_dataset, trainset, original_dataset):
+
+    assert np.count_nonzero(converted_binary_dataset._binary_dataset) == trainset.n_ratings
+    assert np.count_nonzero(converted_binary_dataset._binary_dataset) == np.count_nonzero(original_dataset._binary_dataset)
+
+    for iuid, row in enumerate(converted_binary_dataset._binary_dataset):
+        for iiid, item in enumerate(row):
+            if item:
+                uid = trainset.to_raw_uid(iuid)
+                iid = trainset.to_raw_iid(iiid)
+
+                assert original_dataset._binary_dataset[uid][iid]
+
+                user_ratings = trainset.ur[iuid]
+                for this_iiid, rating in user_ratings:
+                    if trainset.to_raw_iid(this_iiid) == iid:
+                        assert rating
+                        break
+                else:
+                    raise Exception(iuid, iiid, uid, iid, user_ratings)
+
+
+def test_load_from_trainset_my_toy():
+    for _ in range(CONVERT_DATASET_SHUFFLE_TIMES):
+        my_toy_trainset = convert_raw_rating_list_into_trainset(my_toy_dataset_raw_rating)
+        binary_dataset = BinaryDataset.load_from_trainset(my_toy_trainset)
+        assert_dataset_and_trainset_are_equal(binary_dataset, my_toy_trainset, my_toy_binary_dataset)
+
+
+def test_load_from_trainset_zaki():
+    for _ in range(CONVERT_DATASET_SHUFFLE_TIMES):
+        zaki_trainset = convert_raw_rating_list_into_trainset(zaki_dataset_raw_rating)
+        binary_dataset = BinaryDataset.load_from_trainset(zaki_trainset)
+        assert_dataset_and_trainset_are_equal(binary_dataset, zaki_trainset, zaki_binary_dataset)
+
+
+def test_load_from_trainset_belohlavek():
+    for _ in range(CONVERT_DATASET_SHUFFLE_TIMES):
+        belohlavek_trainset = convert_raw_rating_list_into_trainset(belohlavek_dataset_raw_rating)
+        binary_dataset = BinaryDataset.load_from_trainset(belohlavek_trainset)
+        assert_dataset_and_trainset_are_equal(binary_dataset, belohlavek_trainset, belohlavek_binary_dataset)

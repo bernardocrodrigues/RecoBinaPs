@@ -13,7 +13,7 @@
 # reports.
 #
 # Bibliography
-# [1] Mohammed J. Zaki and Wagner Meira, Jr., 'Data Mining and Analysis: Fundamental Concepts and Algorithms' 
+# [1] Mohammed J. Zaki and Wagner Meira, Jr., 'Data Mining and Analysis: Fundamental Concepts and Algorithms'
 #     <https://dataminingbook.info/first_edition/>
 # [2] Radim Belohlavek, Vilem Vychodil, 'Discovery of optimal factors in binary data via a novel method of matrix
 #     decomposition' <https://www.sciencedirect.com/science/article/pii/S0022000009000415>
@@ -21,7 +21,19 @@
 #     Collaborative Filtering <https://publications.hse.ru/pubs/share/folder/2yoq2ezea5/97014436.pdf>
 
 import numpy as np
+import pandas as pd
 from lib.BinaryDataset import BinaryDataset
+from surprise import Dataset, Reader, Trainset
+import random
+
+
+def convert_raw_rating_list_into_trainset(raw_data, shuffle=True) -> Trainset:
+    if shuffle:
+        random.shuffle(raw_data)
+    rating_dataframe = pd.DataFrame(raw_data, columns=["userID", "itemID", "rating"])
+    reader = Reader(rating_scale=(0, 5))
+    return Dataset.load_from_df(rating_dataframe[["userID", "itemID", "rating"]], reader).build_full_trainset()
+
 
 # fmt: off
 my_toy_dataset_raw = np.array(
@@ -36,6 +48,30 @@ my_toy_dataset_raw = np.array(
     ],
     dtype=bool,
 )
+my_toy_dataset_raw_rating = [  # User ID     Item ID     Rating
+                                [0,          0,          5],
+                                [0,          1,          5],
+                                [0,          3,          5],
+                                [1,          0,          5],
+                                [1,          1,          5],
+                                [1,          2,          5],
+                                [1,          3,          5],
+                                [2,          0,          5],
+                                [2,          1,          5],
+                                [2,          2,          5],
+                                [2,          3,          5],
+                                [3,          4,          5],
+                                [3,          5,          5],
+                                [4,          4,          5],
+                                [4,          5,          5],
+                                [5,          0,          5],
+                                [5,          1,          5],
+                                [5,          2,          5],
+                                [5,          3,          5],
+                                [5,          4,          5],
+                                [5,          5,          5],
+                                [6,          6,          5],
+                            ]
 # fmt: on
 my_toy_binary_dataset = BinaryDataset(my_toy_dataset_raw)
 
@@ -70,6 +106,30 @@ zaki_dataset_raw = np.array(
     ],
     dtype=bool,
 )
+zaki_dataset_raw_rating = [  # User ID     Item ID     Rating
+                              [0,          0,          5],
+                              [0,          1,          5],
+                              [0,          3,          5],
+                              [0,          4,          5],
+                              [1,          1,          5],
+                              [1,          2,          5],
+                              [1,          4,          5],
+                              [2,          0,          5],
+                              [2,          1,          5],
+                              [2,          4,          5],
+                              [3,          0,          5],
+                              [3,          1,          5],
+                              [3,          2,          5],
+                              [3,          4,          5],
+                              [4,          0,          5],
+                              [4,          1,          5],
+                              [4,          2,          5],
+                              [4,          3,          5],
+                              [4,          4,          5],
+                              [5,          1,          5],
+                              [5,          2,          5],
+                              [5,          3,          5],
+                        ]
 # fmt: on
 zaki_binary_dataset = BinaryDataset(zaki_dataset_raw)
 
@@ -87,6 +147,24 @@ belohlavek_dataset_raw = np.array(
     ],
     dtype=bool,
 )
+belohlavek_dataset_raw_rating = [  # User ID     Item ID     Rating
+                                    [0,          0,          5],
+                                    [0,          2,          5],
+                                    [0,          4,          5],
+                                    [0,          5,          5],
+                                    [1,          2,          5],
+                                    [2,          0,          5],
+                                    [2,          1,          5],
+                                    [2,          3,          5],
+                                    [2,          4,          5],
+                                    [2,          5,          5],
+                                    [3,          2,          5],
+                                    [3,          5,          5],
+                                    [4,          1,          5],
+                                    [4,          2,          5],
+                                    [4,          3,          5],
+                                    [4,          5,          5],
+                                ]
 # fmt: on
 belohlavek_binary_dataset = BinaryDataset(belohlavek_dataset_raw)
 
