@@ -71,7 +71,6 @@ def test_get_matrices_belohlavek_2():
             [False, False, False, True],
             [True, False, False, False],
             [False, True, False, False],
-
         ],
     )
 
@@ -178,7 +177,6 @@ def test_GreConD_belohlavek():
 
     assert np.array_equal(formal_context[3].extent, [0, 2, 3, 4])
     assert np.array_equal(formal_context[3].intent, [5])
-
 
     Af, Bf = get_factor_matrices_from_concepts(formal_context, belohlavek_binary_dataset.shape[0], belohlavek_binary_dataset.shape[1])
     I = np.matmul(Af, Bf)
