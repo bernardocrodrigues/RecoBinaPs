@@ -166,3 +166,7 @@ cython_debug/
 *.dat
 *.dat_patterns.txt
 *.binaps.patterns
+
+# VSCode
+.vscode
+tmp
