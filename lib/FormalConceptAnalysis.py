@@ -68,21 +68,46 @@ def GreConD(binary_dataset: BinaryDataset, coverage=1, verbose=False):
         current_coverage = 1 - np.count_nonzero(U) / initial_number_of_trues
         D = np.array([])
         V = 0
-        js_not_in_D = [d for d in binary_dataset.Y if d not in D]
+        D_u_j = np.array([])  # current D union {j}
 
-        for j in js_not_in_D:
-            candidate_D_intent = binary_dataset.i(binary_dataset.t(np.append(D, j).astype(int)))
-            candidate_D_extent = binary_dataset.t(candidate_D_intent)
-            candidate_V = submatrix_intersection_size(candidate_D_extent, candidate_D_intent, U)
-            if candidate_V > V:
-                D = candidate_D_intent
-                V = candidate_V
-                break
+        searching = True
+
+        while searching:
+
+            js_not_in_D = [j for j in binary_dataset.Y if j not in D_u_j]
+
+            best_D_u_j_closed_intent = None
+            best_D_u_j_V = 0
+
+            for j in js_not_in_D:
+
+                D_u_j = np.append(D, j).astype(int)
+
+                D_u_j_closed_extent = binary_dataset.t(D_u_j)
+                D_u_j_closed_intent = binary_dataset.i(D_u_j_closed_extent)
+
+                D_u_j_V = submatrix_intersection_size(D_u_j_closed_extent, D_u_j_closed_intent, U)
+
+                if D_u_j_V > best_D_u_j_V:
+                    best_D_u_j_V = D_u_j_V
+                    best_D_u_j_closed_intent = D_u_j_closed_intent.copy()
+
+            if best_D_u_j_V > V:
+                D = best_D_u_j_closed_intent
+                V = best_D_u_j_V
+            else:
+                searching = False
+
         C = binary_dataset.t(D)
+
         new_concept = Concept(C, D)
+
         F.append(new_concept)
+
         erase_submatrix_values(new_concept.extent, new_concept.intent, U)
+
         current_coverage = 1 - np.count_nonzero(U) / initial_number_of_trues
+
         if verbose:
             print(f"[GreConD] Current Coverage: {current_coverage*100:.2f}%", end="\r")
 
