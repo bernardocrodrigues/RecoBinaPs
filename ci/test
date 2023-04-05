@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+
+THIS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+cd $THIS_SCRIPT_DIR/..
+
+python3 -m coverage run -m pytest -vs
+
+# coverage report --omit=/usr/lib/* -m 
