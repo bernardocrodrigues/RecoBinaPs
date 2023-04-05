@@ -16,6 +16,8 @@ Series of helper functions to make interacting with BinaPs vanilla implementatio
 
 from subprocess import run
 
+from tabulate import tabulate
+
 
 def generate_synthetic_data(row_quantity, column_quantity, file_prefix: str, max_pattern_size: int,
                             noise: float = 0.5, density: float = 0.5) -> None:
@@ -94,3 +96,9 @@ def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_fil
 
     output = run(cmd.split(" "), capture_output=True, check=True)
     print(output.stdout.decode())
+
+
+def display_as_table(data, headers = [], title = None):
+    if title:
+        print(title)
+    print(tabulate(data, headers = headers, tablefmt="fancy_grid"))
