@@ -42,11 +42,12 @@ def get_similarity_matrix(dataset: BinaryDataset, distance_strategy=jaccard_dist
 
 
 class FcaBmf(AlgoBase):
-    def __init__(self, k=30, coverage=1.0, distance_strategy=jaccard_distance, verbose=False):
+    def __init__(self, k=30, coverage=1.0, threshold=1, distance_strategy=jaccard_distance, verbose=False):
         AlgoBase.__init__(self)
         self.verbose = verbose
         self.k = k
         self.coverage = coverage
+        self.threshold = threshold
         self.distance_strategy = distance_strategy
 
         self.actual_coverage = None
@@ -58,7 +59,7 @@ class FcaBmf(AlgoBase):
         if self.verbose:
             print("[FcaBmf] Generating binary dataset...")
 
-        self.binary_dataset = BinaryDataset.load_from_trainset(trainset)
+        self.binary_dataset = BinaryDataset.load_from_trainset(trainset,threshold=self.threshold)
 
         if self.verbose:
             print("[FcaBmf] Generating binary dataset OK!")
