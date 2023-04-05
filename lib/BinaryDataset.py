@@ -55,6 +55,9 @@ class BinaryDataset(object):
         self.X = np.arange(binary_dataset.shape[0], dtype=int)
         self.Y = np.arange(binary_dataset.shape[1], dtype=int)
 
+        self.number_of_trues = np.count_nonzero(binary_dataset)
+        self.sparsity = self.number_of_trues / binary_dataset.size
+
     def get_raw_copy(self):
         return self._binary_dataset.copy()
 

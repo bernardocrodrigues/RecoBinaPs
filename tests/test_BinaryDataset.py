@@ -221,3 +221,6 @@ def test_load_from_trainset_belohlavek():
         belohlavek_trainset = convert_raw_rating_list_into_trainset(belohlavek_dataset_raw_rating)
         binary_dataset = BinaryDataset.load_from_trainset(belohlavek_trainset)
         assert_dataset_and_trainset_are_equal(binary_dataset, belohlavek_trainset, belohlavek_binary_dataset)
+
+
+# todo: add sparsity and number of zeros tests
