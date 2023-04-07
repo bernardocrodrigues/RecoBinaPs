@@ -31,5 +31,6 @@ RUN pip install matplotlib
 RUN pip install plotly
 RUN pip install tabulate
 
-RUN mkdir /workdir
-WORKDIR /workdir
+# Unit test tooling
+RUN pip install pytest
+RUN pip install coverage

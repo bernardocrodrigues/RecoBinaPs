@@ -60,3 +60,8 @@ Install the example *environment/kernel.json* at your local IPython kernel direc
 
         mkdir ~/.local/share/jupyter/kernels/binaps/
         cp environment/kernel.json ~/.local/share/jupyter/kernels/binaps/kernel.json
+
+### Running unit tests
+
+To run the unit test suit, make sure you've built the environment and simply run the script at `ci/test`. It will run
+pytest inside the provided environment.
