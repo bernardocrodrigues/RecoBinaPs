@@ -44,11 +44,11 @@ def Algorithm2(I, mincov):
     F = []
     nt1s = U.sum()
     while 1 - (U.sum() / nt1s) < mincov:
+        print( 1 - (U.sum() / nt1s), end='\r')
         D = []
         V = 0
         existe = True
         while existe:
-            existe = False
             bestDbolaMaisJ = 0
             bestDjClosed = []
             for j in range(I.shape[1]):
@@ -56,18 +56,19 @@ def Algorithm2(I, mincov):
                     Dj = D.copy()
                     Dj.append(j)
                     nIntersection, DjClosed = nbolaMais(Dj, U, I)
-                    if nIntersection > V:
-                        existe = True
-                        if nIntersection > bestDbolaMaisJ:
-                            bestDbolaMaisJ = nIntersection #using idempotency property
-                            bestDjClosed = DjClosed
-        D = bestDjClosed
-        V = bestDbolaMaisJ
-        if existe:
-            C = downArrow(D, I)
-            F.append([C,D])
-            idx = np.ravel_multi_index([np.repeat(C, len(D)),np.tile(D,len(C))], I.shape)
-            U[idx] = 0
+                    if nIntersection > bestDbolaMaisJ:
+                        bestDbolaMaisJ = nIntersection #using idempotency property
+                        bestDjClosed = DjClosed
+            if bestDbolaMaisJ > V:
+                D = bestDjClosed
+                V = bestDbolaMaisJ
+            else:
+                existe = False
+
+        C = downArrow(D, I)
+        F.append([C,D])
+        idx = np.ravel_multi_index([np.repeat(C, len(D)),np.tile(D,len(C))], I.shape)
+        U[idx] = 0
     return F
 
 def nbolaMais(Dy, U, matrix):
