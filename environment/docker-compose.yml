@@ -10,22 +10,13 @@ services:
     tmpfs:
       - /home/$USER
     user: $UID:$GID
-    entrypoint: jupyter-lab --no-browser --allow-root --notebook-dir=/workdir --ip='*' --NotebookApp.token='something_secret'
+    working_dir: /workdir
+    entrypoint: jupyter-lab
+    command: --no-browser --allow-root --notebook-dir=/workdir --ip='*' --NotebookApp.token='something_secret'
     network_mode: host
   notebook-cuda:
-    build: .
-    ports:
-      - "8888:8888"
-    runtime: nvidia
-    volumes:
-      - /etc/passwd:/etc/passwd:ro
-      - /etc/group:/etc/group:ro
-      - $BINAPS_ROOT_DIR:/workdir
-    tmpfs:
-      - /home/$USER
-    user: $UID:$GID
-    network_mode: host
-    entrypoint: jupyter-lab --no-browser --allow-root --notebook-dir=/workdir --ip='*' --NotebookApp.token='something_secret'
+    extends:
+      service: notebook
     deploy:
       resources:
         reservations:
