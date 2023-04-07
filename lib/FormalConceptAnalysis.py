@@ -23,101 +23,80 @@ from collections import namedtuple
 
 Concept = namedtuple("Concept", "extent intent")
 
-
-@njit
-def submatrix_intersection_size(rows, columns, U) -> int:  # pragma: no cover
-    intersection_size = 0
-    for row in rows:
-        for column in columns:
-            if U[row][column]:
-                intersection_size += 1
-    return intersection_size
-
-
-@njit
-def erase_submatrix_values(rows, columns, U) -> None:  # pragma: no cover
-    for row in rows:
-        for column in columns:
-            U[row][column] = False
-
-
-def GreConD(binary_dataset: BinaryDataset, coverage=1, verbose=False):
+def  GreConD(binary_dataset: BinaryDataset, coverage=1, verbose=False):
     """
-    Implements Algorithm 2 in section 2.5.2 (page 15) from [1].
-
-    This algorithms proposes a greedy heuristic to enumerate the set F given a binary dataset D. F is suposed to be a
-    'good enough' formal context of D although it's not guaranteed to be optimal (smallest F that covers all of D).
-
-    It is also possible to define the desired coverage. The algorithm will stop when the current set F covers the given
-    coverage.
+    Wrapper over Algorithm2 to match my API
     """
 
-    if verbose:
-        print("[GreConD] Mining Formal Concepts...")
+    F = Algorithm2(binary_dataset._binary_dataset, coverage)
 
-    U = binary_dataset.get_raw_copy()
-    initial_number_of_trues = np.count_nonzero(U)
+    F_as_concepts = []
+    for item in F:
+        F_as_concepts.append(Concept(item[0], item[1]))
 
-    if verbose:
-        print(f"[GreConD] Binary dataset has {np.count_nonzero(U)} True's (sparcity: {initial_number_of_trues/U.size:.2f})")
+    return F_as_concepts, coverage
 
+# Parameters:
+# I: Boolean matrix
+# mincov: minimum coverage [0,1]
+def Algorithm2(I, mincov):
+    U = (I.copy()).ravel()
     F = []
-    current_coverage = 0
-
-    while coverage > current_coverage:
-        current_coverage = 1 - np.count_nonzero(U) / initial_number_of_trues
-        D = np.array([])
+    nt1s = U.sum()
+    while 1 - (U.sum() / nt1s) < mincov:
+        D = []
         V = 0
-        D_u_j = np.array([])  # current D union {j}
+        existe = True
+        while existe:
+            existe = False
+            bestDbolaMaisJ = 0
+            bestDjClosed = []
+            for j in range(I.shape[1]):
+                if not j in D:
+                    Dj = D.copy()
+                    Dj.append(j)
+                    nIntersection, DjClosed = nbolaMais(Dj, U, I)
+                    if nIntersection > V:
+                        existe = True
+                        if nIntersection > bestDbolaMaisJ:
+                            bestDbolaMaisJ = nIntersection #using idempotency property
+                            bestDjClosed = DjClosed
+        D = bestDjClosed
+        V = bestDbolaMaisJ
+        if existe:
+            C = downArrow(D, I)
+            F.append([C,D])
+            idx = np.ravel_multi_index([np.repeat(C, len(D)),np.tile(D,len(C))], I.shape)
+            U[idx] = 0
+    return F
 
-        searching = True
+def nbolaMais(Dy, U, matrix):
+    rows = downArrow(Dy, matrix)
+    if len(rows) == 0:
+        return 0, []
+    cols = upArrow(rows, matrix)
+    idx = np.ravel_multi_index([np.repeat(rows, len(cols)),np.tile(cols,len(rows))], matrix.shape)
+    return U[idx].sum(), cols
 
-        while searching:
+def downArrow(D, matrix):
+    rows = set(range(matrix.shape[0]))
+    for col in D:
+        aux = set(getColCoverage(col, matrix))
+        rows = rows.intersection(aux)
+    return list(rows)
 
-            js_not_in_D = [j for j in binary_dataset.Y if j not in D_u_j]
+def upArrow(C, matrix):
+    cols = set(range(matrix.shape[1]))
+    for row in C:
+        aux = set(getRowCoverage(row, matrix))
+        cols = cols.intersection(aux)
+    return list(cols)
 
-            best_D_u_j_closed_intent = None
-            best_D_u_j_V = 0
+def getColCoverage(col, matrix):
+    return np.where(matrix[:,col] == 1)[0]
 
-            for j in js_not_in_D:
-
-                D_u_j = np.append(D, j).astype(int)
-
-                D_u_j_closed_extent = binary_dataset.t(D_u_j)
-                D_u_j_closed_intent = binary_dataset.i(D_u_j_closed_extent)
-
-                D_u_j_V = submatrix_intersection_size(D_u_j_closed_extent, D_u_j_closed_intent, U)
-
-                if D_u_j_V > best_D_u_j_V:
-                    best_D_u_j_V = D_u_j_V
-                    best_D_u_j_closed_intent = D_u_j_closed_intent.copy()
-
-            if best_D_u_j_V > V:
-                D = best_D_u_j_closed_intent
-                V = best_D_u_j_V
-            else:
-                searching = False
-
-        C = binary_dataset.t(D)
-
-        new_concept = Concept(C, D)
-
-        F.append(new_concept)
-
-        erase_submatrix_values(new_concept.extent, new_concept.intent, U)
-
-        current_coverage = 1 - np.count_nonzero(U) / initial_number_of_trues
-
-        if verbose:
-            print(f"[GreConD] Current Coverage: {current_coverage*100:.2f}%", end="\r")
-
-    if verbose:
-        print("[GreConD] Mining Formal Concepts OK")
-        print(f"[GreConD] Formal Concepts mined: {len(F)}")
-        print(f"[GreConD] Final Concepts Coverage {current_coverage*100}%")
-
-    return F, current_coverage
-
+def getRowCoverage(row, matrix):
+    return np.where(matrix[row,:] == 1)[0]
 
 @njit
 def _get_matrices(concepts: List, dataset_number_rows, dataset_number_cols):  # pragma: no cover
