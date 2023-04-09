@@ -71,10 +71,9 @@ def GreConD(binary_dataset: BinaryDataset, coverage=1, verbose=False):
         D_u_j = np.array([])  # current D union {j}
 
         searching = True
-
+        js_not_in_D = [j for j in binary_dataset.Y if j not in D_u_j]
+        
         while searching:
-
-            js_not_in_D = [j for j in binary_dataset.Y if j not in D_u_j]
 
             best_D_u_j_closed_intent = None
             best_D_u_j_V = 0
