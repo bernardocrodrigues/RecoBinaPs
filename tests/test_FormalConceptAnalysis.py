@@ -3,7 +3,7 @@ import numpy as np
 from lib.FormalConceptAnalysis import get_factor_matrices_from_concepts, Concept, GreConD
 
 from tests.ToyDatasets import my_toy_binary_dataset, my_toy_binary_2_dataset, zaki_binary_dataset, belohlavek_binary_dataset, belohlavek_binary_dataset_2, nenova_dataset_dataset
-
+from tests.mushroom import MushroomDataset
 
 def test_get_matrices_belohlavek():
     # example from belohlavek paper page 14 and 15
@@ -268,3 +268,21 @@ def test_GreConD_partial_2():
     assert I.shape == nenova_dataset_dataset.shape
     assert real_coverage >= 0.7
     assert real_coverage <= 1
+
+
+def test_GreConD_mushroom():
+
+    coverages =  np.arange(0, 1.01, 0.01)
+    mushroom_factors_per_coverage = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3,
+                                     3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 8, 8, 9, 9, 10,
+                                     10, 11, 11, 12, 12, 13, 13, 14, 15, 16, 16, 17, 18, 18, 19, 20, 21, 22, 23, 24, 25,
+                                     26, 27, 28, 28, 29, 31, 32, 34, 35, 37, 38, 40, 42, 44, 46, 49, 52, 55, 58, 62, 66,
+                                     70, 75, 85, 120]
+
+    found_factors_per_coverage = []
+
+    for coverage in coverages:
+        concepts, _ = GreConD(MushroomDataset, coverage=coverage)
+        found_factors_per_coverage.append(len(concepts))
+
+    assert mushroom_factors_per_coverage == found_factors_per_coverage
