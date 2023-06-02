@@ -4,7 +4,7 @@ THIS_SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && p
 
 cd $THIS_SCRIPT_DIR/../environment
 
-docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage run -m pytest -vs
+docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage run -m pytest --durations=0 -vs
 docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage report --omit=/usr/local/*,/usr/lib/* -m 
 
 cd -
