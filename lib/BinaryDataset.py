@@ -93,3 +93,38 @@ class BinaryDataset(object):
                 raw_dataset[uid][iid] = True
 
         return BinaryDataset(raw_dataset)
+
+    def save_as_binaps_compatible_input(self, stream):   
+        """
+        Save the binary dataset as a binaps-compatible input.
+
+        Args:
+            stream: A file-like object to write the binaps-compatible input.
+
+        Returns:
+            None
+
+        This method takes the binary dataset and writes its binaps-compatible representation
+        to the provided stream. Each row of the binary dataset is processed, and the indices
+        of non-zero elements in the row are converted to a string representation. The string
+        representations of all rows are concatenated with a newline character and written to
+        the stream.
+
+        Example:
+            binary_dataset = np.array([[1, 0, 1],
+                                       [0, 1, 0],
+                                       [1, 1, 0]])
+
+            with open('binaps_input.txt', 'w') as stream:
+                save_as_binaps_compatible_input(binary_dataset, stream)
+
+            # Contents of 'binaps_input.txt':
+            # 1 3
+            # 2
+            # 1 2
+        """
+
+        for row in self._binary_dataset:
+            non_zero_indices = np.add(row.nonzero(), 1)[0]
+            str_representation =  ' '.join((str(indice) for indice in non_zero_indices)) + '\n'
+            stream.write(str_representation)

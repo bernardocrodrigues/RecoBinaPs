@@ -7,8 +7,13 @@ services:
       - /etc/passwd:/etc/passwd:ro
       - /etc/group:/etc/group:ro
       - $BINAPS_ROOT_DIR:/workdir
+      #By sharing the tmp folder with the host, we'll only donwload surprise's builtin datasets once per session
+      - /tmp:/tmp
     tmpfs:
       - /home/$USER
+    environment:
+      # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
+      - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
     user: $UID:$GID
     working_dir: /workdir
     entrypoint: jupyter-lab

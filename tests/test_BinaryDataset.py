@@ -1,4 +1,7 @@
+import tempfile
+from surprise import Dataset
 import numpy as np
+
 
 from tests.ToyDatasets import (
     convert_raw_rating_list_into_trainset,
@@ -8,6 +11,7 @@ from tests.ToyDatasets import (
     zaki_dataset_raw_rating,
     belohlavek_binary_dataset,
     belohlavek_dataset_raw_rating,
+    nenova_dataset_dataset
 )
 from lib.BinaryDataset import BinaryDataset
 
@@ -222,5 +226,82 @@ def test_load_from_trainset_belohlavek():
         binary_dataset = BinaryDataset.load_from_trainset(belohlavek_trainset)
         assert_dataset_and_trainset_are_equal(binary_dataset, belohlavek_trainset, belohlavek_binary_dataset)
 
+
+def test_save_as_binaps_compatible_input():
+
+    def write_and_assert_file_output(dataset, line_results):
+        with tempfile.TemporaryFile(mode='w+t') as f:
+            dataset.save_as_binaps_compatible_input(f)
+
+            f.seek(0)
+
+            for file_line, reference_line in zip(f, line_results):
+                assert(file_line == reference_line)
+
+    my_toy_binary_dataset_line_results = [
+        '1 2 4\n',
+        '1 2 3 4\n',
+        '1 2 3 4\n',
+        '5 6\n',
+        '5 6\n',
+        '1 2 3 4 5 6\n',
+        '7\n',
+    ]
+
+    zaki_line_results = [
+        '1 2 4 5\n',
+        '2 3 5\n',
+        '1 2 5\n',
+        '1 2 3 5\n',
+        '1 2 3 4 5\n',
+        '2 3 4\n',
+    ]
+
+    nenova_line_results = [
+        '1 2 3\n',
+        '1 2 3 4 5\n',
+        '4 5\n',
+        '4 5 6 7\n',
+        '6 7\n',
+        '6 7\n',
+    ]
+
+    write_and_assert_file_output(my_toy_binary_dataset, my_toy_binary_dataset_line_results)
+    write_and_assert_file_output(zaki_binary_dataset, zaki_line_results)
+    write_and_assert_file_output(nenova_dataset_dataset, nenova_line_results)
+
+
+def test_save_as_binaps_compatible_input_on_movielens():
+
+    threshold = 1
+
+    dataset = Dataset.load_builtin("ml-1m", prompt=False)
+    trainset = dataset.build_full_trainset()
+    binary_dataset = BinaryDataset.load_from_trainset(trainset, threshold=1)
+
+    with tempfile.TemporaryFile(mode='r+') as f:
+        binary_dataset.save_as_binaps_compatible_input(f)
+
+        f.seek(0)
+        file_lines = f.read().split('\n')
+
+        for user, item, rating in trainset.all_ratings():
+            if rating >= threshold:
+                binaps_item = str(item + 1)
+                assert binaps_item in file_lines[user].split(' ')
+
+    dataset = Dataset.load_builtin("ml-100k", prompt=False)
+    trainset = dataset.build_full_trainset()
+    binary_dataset = BinaryDataset.load_from_trainset(trainset, threshold=1)
+
+    with tempfile.TemporaryFile(mode='r+') as f:
+        binary_dataset.save_as_binaps_compatible_input(f)
+
+        f.seek(0)
+        file_lines = f.read().split('\n')
+
+        for user, item, rating in trainset.all_ratings():
+            if rating >= threshold:
+                assert str(item + 1) in file_lines[user].split(' ')
 
 # todo: add sparsity and number of zeros tests
