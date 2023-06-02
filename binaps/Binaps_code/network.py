@@ -59,12 +59,10 @@ def train(model, device_cpu, device_gpu, train_loader, optimizer, lossFun, epoch
         optimizer.step()
         model.clipWeights()
 
-        if batch_idx % log_interval == 0:
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, batch_idx * len(data), len(train_loader.dataset),
-                100. * batch_idx / len(train_loader), loss.item()))
+        # if batch_idx % log_interval == 0:
+            # print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.item()))
 
-    return
+    return epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.item()
 
 
 def test(model, device_cpu, device_gpu, test_loader, lossFun):
@@ -80,9 +78,9 @@ def test(model, device_cpu, device_gpu, test_loader, lossFun):
             correct += (output.ne(data.data.view_as(output)).sum(1) == 0).sum()
 
     _, target = next(iter(test_loader))
-    print('\nTest set: Average loss: {:.6f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
-        test_loss, correct, len(test_loader.dataset),
-        100. * correct / len(test_loader.dataset)))
+    # print('\nTest set: Average loss: {:.6f}, Accuracy: {}/{} ({:.0f}%)\n'.format(test_loss, correct, len(test_loader.dataset), 100. * correct / len(test_loader.dataset)))
+
+    return test_loss, correct, len(test_loader.dataset), 100. * correct / len(test_loader.dataset)
 
 
 def learn(input, lr, gamma, weight_decay, epochs, hidden_dim, train_set_size, batch_size, test_batch_size, log_interval, device_cpu, device_gpu):
@@ -111,9 +109,11 @@ def learn(input, lr, gamma, weight_decay, epochs, hidden_dim, train_set_size, ba
 
     scheduler = MultiStepLR(optimizer, [5,7], gamma=gamma)
     for epoch in range(1, epochs + 1):
-        train(model, device_cpu, device_gpu, train_loader, optimizer, lossFun, epoch, log_interval)
+        epoch, _, _, _, _ = train(model, device_cpu, device_gpu, train_loader, optimizer, lossFun, epoch, log_interval)
 
-        test(model, device_cpu, device_gpu, test_loader, lossFun)
+        test_loss, correct, _, _ = test(model, device_cpu, device_gpu, test_loader, lossFun)
         scheduler.step()
+
+        print(epoch, test_loss, correct, end='\r')
 
     return model, new_weights, trainDS
