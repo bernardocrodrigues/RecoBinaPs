@@ -14,9 +14,10 @@ utils.py
 Series of helper functions to make interacting with BinaPs vanilla implementation more friendly.
 """
 
+import re
 from subprocess import run
-
 from tabulate import tabulate
+from typing import List, Optional, TextIO
 
 
 def generate_synthetic_data(row_quantity, column_quantity, file_prefix: str, max_pattern_size: int,
@@ -80,6 +81,39 @@ def run_binaps(data_path: str, hidden_dimension: int, epochs: int) -> None:
     print(f"{stdout[:print_character_length]} [output truncated]")
     print("...")
     print(f"[output truncated] {stdout[-print_character_length:]}")
+
+
+def parse_binaps_patterns(file_object: TextIO) -> List[List[int]]:
+    """
+    Parse binaps patterns from a file.
+
+    Args:
+        file_object: A file-like object containing the binaps detected patterns.
+
+    Returns:
+        A list of lists representing the parsed binaps patterns.
+
+    This function reads the contents of the provided file and extracts binaps patterns.
+    Each binaps pattern is represented as a list of integers. The function returns a list
+    of these patterns.
+
+    Example:
+        patterns_file = open('patterns.txt', 'r')
+        patterns = parse_binaps_patterns(patterns_file)
+        patterns_file.close()
+    """
+
+    file_contents = file_object.read()
+
+    regex = re.compile(r"\[[ ]*([ \d\n]+)]")
+    patterns_as_strings = regex.findall(file_contents)
+
+    patterns = []
+    for pattern_as_string in patterns_as_strings:
+        pattern = [int(d) for d in pattern_as_string.replace('\n', ' ').split()]
+        patterns.append(pattern)
+
+    return patterns
 
 
 def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_file: str) -> None:
