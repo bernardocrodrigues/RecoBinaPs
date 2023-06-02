@@ -3,7 +3,8 @@ import numpy as np
 from lib.FormalConceptAnalysis import BinaryDataset, GreConD, get_factor_matrices_from_concepts
 from surprise import AlgoBase, PredictionImpossible
 from scipy.spatial import distance
-
+from abc import ABC, abstractmethod
+from lib.BinapsWrapper import run_binaps
 
 def jaccard_distance(A: np.array, B: np.array):
     return distance.jaccard(A, B)
@@ -41,7 +42,7 @@ def get_similarity_matrix(dataset: BinaryDataset, distance_strategy=jaccard_dist
     return similarity_matrix
 
 
-class FcaBmf(AlgoBase):
+class BooleanMatrixBasedRecomender(AlgoBase, ABC):
     def __init__(self, k=30, coverage=1.0, threshold=1, distance_strategy=jaccard_distance, verbose=False):
         AlgoBase.__init__(self)
         self.verbose = verbose
@@ -53,26 +54,20 @@ class FcaBmf(AlgoBase):
         self.actual_coverage = None
         self.number_of_factors = None
 
+    @abstractmethod
+    def generate_formal_context(self):
+        pass
+
     def fit(self, trainset):
         AlgoBase.fit(self, trainset)
 
         if self.verbose:
             print("[FcaBmf] Generating binary dataset...")
 
-        self.binary_dataset = BinaryDataset.load_from_trainset(trainset,threshold=self.threshold)
+        self.binary_dataset = BinaryDataset.load_from_trainset(trainset, threshold=self.threshold)
 
-        if self.verbose:
-            print("[FcaBmf] Generating binary dataset OK!")
-            print(f"[FcaBmf] Resulting binary dataset is {self.binary_dataset.shape[0]} rows x {self.binary_dataset.shape[1]} columns")
-
-        if self.verbose:
-            print("[FcaBmf] Generating Formal Context...")
-
-        self.formal_context, self.actual_coverage = GreConD(self.binary_dataset, coverage=self.coverage, verbose=self.verbose)
+        self.generate_formal_context()
         self.number_of_factors = len(self.formal_context)
-
-        if self.verbose:
-            print("[FcaBmf] Generating Formal Context OK")
 
         self.Af, self.Bf = get_factor_matrices_from_concepts(self.formal_context, self.binary_dataset.shape[0], self.binary_dataset.shape[1])
         latent_binary_dataset = BinaryDataset(self.Af)
@@ -128,3 +123,37 @@ class FcaBmf(AlgoBase):
         details = {"actual_k": len(neighbors_used), "neighbors_used": neighbors_used}
 
         return rating, details
+
+class FcaBmf(BooleanMatrixBasedRecomender):
+
+    def generate_formal_context(self):
+
+        if self.verbose:
+            print("[FcaBmf] Generating binary dataset OK!")
+            print(f"[FcaBmf] Resulting binary dataset is {self.binary_dataset.shape[0]} rows x {self.binary_dataset.shape[1]} columns")
+
+        if self.verbose:
+            print("[FcaBmf] Generating Formal Context...")
+
+        self.formal_context, self.actual_coverage = GreConD(self.binary_dataset, coverage=self.coverage, verbose=self.verbose)
+
+        if self.verbose:
+            print("[FcaBmf] Generating Formal Context OK")
+
+class BinapsRecommender(BooleanMatrixBasedRecomender):
+
+    def generate_formal_context(self):
+
+        with open('movielens.dat', 'w') as f:
+            self.binary_dataset.save_as_binaps_compatible_input(f)
+
+        data_path = "movielens.dat"
+        hidden_dimension = 1600
+        epochs = 10000
+
+        run_binaps(data_path, hidden_dimension, epochs)
+
+
+
+
+
