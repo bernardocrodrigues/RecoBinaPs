@@ -132,7 +132,46 @@ def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_fil
     print(output.stdout.decode())
 
 
-def display_as_table(data, headers = [], title = None):
+def display_as_table(data: List[List], headers: Optional[List[str]] = [], title: Optional[str] = None) -> None:
+    """
+    Display data as a formatted table.
+
+    Args:
+        data: A list of lists representing the data to be displayed.
+        headers (optional): A list of strings representing the column headers (default: []).
+        title (optional): A string representing the title of the table (default: None).
+
+    Returns:
+        None
+
+    This function takes the provided data and displays it as a formatted table. The data should be
+    provided as a list of lists, where each inner list represents a row of the table. The column headers,
+    if provided, should be specified as a list of strings. If a title is provided, it will be displayed
+    above the table.
+
+    Example:
+        data = [
+            ['John Doe', 25, 'Engineer'],
+            ['Jane Smith', 32, 'Manager'],
+            ['Mark Johnson', 41, 'Developer']
+        ]
+
+        headers = ['Name', 'Age', 'Role']
+
+        display_as_table(data, headers=headers, title='Employee Information')
+
+        # Output:
+        # Employee Information
+        # ╒═════════════╤═════╤═════════════╕
+        # │ Name        │ Age │ Role        │
+        # ╞═════════════╪═════╪═════════════╡
+        # │ John Doe    │ 25  │ Engineer    │
+        # ├─────────────┼─────┼─────────────┤
+        # │ Jane Smith  │ 32  │ Manager     │
+        # ├─────────────┼─────┼─────────────┤
+        # │ Mark Johnson│ 41  │ Developer   │
+        # ╘═════════════╧═════╧═════════════╛
+    """
     if title:
         print(title)
     print(tabulate(data, headers = headers, tablefmt="fancy_grid"))
