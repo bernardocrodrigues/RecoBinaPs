@@ -157,3 +157,44 @@ def get_factor_matrices_from_concepts(concepts, dataset_number_rows, dataset_num
     Bf = np.array(Bf, dtype=bool)
 
     return Af, Bf
+
+
+def construct_context_from_binaps_patterns(binary_dataset: BinaryDataset, patterns: List[List[int]], closed_itemsets: bool = True) -> List[Concept]:
+    """
+    Construct a context from binaps patterns.
+
+    Args:
+        binary_dataset: The binary dataset object.
+        patterns: A list of binaps patterns represented as lists of integers.
+        closed_itemsets: A boolean flag indicating whether to compute closed itemsets (default: True).
+
+    Returns:
+        A list of Concept objects representing the constructed context.
+
+    This function constructs a context from the given binaps patterns and the associated binary dataset.
+    Each binaps pattern is converted into a tidset and itemset based on the binary dataset.
+    The context is represented as a list of Concept objects, where each Concept consists of a tidset and an itemset.
+
+    If the `closed_itemsets` flag is set to True, closed itemsets will be computed by transforming the itemset
+    into a closed itemset based on the binary dataset.
+
+    Example:
+        binary_dataset = BinaryDataset(...)
+        patterns = [[1, 2, 3], [4, 5], [2, 4, 6]]
+        context = construct_context_from_binaps_patterns(binary_dataset, patterns)
+    """
+    context = []
+
+    for pattern in patterns:
+
+        tidset = binary_dataset.t(pattern) # a pattern equals an itemset
+
+        if closed_itemsets:
+            itemset = binary_dataset.i(tidset)
+            tidset = binary_dataset.t(itemset)
+        else:
+            itemset = pattern
+
+        context.append(Concept(tidset, itemset))
+
+    return context

@@ -1,6 +1,8 @@
 import numpy as np
 
-from lib.FormalConceptAnalysis import get_factor_matrices_from_concepts, Concept, GreConD
+from unittest.mock import Mock, call
+from lib.FormalConceptAnalysis import get_factor_matrices_from_concepts, Concept, GreConD, construct_context_from_binaps_patterns
+from lib.BinaryDataset import BinaryDataset
 
 from tests.ToyDatasets import my_toy_binary_dataset, my_toy_binary_2_dataset, zaki_binary_dataset, belohlavek_binary_dataset, belohlavek_binary_dataset_2, nenova_dataset_dataset
 from tests.mushroom import MushroomDataset
@@ -286,3 +288,57 @@ def test_GreConD_mushroom():
         found_factors_per_coverage.append(len(concepts))
 
     assert mushroom_factors_per_coverage == found_factors_per_coverage
+
+
+def test_construct_context_from_binaps_patterns_with_closed_itemsets():
+    # Mock the binary_dataset
+    binary_dataset = Mock(spec=BinaryDataset)
+    binary_dataset.t.side_effect = lambda itemset: [i * 10 for i in itemset]
+    binary_dataset.i.side_effect = lambda tidset: [i * 100 for i in tidset]
+
+    # Define the input patterns
+    patterns = [[1, 2, 3], [4, 5], [2, 4, 6]]
+
+    # Call the function under test
+    context = construct_context_from_binaps_patterns(binary_dataset, patterns, closed_itemsets=True)
+
+    # Assert the calls to binary_dataset.i
+    binary_dataset.i.assert_has_calls([call([10, 20, 30]), call([40, 50]), call([20, 40, 60])])
+
+    # Assert the calls to binary_dataset.t
+    binary_dataset.t.assert_has_calls([call([1, 2, 3]), call([1000, 2000, 3000]), call([4, 5]), call([4000, 5000]), call([2, 4, 6]),   call([2000, 4000, 6000])])
+
+    # Assert the output
+    expected_context = [
+        Concept(extent=[10000, 20000, 30000], intent=[1000, 2000, 3000]),
+        Concept(extent=[40000, 50000], intent=[4000, 5000]),
+        Concept(extent=[20000, 40000, 60000], intent=[2000, 4000, 6000])
+    ]
+    assert context == expected_context
+
+
+def test_construct_context_from_binaps_patterns_without_closed_itemsets():
+    # Mock the binary_dataset
+    binary_dataset = Mock(spec=BinaryDataset)
+    binary_dataset.t.side_effect = lambda itemset: [i * 10 for i in itemset]
+    binary_dataset.i.side_effect = lambda tidset: [i * 100 for i in tidset]
+
+    # Define the input patterns
+    patterns = [[1, 2, 3], [4, 5], [2, 4, 6]]
+
+    # Call the function under test
+    context = construct_context_from_binaps_patterns(binary_dataset, patterns, closed_itemsets=False)
+
+    # Assert the calls to binary_dataset.i
+    binary_dataset.i.assert_not_called()
+
+    # Assert the calls to binary_dataset.t
+    binary_dataset.t.assert_has_calls([call([1, 2, 3]), call([4, 5]), call([2, 4, 6])])
+
+    # Assert the output
+    expected_context = [
+        Concept(extent=[10, 20, 30], intent=[1, 2, 3]),
+        Concept(extent=[40, 50], intent=[4, 5]),
+        Concept(extent=[20, 40, 60], intent=[2, 4, 6])
+    ]
+    assert context == expected_context
