@@ -15,6 +15,7 @@
 import numpy as np
 from numba import njit
 from surprise import Trainset
+from binaps.Binaps_code.dataLoader import readDatFile
 
 
 @njit
@@ -93,6 +94,29 @@ class BinaryDataset(object):
                 raw_dataset[uid][iid] = True
 
         return BinaryDataset(raw_dataset)
+    
+    @staticmethod
+    def load_from_binaps_compatible_input(file_path):
+        """
+        Instantiate a binary dataset based on the contents of a file that follows the format 
+        used by BinAps.
+
+        Args:
+            file_path (str): The path to the file containing the binary dataset.
+
+        Returns:
+            BinaryDataset: A BinaryDataset object initialized with the data from the file.
+
+        Raises:
+            FileNotFoundError: If the specified file_path does not exist.
+            IOError: If there is an error reading the file.
+
+        Example:
+            dataset = BinaryDataset.load_from_binaps_compatible_input('data.dat')
+        """
+        raw_dataset = readDatFile(file_path)
+        return BinaryDataset(raw_dataset)
+
 
     def save_as_binaps_compatible_input(self, stream):   
         """

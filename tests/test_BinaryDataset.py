@@ -1,6 +1,9 @@
 import tempfile
 from surprise import Dataset
 import numpy as np
+import random
+import os
+from lib.BinapsWrapper import generate_synthetic_data
 
 
 from tests.ToyDatasets import (
@@ -303,5 +306,104 @@ def test_save_as_binaps_compatible_input_on_movielens():
         for user, item, rating in trainset.all_ratings():
             if rating >= threshold:
                 assert str(item + 1) in file_lines[user].split(' ')
+
+
+def test_load_from_binaps_compatible_input_on_example_datasets():
+    
+    def write_and_assert_file_output(dataset):
+
+        file_object = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
+        dataset.save_as_binaps_compatible_input(file_object)
+        file_object.close()
+        
+        saved_dataset = BinaryDataset.load_from_binaps_compatible_input(file_object.name)
+        np.testing.assert_array_equal(saved_dataset._binary_dataset, dataset._binary_dataset)
+
+    write_and_assert_file_output(my_toy_binary_dataset)
+    write_and_assert_file_output(zaki_binary_dataset)
+    write_and_assert_file_output(nenova_dataset_dataset)
+    write_and_assert_file_output(belohlavek_binary_dataset)
+
+def test_load_and_save_procedures_on_synthetic_data():
+
+    def test_against_synthetic_data(synthetic_data_path):
+        
+        synthetic_dataset = BinaryDataset.load_from_binaps_compatible_input(synthetic_data_path)
+
+        file_object = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
+        synthetic_dataset.save_as_binaps_compatible_input(file_object)
+        file_object.close()
+
+        with open(file_object.name) as generated, open(synthetic_data_path) as reference:
+            assert generated.read() == reference.read()
+
+        yet_another_synthetic_dataset = BinaryDataset.load_from_binaps_compatible_input(file_object.name)
+
+        np.testing.assert_array_equal(synthetic_dataset._binary_dataset, yet_another_synthetic_dataset._binary_dataset)
+
+        yet_another_file_object = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
+        yet_another_synthetic_dataset.save_as_binaps_compatible_input(yet_another_file_object)
+        yet_another_file_object.close()
+
+        with open(yet_another_file_object.name) as generated, open(synthetic_data_path) as reference:
+            assert generated.read() == reference.read()
+
+        os.remove(file_object.name)
+        os.remove(yet_another_file_object.name)
+
+    prefix = "/tmp/data"
+
+    non_overlapping_data_path = f"{prefix}.dat"
+    non_overlapping_data_patterns_path = f"{prefix}.dat_patterns.txt"
+    overlapping_data_path = f"{prefix}_itemOverlap.dat"
+    overlapping_data_patterns_path = f"{prefix}_itemOverlap.dat_patterns.txt"
+
+    row_quantity = random.randint(100, 20000)
+    column_quantity = random.randint(1, 100)
+    max_pattern_size = random.randint(1, 100)
+    noise = random.uniform(0, 1)
+    density = random.uniform(0, 1)
+
+    generate_synthetic_data(row_quantity, column_quantity, prefix, max_pattern_size, noise, density)
+
+    test_against_synthetic_data(non_overlapping_data_path)
+    test_against_synthetic_data(overlapping_data_path)
+
+    os.remove(non_overlapping_data_path)
+    os.remove(non_overlapping_data_patterns_path)
+    os.remove(overlapping_data_path)
+    os.remove(overlapping_data_patterns_path)
+
+
+def test_load_and_save_procedures_on_movielens():
+
+    threshold = 1
+    dataset = Dataset.load_builtin("ml-100k", prompt=False)
+    trainset = dataset.build_full_trainset()
+    binary_dataset = BinaryDataset.load_from_trainset(trainset, threshold=threshold)
+
+    with tempfile.NamedTemporaryFile(mode='w+t') as file_object:
+        binary_dataset.save_as_binaps_compatible_input(file_object)
+        file_object.seek(0)
+        file_lines = file_object.read().split('\n')
+
+        for user, item, rating in trainset.all_ratings():
+            if rating >= threshold:
+                assert str(item + 1) in file_lines[user]
+
+
+    dataset = Dataset.load_builtin("ml-1m", prompt=False)
+    trainset = dataset.build_full_trainset()
+    binary_dataset = BinaryDataset.load_from_trainset(trainset, threshold=threshold)
+
+    with tempfile.NamedTemporaryFile(mode='w+t') as file_object:
+        binary_dataset.save_as_binaps_compatible_input(file_object)
+        file_object.seek(0)
+        file_lines = file_object.read().split('\n')
+
+        for user, item, rating in trainset.all_ratings():
+            if rating >= threshold:
+                assert str(item + 1) in file_lines[user]
+
 
 # todo: add sparsity and number of zeros tests
