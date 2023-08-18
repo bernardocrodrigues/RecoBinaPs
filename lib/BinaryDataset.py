@@ -115,7 +115,7 @@ class BinaryDataset(object):
             dataset = BinaryDataset.load_from_binaps_compatible_input('data.dat')
         """
         raw_dataset = readDatFile(file_path)
-        return BinaryDataset(raw_dataset)
+        return BinaryDataset(raw_dataset.astype(bool))
 
 
     def save_as_binaps_compatible_input(self, stream):   
