@@ -14,10 +14,11 @@ services:
     environment:
       # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
       - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
+      - PYTHONPATH=/workdir:/workdir/binaps/Binaps_code
     user: $UID:$GID
     working_dir: /workdir
     entrypoint: jupyter-lab
-    command: --no-browser --allow-root --notebook-dir=/workdir --ip='*' --NotebookApp.token='something_secret'
+    command: --no-browser --allow-root --notebook-dir=/workdir --NotebookApp.allow_origin='*' --NotebookApp.ip='0.0.0.0' --NotebookApp.token='something_secret'
     network_mode: host
   notebook-cuda:
     extends:
