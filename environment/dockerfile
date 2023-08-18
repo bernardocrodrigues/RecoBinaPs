@@ -30,7 +30,12 @@ RUN pip install numba
 RUN pip install matplotlib
 RUN pip install plotly
 RUN pip install tabulate
+RUN pip install plotext
+RUN pip install statsmodels
+RUN pip install kaleido
 
 # Unit test tooling
 RUN pip install pytest
 RUN pip install coverage
+
+RUN DEBIAN_FRONTEND=noninteractive apt -y install msttcorefonts
