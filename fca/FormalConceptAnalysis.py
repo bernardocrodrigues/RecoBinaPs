@@ -20,6 +20,7 @@ from numba.typed import List
 from lib.BinaryDataset import BinaryDataset
 
 from collections import namedtuple
+from . import DEFAULTLOGGER
 
 Concept = namedtuple("Concept", "extent intent")
 
@@ -41,7 +42,7 @@ def erase_submatrix_values(rows, columns, U) -> None:  # pragma: no cover
             U[row][column] = False
 
 
-def GreConD(binary_dataset: BinaryDataset, coverage=1, verbose=False):
+def GreConD(binary_dataset: BinaryDataset, coverage=1, logger=DEFAULTLOGGER):
     """
     Implements Algorithm 2 in section 2.5.2 (page 15) from [1].
 
@@ -52,14 +53,12 @@ def GreConD(binary_dataset: BinaryDataset, coverage=1, verbose=False):
     coverage.
     """
 
-    if verbose:
-        print("[GreConD] Mining Formal Concepts...")
+    logger.info("Mining Formal Concepts...")
 
     U = binary_dataset.get_raw_copy()
     initial_number_of_trues = np.count_nonzero(U)
 
-    if verbose:
-        print(f"[GreConD] Binary dataset has {np.count_nonzero(U)} True's (sparcity: {initial_number_of_trues/U.size:.2f})")
+    logger.info(f"Binary dataset has {np.count_nonzero(U)} True's (sparcity: {initial_number_of_trues/U.size:.2f})")
 
     F = []
     current_coverage = 0
@@ -107,13 +106,11 @@ def GreConD(binary_dataset: BinaryDataset, coverage=1, verbose=False):
 
         current_coverage = 1 - np.count_nonzero(U) / initial_number_of_trues
 
-        if verbose:
-            print(f"[GreConD] Current Coverage: {current_coverage*100:.2f}%", end="\r")
+        logger.debug(f"Current Coverage: {current_coverage*100:.2f}%")
 
-    if verbose:
-        print("[GreConD] Mining Formal Concepts OK")
-        print(f"[GreConD] Formal Concepts mined: {len(F)}")
-        print(f"[GreConD] Final Concepts Coverage {current_coverage*100}%")
+    logger.info("Mining Formal Concepts DONE")
+    logger.info(f"Formal Concepts mined: {len(F)}")
+    logger.info(f"Final Concepts Coverage {current_coverage*100}%")
 
     return F, current_coverage
 

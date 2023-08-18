@@ -1,7 +1,7 @@
 import numpy as np
 
 from unittest.mock import Mock, call
-from lib.FormalConceptAnalysis import get_factor_matrices_from_concepts, Concept, GreConD, construct_context_from_binaps_patterns
+from fca.FormalConceptAnalysis import get_factor_matrices_from_concepts, Concept, GreConD, construct_context_from_binaps_patterns
 from lib.BinaryDataset import BinaryDataset
 
 from tests.ToyDatasets import my_toy_binary_dataset, my_toy_binary_2_dataset, zaki_binary_dataset, belohlavek_binary_dataset, belohlavek_binary_dataset_2, nenova_dataset_dataset
