@@ -17,7 +17,7 @@
 import numpy as np
 from numba import njit
 from numba.typed import List
-from lib.BinaryDataset import BinaryDataset
+from dataset.BinaryDataset import BinaryDataset
 
 from collections import namedtuple
 from . import DEFAULTLOGGER

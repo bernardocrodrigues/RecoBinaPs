@@ -58,7 +58,7 @@ def generate_synthetic_data(
     assert 0 <= density <= 1
 
     cmd = (
-        f"Rscript binaps/Data/Synthetic_data/generate_toy.R AND {column_quantity} "
+        f"Rscript /workdir/binaps/original/Data/Synthetic_data/generate_toy.R AND {column_quantity} "
         f"{row_quantity} {max_pattern_size} {file_prefix} {noise} {density}"
     )
 

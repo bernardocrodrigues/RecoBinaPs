@@ -15,7 +15,7 @@
 import numpy as np
 from numba import njit
 from surprise import Trainset
-from binaps.Binaps_code.dataLoader import readDatFile
+from binaps.original.Binaps_code.dataLoader import readDatFile
 
 
 @njit

@@ -3,7 +3,7 @@ from surprise import Dataset
 import numpy as np
 import random
 import os
-from lib.BinapsWrapper import generate_synthetic_data
+from binaps.BinapsWrapper import generate_synthetic_data
 
 
 from tests.ToyDatasets import (
@@ -16,7 +16,7 @@ from tests.ToyDatasets import (
     belohlavek_dataset_raw_rating,
     nenova_dataset_dataset
 )
-from lib.BinaryDataset import BinaryDataset
+from dataset.BinaryDataset import BinaryDataset
 
 CONVERT_DATASET_SHUFFLE_TIMES = 10
 

@@ -14,7 +14,7 @@ services:
     environment:
       # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
       - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
-      - PYTHONPATH=/workdir:/workdir/binaps/Binaps_code
+      - PYTHONPATH=/workdir:/workdir/binaps/original/Binaps_code
     user: $UID:$GID
     working_dir: /workdir
     entrypoint: jupyter-lab

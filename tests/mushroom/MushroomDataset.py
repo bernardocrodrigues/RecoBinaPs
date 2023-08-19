@@ -1,5 +1,5 @@
 import numpy as np
-from lib.BinaryDataset import BinaryDataset
+from dataset.BinaryDataset import BinaryDataset
 
 attribute_map = [
     ["b", "c", "x", "f", "k", "s"],  # cap-shape:                bell=b,conical=c,convex=x,flat=f, knobbed=k,sunken=s

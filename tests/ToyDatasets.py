@@ -22,7 +22,7 @@
 
 import numpy as np
 import pandas as pd
-from lib.BinaryDataset import BinaryDataset
+from dataset.BinaryDataset import BinaryDataset
 from surprise import Dataset, Reader, Trainset
 import random
 
