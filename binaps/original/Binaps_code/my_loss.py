@@ -24,8 +24,8 @@ class weightedXor(nn.Module):
         self.weight = weight
         ## decay rate
         self.weight_decay = weight_decay
-        print("Data Sparsity:")
-        print(self.weight)
+        # print("Data Sparsity:")
+        # print(self.weight)
 
     def forward(self, output, target, w):
 

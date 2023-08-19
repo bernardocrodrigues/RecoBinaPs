@@ -1,4 +1,4 @@
-All source placed at the binaps subdirectory is authored by Fischer, J & Vreeken, J
+All source placed at the binaps/original subdirectory is authored by Fischer, J & Vreeken, J
 
 The code is the replication package and source code for the neural autoencoder called BinaPs proposed by Fischer, J &
 Vreeken, J in the paper 'Differentiable Pattern Set Mining' available at [3].

@@ -15,13 +15,22 @@ Series of helper functions to make interacting with BinaPs vanilla implementatio
 """
 
 import re
+import torch
 from subprocess import run
 from tabulate import tabulate
 from typing import List, Optional, TextIO
 
+from binaps.original.Binaps_code.network import learn
+from binaps.original.Binaps_code.my_layers import BinarizeTensorThresh
 
-def generate_synthetic_data(row_quantity, column_quantity, file_prefix: str, max_pattern_size: int,
-                            noise: float = 0.5, density: float = 0.5) -> None:
+def generate_synthetic_data(
+    row_quantity,
+    column_quantity,
+    file_prefix: str,
+    max_pattern_size: int,
+    noise: float = 0.5,
+    density: float = 0.5,
+) -> None:
     """Generates a synthetic database based on known patterns.
 
     This is a wrapper function over the vanilla R script generate_toy.R. It places 4 files at the
@@ -48,16 +57,29 @@ def generate_synthetic_data(row_quantity, column_quantity, file_prefix: str, max
     assert 0 <= noise <= 1
     assert 0 <= density <= 1
 
-    cmd = f"Rscript binaps/Data/Synthetic_data/generate_toy.R AND {column_quantity} " \
-          f"{row_quantity} {max_pattern_size} {file_prefix} {noise} {density}"
+    cmd = (
+        f"Rscript binaps/Data/Synthetic_data/generate_toy.R AND {column_quantity} "
+        f"{row_quantity} {max_pattern_size} {file_prefix} {noise} {density}"
+    )
 
     print(cmd)
     output = run(cmd.split(" "), capture_output=True, check=True)
     print(output.stdout.decode())
 
 
-def run_binaps(data_path: str, hidden_dimension: int, epochs: int) -> None:
-    """ Runs BinaPs Autoencoder
+def run_binaps(
+    data_path: str,
+    train_set_size: float = 0.9,
+    batch_size: int = 64,
+    test_batch_size: int = 64,
+    epochs: int = 10,
+    learning_rate: float = 0.01,
+    weight_decay: float = 0,
+    gamma: float = 0.1,
+    seed: int = 1,
+    hidden_dimension: int = -1,
+) -> None:
+    """Runs BinaPs Autoencoder
 
     This will ingest a given dataset and extract its patterns through BinaPs. This will place a
     .binaps.patterns file on the current working dir with the pattern list
@@ -70,8 +92,18 @@ def run_binaps(data_path: str, hidden_dimension: int, epochs: int) -> None:
         epochs: how many epochs will the neural network train
     """
 
-    cmd = f"python3 binaps/Binaps_code/main.py -i {data_path} --hidden_dim " \
-          f"{hidden_dimension} --epochs={epochs}"
+    cmd = (
+        f"python3 /workdir/binaps/Binaps_code/main.py -i={data_path} "
+        f"--train_set_size={train_set_size} "
+        f"--batch_size={batch_size} "
+        f"--test_batch_size={test_batch_size} "
+        f"--epochs={epochs} "
+        f"--lr={learning_rate} "
+        f"--weight_decay={weight_decay} "
+        f"--gamma={gamma} "
+        f"--seed={seed} "
+        f"--hidden_dim={hidden_dimension}"
+    )
 
     print(cmd)
     output = run(cmd.split(" "), capture_output=True, check=True)
@@ -81,6 +113,56 @@ def run_binaps(data_path: str, hidden_dimension: int, epochs: int) -> None:
     print(f"{stdout[:print_character_length]} [output truncated]")
     print("...")
     print(f"[output truncated] {stdout[-print_character_length:]}")
+
+
+def run_binaps_2(
+    input_dataset_path: str,
+    train_set_size: float = 0.9,
+    batch_size: int = 64,
+    test_batch_size: int = 64,
+    epochs: int = 10,
+    learning_rate: float = 0.01,
+    weight_decay: float = 0,
+    gamma: float = 0.1,
+    seed: int = 1,
+    hidden_dimension: int = -1,
+):
+    torch.manual_seed(seed)
+    torch.set_num_threads(16)
+
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+
+    model, weights, train_data, training_losses, test_losses = learn(
+        input_dataset_path,
+        learning_rate,
+        gamma,
+        weight_decay,
+        epochs,
+        hidden_dimension,
+        train_set_size,
+        batch_size,
+        test_batch_size,
+        0,
+        device,
+        device,
+    )
+
+    return weights, training_losses, test_losses
+
+def get_patterns_from_weights(weights, threshold=0.2):
+
+    patterns = []
+
+    with torch.no_grad():
+        for hn in BinarizeTensorThresh(weights, threshold):
+            pattern = torch.squeeze(hn.nonzero())
+            if hn.sum() >= 2:
+                patterns.append(pattern.cpu().numpy())
+    
+    return patterns
 
 
 def parse_binaps_patterns(file_object: TextIO) -> List[List[int]]:
@@ -110,7 +192,7 @@ def parse_binaps_patterns(file_object: TextIO) -> List[List[int]]:
 
     patterns = []
     for pattern_as_string in patterns_as_strings:
-        pattern = [int(d) for d in pattern_as_string.replace('\n', ' ').split()]
+        pattern = [int(d) for d in pattern_as_string.replace("\n", " ").split()]
         patterns.append(pattern)
 
     return patterns
@@ -125,14 +207,18 @@ def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_fil
             generate_synthetic_data.
     """
 
-    cmd = f"python3 binaps/Data/Synthetic_data/comp_patterns.py -p {estimated_patterns_file} " \
-          f"-t Binaps -r {real_patterns_file} -m F1"
+    cmd = (
+        f"python3 binaps/Data/Synthetic_data/comp_patterns.py -p {estimated_patterns_file} "
+        f"-t Binaps -r {real_patterns_file} -m F1"
+    )
 
     output = run(cmd.split(" "), capture_output=True, check=True)
     print(output.stdout.decode())
 
 
-def display_as_table(data: List[List], headers: Optional[List[str]] = [], title: Optional[str] = None) -> None:
+def display_as_table(
+    data: List[List], headers: Optional[List[str]] = [], title: Optional[str] = None
+) -> None:
     """
     Display data as a formatted table.
 
@@ -174,4 +260,4 @@ def display_as_table(data: List[List], headers: Optional[List[str]] = [], title:
     """
     if title:
         print(title)
-    print(tabulate(data, headers = headers, tablefmt="fancy_grid"))
+    print(tabulate(data, headers=headers, tablefmt="fancy_grid"))
