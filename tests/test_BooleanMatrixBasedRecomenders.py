@@ -1,4 +1,4 @@
-from recomenders.BooleanMatrixBasedRecomenders import jaccard_distance, cosine_distance, get_similarity_matrix
+from recomenders.common import jaccard_distance, cosine_distance, get_similarity_matrix
 from tests.ToyDatasets import zaki_binary_dataset
 
 import numpy as np
@@ -9,7 +9,6 @@ from unittest.mock import Mock
 
 
 def test_cosine_distance_of_booleans():
-
     a = [1, 1, 0, 0]
     b = [0, 1, 1, 1]
 
@@ -24,7 +23,6 @@ def test_cosine_distance_of_booleans():
 
 
 def test_cosine_distance_of_booleans_2():
-
     a = [1, 0, 1]
     b = [0, 1, 1]
 
@@ -39,7 +37,6 @@ def test_cosine_distance_of_booleans_2():
 
 
 def test_cosine_distance():
-
     a = [True, False, True]
     b = [False, True, False]
 
@@ -49,7 +46,6 @@ def test_cosine_distance():
 
 
 def test_cosine_distance_2():
-
     a = [True, False, True]
     b = [True, False, True]
 
@@ -59,7 +55,6 @@ def test_cosine_distance_2():
 
 
 def test_jaccard_distance():
-
     a = [True, False, True]
     b = [False, True, False]
 
@@ -69,7 +64,6 @@ def test_jaccard_distance():
 
 
 def test_jaccard_distance_2():
-
     a = [True, False, True]
     b = [True, False, True]
 
@@ -79,7 +73,6 @@ def test_jaccard_distance_2():
 
 
 def test_get_similarity_matrix():
-
     distance_strategy_mock = Mock(side_effect=np.arange(0, 0.21, 0.01))
     similarity_matrix = get_similarity_matrix(zaki_binary_dataset, distance_strategy_mock)
 

@@ -1,6 +1,6 @@
 from io import StringIO
 
-from binaps.BinapsWrapper import parse_binaps_patterns
+from binaps.binaps_wrapper import parse_binaps_patterns
 
 # Binaps output is written to a .patterns file with its contents as follows
 BINAPS_PATTERNS_STRING = """

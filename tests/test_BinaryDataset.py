@@ -3,7 +3,7 @@ from surprise import Dataset
 import numpy as np
 import random
 import os
-from binaps.BinapsWrapper import generate_synthetic_data
+from binaps.binaps_wrapper import generate_synthetic_data
 
 
 from tests.ToyDatasets import (
@@ -16,7 +16,7 @@ from tests.ToyDatasets import (
     belohlavek_dataset_raw_rating,
     nenova_dataset_dataset
 )
-from dataset.BinaryDataset import BinaryDataset
+from dataset.binary_dataset import BinaryDataset
 
 CONVERT_DATASET_SHUFFLE_TIMES = 10
 
@@ -189,16 +189,16 @@ def test_t_on_belohlavek_binary_dataset():
 
 def assert_dataset_and_trainset_are_equal(converted_binary_dataset, trainset, original_dataset):
 
-    assert np.count_nonzero(converted_binary_dataset._binary_dataset) == trainset.n_ratings
-    assert np.count_nonzero(converted_binary_dataset._binary_dataset) == np.count_nonzero(original_dataset._binary_dataset)
+    assert np.count_nonzero(converted_binary_dataset.binary_dataset) == trainset.n_ratings
+    assert np.count_nonzero(converted_binary_dataset.binary_dataset) == np.count_nonzero(original_dataset.binary_dataset)
 
-    for iuid, row in enumerate(converted_binary_dataset._binary_dataset):
+    for iuid, row in enumerate(converted_binary_dataset.binary_dataset):
         for iiid, item in enumerate(row):
             if item:
                 uid = trainset.to_raw_uid(iuid)
                 iid = trainset.to_raw_iid(iiid)
 
-                assert original_dataset._binary_dataset[uid][iid]
+                assert original_dataset.binary_dataset[uid][iid]
 
                 user_ratings = trainset.ur[iuid]
                 for this_iiid, rating in user_ratings:
@@ -317,7 +317,7 @@ def test_load_from_binaps_compatible_input_on_example_datasets():
         file_object.close()
         
         saved_dataset = BinaryDataset.load_from_binaps_compatible_input(file_object.name)
-        np.testing.assert_array_equal(saved_dataset._binary_dataset, dataset._binary_dataset)
+        np.testing.assert_array_equal(saved_dataset.binary_dataset, dataset.binary_dataset)
 
     write_and_assert_file_output(my_toy_binary_dataset)
     write_and_assert_file_output(zaki_binary_dataset)
@@ -339,7 +339,7 @@ def test_load_and_save_procedures_on_synthetic_data():
 
         yet_another_synthetic_dataset = BinaryDataset.load_from_binaps_compatible_input(file_object.name)
 
-        np.testing.assert_array_equal(synthetic_dataset._binary_dataset, yet_another_synthetic_dataset._binary_dataset)
+        np.testing.assert_array_equal(synthetic_dataset.binary_dataset, yet_another_synthetic_dataset.binary_dataset)
 
         yet_another_file_object = tempfile.NamedTemporaryFile(mode='w+t', delete=False)
         yet_another_synthetic_dataset.save_as_binaps_compatible_input(yet_another_file_object)

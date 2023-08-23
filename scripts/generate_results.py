@@ -5,7 +5,7 @@ import pickle
 from rich.progress import track
 
 # from lib.BinaryDataset import BinaryDataset
-from binaps.BinapsWrapper import run_binaps_2
+from binaps.binaps_wrapper import run_binaps
 
 
 DATABASE = sqlite3.connect("your_database.db")
@@ -127,7 +127,7 @@ for (
 ) in track(meta_parameters):
     start_time = time.time()
 
-    weights, training_losses, test_losses = run_binaps_2(
+    weights, training_losses, test_losses = run_binaps(
         f"{DATASET_FOLDER_PATH}/{dataset}",
         train_set_size,
         batch_size,
