@@ -1,27 +1,24 @@
-# Copyright 2022 Bernardo C. Rodrigues
-#
-# This program is free software: you can redistribute it and/or modify it under the terms of the GNU
-# General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version. This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should
-# have received a copy of the GNU General Public License along with this program. If not, see
-# <https://www.gnu.org/licenses/>.
+""" binaps_wrapper.py
 
-"""
-utils.py
+This module contains a series of helper functions to run the BinaPs algorithm through its CLI. It
+also contains a function to parse the output of the BinaPs algorithm. This way, we easily integrate
+BinaPs original implementation with our own modules.
 
-Series of helper functions to make interacting with BinaPs vanilla implementation more friendly.
+Copyright 2022 Bernardo C. Rodrigues
+See LICENSE file for license details
+
+
 """
 
 import re
-import torch
 from subprocess import run
-from tabulate import tabulate
 from typing import List, Optional, TextIO
+import torch
+from tabulate import tabulate
 
 from binaps.original.Binaps_code.network import learn
 from binaps.original.Binaps_code.my_layers import BinarizeTensorThresh
+
 
 def generate_synthetic_data(
     row_quantity,
@@ -58,8 +55,8 @@ def generate_synthetic_data(
     assert 0 <= density <= 1
 
     cmd = (
-        f"Rscript /workdir/binaps/original/Data/Synthetic_data/generate_toy.R AND {column_quantity} "
-        f"{row_quantity} {max_pattern_size} {file_prefix} {noise} {density}"
+        "Rscript /workdir/binaps/original/Data/Synthetic_data/generate_toy.R AND "
+        f"{column_quantity} {row_quantity} {max_pattern_size} {file_prefix} {noise} {density}"
     )
 
     print(cmd)
@@ -67,7 +64,7 @@ def generate_synthetic_data(
     print(output.stdout.decode())
 
 
-def run_binaps(
+def run_binaps_cli(
     data_path: str,
     train_set_size: float = 0.9,
     batch_size: int = 64,
@@ -115,7 +112,7 @@ def run_binaps(
     print(f"[output truncated] {stdout[-print_character_length:]}")
 
 
-def run_binaps_2(
+def run_binaps(
     input_dataset_path: str,
     train_set_size: float = 0.9,
     batch_size: int = 64,
@@ -127,6 +124,36 @@ def run_binaps_2(
     seed: int = 1,
     hidden_dimension: int = -1,
 ):
+    """
+    Run the Binaps algorithm on a given dataset.
+
+    Args:
+        input_dataset_path (str): The path to the input dataset.
+        train_set_size (float): The size of the training set as a fraction 
+                                of the dataset (default: 0.9).
+        batch_size (int): The batch size for training (default: 64).
+        test_batch_size (int): The batch size for testing (default: 64).
+        epochs (int): The number of training epochs (default: 10).
+        learning_rate (float): The learning rate for optimization (default: 0.01).
+        weight_decay (float): Weight decay for optimization (default: 0).
+        gamma (float): Gamma value for optimization (default: 0.1).
+        seed (int): Random seed for reproducibility (default: 1).
+        hidden_dimension (int): Hidden dimension for the Binaps algorithm (default: -1).
+
+    Returns:
+        Tuple[torch.Tensor, List[float], List[float]]: A tuple containing weights, 
+                                                       training losses, and test losses.
+
+    Example:
+        weights, training_losses, test_losses = run_binaps(
+            input_dataset_path="my_dataset.dat",
+            train_set_size=0.8,
+            batch_size=32,
+            epochs=15,
+            learning_rate=0.001,
+            weight_decay=0.001,
+        )
+    """
     torch.manual_seed(seed)
     torch.set_num_threads(16)
 
@@ -135,7 +162,7 @@ def run_binaps_2(
     else:
         device = torch.device("cpu")
 
-    model, weights, train_data, training_losses, test_losses = learn(
+    _, weights, _, training_losses, test_losses = learn(
         input_dataset_path,
         learning_rate,
         gamma,
@@ -152,16 +179,33 @@ def run_binaps_2(
 
     return weights, training_losses, test_losses
 
-def get_patterns_from_weights(weights, threshold=0.2):
 
+def get_patterns_from_weights(weights, threshold: float = 0.2):
+    """
+    Extract patterns from a set of BinaPs weights using a given threshold.
+
+    Args:
+        weights (torch.Tensor): The BinaPs weights from which patterns will be extracted.
+        threshold (float): The threshold for pattern extraction (default: 0.2).
+
+    Returns:
+        List[np.ndarray]: A list of patterns represented as NumPy arrays.
+
+    Example:
+        weights = torch.tensor([0.1, 0.3, 0.6, 0.2, 0.4, 0.8])
+        threshold = 0.4
+        patterns = get_patterns_from_weights(weights, threshold)
+        # Output: [array([2, 5]), array([4, 5])]
+
+    """
     patterns = []
 
     with torch.no_grad():
-        for hn in BinarizeTensorThresh(weights, threshold):
+        for hn in BinarizeTensorThresh(weights, threshold): # pylint: disable=invalid-name
             pattern = torch.squeeze(hn.nonzero())
             if hn.sum() >= 2:
                 patterns.append(pattern.cpu().numpy())
-    
+
     return patterns
 
 
@@ -217,7 +261,7 @@ def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_fil
 
 
 def display_as_table(
-    data: List[List], headers: Optional[List[str]] = [], title: Optional[str] = None
+    data: List[List], headers: Optional[List[str]] = None, title: Optional[str] = None
 ) -> None:
     """
     Display data as a formatted table.
@@ -231,9 +275,9 @@ def display_as_table(
         None
 
     This function takes the provided data and displays it as a formatted table. The data should be
-    provided as a list of lists, where each inner list represents a row of the table. The column headers,
-    if provided, should be specified as a list of strings. If a title is provided, it will be displayed
-    above the table.
+    provided as a list of lists, where each inner list represents a row of the table. The column 
+    headers, if provided, should be specified as a list of strings. If a title is provided, it will
+    be displayed above the table.
 
     Example:
         data = [
