@@ -6,7 +6,7 @@ This module contains common functions used by the recommenders.
 
 import numpy as np
 from scipy.spatial import distance
-from fca.FormalConceptAnalysis import BinaryDataset
+from fca.formal_concept_analysis import BinaryDataset
 
 
 def jaccard_distance(A: np.array, B: np.array) -> float:

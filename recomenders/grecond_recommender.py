@@ -15,7 +15,7 @@ Usage:
 """
 
 import logging
-from fca.FormalConceptAnalysis import GreConD
+from fca.formal_concept_analysis import GreConD
 from . import DEFAULT_LOGGER
 from .common import jaccard_distance
 from .formal_context_based_recommender import KNNOverLatentSpaceRecommender

@@ -2,7 +2,7 @@ import sqlite3
 import pickle
 import plotext as plt
 
-from recomenders.BooleanMatrixBasedRecomenders import BinapsRecommender, FcaBmf
+from recomenders.formal_context_based_recommender import BinapsRecommender, FcaBmf
 
 DATABASE = sqlite3.connect("your_database.db")
 cursor = DATABASE.cursor()

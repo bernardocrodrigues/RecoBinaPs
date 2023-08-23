@@ -11,4 +11,4 @@ formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(messag
 ch.setFormatter(formatter)
 DEFAULTLOGGER.addHandler(ch)
 
-from .FormalConceptAnalysis import *
+from .formal_concept_analysis import *

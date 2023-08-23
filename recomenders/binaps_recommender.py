@@ -8,8 +8,8 @@ from typing import List
 from tempfile import TemporaryFile
 import numpy as np
 
-from fca.FormalConceptAnalysis import construct_context_from_binaps_patterns
-from binaps.BinapsWrapper import run_binaps, get_patterns_from_weights
+from fca.formal_concept_analysis import construct_context_from_binaps_patterns
+from binaps.binaps_wrapper import run_binaps, get_patterns_from_weights
 
 from . import DEFAULT_LOGGER
 from .common import jaccard_distance
