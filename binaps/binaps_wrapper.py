@@ -55,7 +55,7 @@ def generate_synthetic_data(
     assert 0 <= density <= 1
 
     cmd = (
-        "Rscript /workdir/binaps/original/Data/Synthetic_data/generate_toy.R AND "
+        "Rscript binaps/original/Data/Synthetic_data/generate_toy.R AND "
         f"{column_quantity} {row_quantity} {max_pattern_size} {file_prefix} {noise} {density}"
     )
 
@@ -90,7 +90,7 @@ def run_binaps_cli(
     """
 
     cmd = (
-        f"python3 /workdir/binaps/Binaps_code/main.py -i={data_path} "
+        f"python3 binaps/Binaps_code/main.py -i={data_path} "
         f"--train_set_size={train_set_size} "
         f"--batch_size={batch_size} "
         f"--test_batch_size={test_batch_size} "

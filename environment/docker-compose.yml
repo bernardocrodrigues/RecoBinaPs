@@ -6,7 +6,7 @@ services:
     volumes:
       - /etc/passwd:/etc/passwd:ro
       - /etc/group:/etc/group:ro
-      - $BINAPS_ROOT_DIR:/workdir
+      - $BINAPS_ROOT_DIR:$BINAPS_ROOT_DIR
       #By sharing the tmp folder with the host, we'll only donwload surprise's builtin datasets once per session
       - /tmp:/tmp
     tmpfs:
@@ -14,11 +14,11 @@ services:
     environment:
       # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
       - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
-      - PYTHONPATH=/workdir:/workdir/binaps/original/Binaps_code
+      - PYTHONPATH=$BINAPS_ROOT_DIR:$BINAPS_ROOT_DIR/binaps/original/Binaps_code
     user: $UID:$GID
-    working_dir: /workdir
+    working_dir: $BINAPS_ROOT_DIR
     entrypoint: jupyter-lab
-    command: --no-browser --allow-root --notebook-dir=/workdir --NotebookApp.allow_origin='*' --NotebookApp.ip='0.0.0.0' --NotebookApp.token='something_secret'
+    command: --no-browser --allow-root --notebook-dir=$BINAPS_ROOT_DIR --NotebookApp.allow_origin='*' --NotebookApp.ip='0.0.0.0' --NotebookApp.token='something_secret'
     network_mode: host
   notebook-cuda:
     extends:
