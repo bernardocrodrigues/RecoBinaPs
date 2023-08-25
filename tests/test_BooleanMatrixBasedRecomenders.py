@@ -1,4 +1,4 @@
-from recomenders.common import jaccard_distance, cosine_distance, get_similarity_matrix
+from recommenders.common import jaccard_distance, cosine_distance, get_similarity_matrix
 from tests.ToyDatasets import zaki_binary_dataset
 
 import numpy as np
