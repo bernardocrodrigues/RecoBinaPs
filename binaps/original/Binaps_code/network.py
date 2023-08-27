@@ -49,7 +49,7 @@ class Net(nn.Module):
 
 def train(model, device_cpu, device_gpu, train_loader, optimizer, lossFun, epoch, log_interval):
     model.train()
-    for _, (data, _) in enumerate(train_loader):
+    for batch_idx, (data, target) in enumerate(train_loader):
         data = data.to(device_gpu)
         optimizer.zero_grad()
         output = model(data)
@@ -59,10 +59,12 @@ def train(model, device_cpu, device_gpu, train_loader, optimizer, lossFun, epoch
         optimizer.step()
         model.clipWeights()
 
-        # if batch_idx % log_interval == 0:
-            # print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(epoch, batch_idx * len(data), len(train_loader.dataset), 100. * batch_idx / len(train_loader), loss.item()))
+        if batch_idx % log_interval == 0:
+            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(train_loader.dataset),
+                100. * batch_idx / len(train_loader), loss.item()))
 
-    return epoch, loss.item()
+    return
 
 
 def test(model, device_cpu, device_gpu, test_loader, lossFun):
@@ -78,9 +80,9 @@ def test(model, device_cpu, device_gpu, test_loader, lossFun):
             correct += (output.ne(data.data.view_as(output)).sum(1) == 0).sum()
 
     _, target = next(iter(test_loader))
-    # print('\nTest set: Average loss: {:.6f}, Accuracy: {}/{} ({:.0f}%)\n'.format(test_loss, correct, len(test_loader.dataset), 100. * correct / len(test_loader.dataset)))
-
-    return test_loss, correct
+    print('\nTest set: Average loss: {:.6f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        test_loss, correct, len(test_loader.dataset),
+        100. * correct / len(test_loader.dataset)))
 
 
 def learn(input, lr, gamma, weight_decay, epochs, hidden_dim, train_set_size, batch_size, test_batch_size, log_interval, device_cpu, device_gpu):
@@ -108,35 +110,10 @@ def learn(input, lr, gamma, weight_decay, epochs, hidden_dim, train_set_size, ba
     lossFun = mylo.weightedXor(trainDS.getSparsity(), weight_decay, device_gpu)
 
     scheduler = MultiStepLR(optimizer, [5,7], gamma=gamma)
-
-    lowest_loss = None
-    last_delta = 0
-
-    training_losses = []
-    test_losses = []
-
     for epoch in range(1, epochs + 1):
-        
-        epoch, training_loss = train(model, device_cpu, device_gpu, train_loader, optimizer, lossFun, epoch, log_interval)
-        test_loss, correct = test(model, device_cpu, device_gpu, test_loader, lossFun)
-    
+        train(model, device_cpu, device_gpu, train_loader, optimizer, lossFun, epoch, log_interval)
+
+        test(model, device_cpu, device_gpu, test_loader, lossFun)
         scheduler.step()
 
-        # training_loss_numpy = training_loss.cpu().numpy()
-        test_loss_numpy = test_loss.cpu().numpy()
-        correct_numpy = correct.cpu().numpy()
-        
-        training_losses.append(training_loss)
-        test_losses.append(test_loss_numpy)
-
-        # if lowest_loss == None or lowest_loss > test_loss_numpy:
-        #     last_delta = test_loss_numpy - lowest_loss if lowest_loss != None else 0
-        #     lowest_loss = test_loss_numpy
-
-
-        # print(f"{epoch}, {test_loss_numpy:5f}, {lowest_loss}, {last_delta}", end='\r')
-        # print(epoch, loss, test_loss_numpy, correct_numpy, lowest_loss, last_delta, end='\r')
-
-
-
-    return model, new_weights, trainDS, training_losses, test_losses
+    return model, new_weights, trainDS
