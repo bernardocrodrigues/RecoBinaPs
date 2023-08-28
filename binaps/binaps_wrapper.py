@@ -11,6 +11,8 @@ See LICENSE file for license details
 """
 
 import re
+import os
+from pathlib import Path
 from subprocess import run
 from typing import List, Optional, TextIO
 import torch
@@ -21,6 +23,7 @@ from binaps.original.Binaps_code.my_layers import BinarizeTensorThresh
 
 
 def generate_synthetic_data(
+    output_path: Path,
     row_quantity,
     column_quantity,
     file_prefix: str,
@@ -54,8 +57,13 @@ def generate_synthetic_data(
     assert 0 <= noise <= 1
     assert 0 <= density <= 1
 
+    source_root_dir = os.environ.get("SOURCE_ROOT_DIR")
+
+    print(f"Generating synthetic data at {output_path}")
+    os.chdir(output_path)
+
     cmd = (
-        "Rscript binaps/original/Data/Synthetic_data/generate_toy.R AND "
+        f"Rscript {source_root_dir}/binaps/original/Data/Synthetic_data/generate_toy.R AND "
         f"{column_quantity} {row_quantity} {max_pattern_size} {file_prefix} {noise} {density}"
     )
 
@@ -89,8 +97,10 @@ def run_binaps_cli(
         epochs: how many epochs will the neural network train
     """
 
+    source_root_dir = os.environ.get("SOURCE_ROOT_DIR")
+
     cmd = (
-        f"python3 binaps/Binaps_code/main.py -i={data_path} "
+        f"python3 {source_root_dir}binaps/original/Binaps_code/main.py -i={data_path} "
         f"--train_set_size={train_set_size} "
         f"--batch_size={batch_size} "
         f"--test_batch_size={test_batch_size} "
@@ -242,7 +252,7 @@ def parse_binaps_patterns(file_object: TextIO) -> List[List[int]]:
     return patterns
 
 
-def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_file: str) -> None:
+def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_file: str):
     """Get the F1 Score on the inferred dataset.
 
     Args:
@@ -251,13 +261,15 @@ def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_fil
             generate_synthetic_data.
     """
 
+    source_root_dir = os.environ.get("SOURCE_ROOT_DIR")
+
     cmd = (
-        f"python3 binaps/Data/Synthetic_data/comp_patterns.py -p {estimated_patterns_file} "
+        f"python3 {source_root_dir}binaps/original/Data/Synthetic_data/comp_patterns.py -p {estimated_patterns_file} "
         f"-t Binaps -r {real_patterns_file} -m F1"
     )
 
     output = run(cmd.split(" "), capture_output=True, check=True)
-    print(output.stdout.decode())
+    return float(output.stdout.decode())
 
 
 def display_as_table(
