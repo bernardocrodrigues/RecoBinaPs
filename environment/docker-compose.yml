@@ -16,6 +16,7 @@ services:
       # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
       - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
       - PYTHONPATH=$SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR/binaps/original/Binaps_code
+      - SOURCE_ROOT_DIR=$SOURCE_ROOT_DIR
     user: $UID:$GID
     working_dir: $SOURCE_ROOT_DIR
     entrypoint: jupyter-lab
