@@ -10,7 +10,8 @@ services:
       #By sharing the tmp folder with the host, we'll only donwload surprise's builtin datasets once per session
       - /tmp:/tmp
     tmpfs:
-      - /home/$USER
+      - /home/$USER/.local
+      - /home/$USER/.config
     environment:
       # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
       - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
