@@ -4,8 +4,6 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
 
-from alive_progress import alive_it  # dynamic progress bars
-
 from .loss import WeightedXor
 from .layers import BinarizeTensorThresh, BinaryActivation, EncoderModule, DecoderModule
 
@@ -96,7 +94,7 @@ def learn(train_dataset, test_dataset, batch_size, test_batch_size, hidden_dimen
     loss_function = WeightedXor(train_dataset.getSparsity(), weight_decay)
     scheduler = MultiStepLR(optimizer, [5, 7], gamma=gamma)
 
-    for current_epoch in alive_it(range(1, epochs + 1), force_tty=True):
+    for current_epoch in range(1, epochs + 1):
         model.train_model(train_loader, optimizer, loss_function)
         test_loss, correct = model.test_model(test_loader, loss_function)
         scheduler.step()
