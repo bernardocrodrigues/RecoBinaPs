@@ -14,11 +14,16 @@ import re
 import os
 from pathlib import Path
 from subprocess import run
-from typing import List, Optional, TextIO
+from typing import List, Optional, TextIO, Tuple
 import torch
 from tabulate import tabulate
+from torch.nn import init
+import torch.optim as optim
+from torch.optim.lr_scheduler import MultiStepLR
 
-from binaps.original.Binaps_code.network import learn
+from binaps.original.Binaps_code import dataLoader as mydl
+from binaps.original.Binaps_code import my_loss as mylo
+from binaps.original.Binaps_code.network import initWeights, Net
 from binaps.original.Binaps_code.my_layers import BinarizeTensorThresh
 
 
@@ -139,7 +144,7 @@ def run_binaps(
 
     Args:
         input_dataset_path (str): The path to the input dataset.
-        train_set_size (float): The size of the training set as a fraction 
+        train_set_size (float): The size of the training set as a fraction
                                 of the dataset (default: 0.9).
         batch_size (int): The batch size for training (default: 64).
         test_batch_size (int): The batch size for testing (default: 64).
@@ -151,7 +156,7 @@ def run_binaps(
         hidden_dimension (int): Hidden dimension for the Binaps algorithm (default: -1).
 
     Returns:
-        Tuple[torch.Tensor, List[float], List[float]]: A tuple containing weights, 
+        Tuple[torch.Tensor, List[float], List[float]]: A tuple containing weights,
                                                        training losses, and test losses.
 
     Example:
@@ -172,7 +177,7 @@ def run_binaps(
     else:
         device = torch.device("cpu")
 
-    _, weights, _, training_losses, test_losses = learn(
+    weights, training_losses, test_losses = learn(
         input_dataset_path,
         learning_rate,
         gamma,
@@ -182,7 +187,6 @@ def run_binaps(
         train_set_size,
         batch_size,
         test_batch_size,
-        0,
         device,
         device,
     )
@@ -211,7 +215,7 @@ def get_patterns_from_weights(weights, threshold: float = 0.2):
     patterns = []
 
     with torch.no_grad():
-        for hn in BinarizeTensorThresh(weights, threshold): # pylint: disable=invalid-name
+        for hn in BinarizeTensorThresh(weights, threshold):  # pylint: disable=invalid-name
             pattern = torch.squeeze(hn.nonzero())
             if hn.sum() >= 2:
                 patterns.append(pattern.cpu().numpy())
@@ -264,7 +268,8 @@ def compare_datasets_based_on_f1(estimated_patterns_file: str, real_patterns_fil
     source_root_dir = os.environ.get("SOURCE_ROOT_DIR")
 
     cmd = (
-        f"python3 {source_root_dir}binaps/original/Data/Synthetic_data/comp_patterns.py -p {estimated_patterns_file} "
+        f"python3 {source_root_dir}binaps/original/Data/Synthetic_data/comp_patterns.py "
+        f"-p {estimated_patterns_file} "
         f"-t Binaps -r {real_patterns_file} -m F1"
     )
 
@@ -287,7 +292,7 @@ def display_as_table(
         None
 
     This function takes the provided data and displays it as a formatted table. The data should be
-    provided as a list of lists, where each inner list represents a row of the table. The column 
+    provided as a list of lists, where each inner list represents a row of the table. The column
     headers, if provided, should be specified as a list of strings. If a title is provided, it will
     be displayed above the table.
 
@@ -317,3 +322,172 @@ def display_as_table(
     if title:
         print(title)
     print(tabulate(data, headers=headers, tablefmt="fancy_grid"))
+
+
+def learn(
+    input_file: str,
+    learn_rate: float,
+    gamma: float,
+    weight_decay: float,
+    epochs: int,
+    hidden_dim: int,
+    train_set_size: float,
+    batch_size: int,
+    test_batch_size: int,
+    device_cpu: torch.device,
+    device_gpu: torch.device,
+):
+    """
+    Train the Binaps algorithm on a given dataset.
+
+    This function is based on the learn function from the original BinaPs implementation found at
+    binaps/original/Binaps_code/network.py:learn
+
+    Args:
+        input_file (str): The path to the input dataset. The dataset must be in the .dat format.
+        learn_rate (float): The learning rate for optimization.
+        gamma (float): Gamma value for optimization.
+        weight_decay (float): Weight decay for optimization.
+        epochs (int): The number of training epochs.
+        hidden_dim (int): Hidden dimension for the Binaps algorithm. If -1, the number of neurons
+                            in the hidden layer will be equal to the number of columns in the
+                            dataset.
+        train_set_size (float): The size of the training set as a fraction of the dataset. Must
+                                be between 0 and 1.
+        batch_size (int): The batch size for training.
+        test_batch_size (int): The batch size for testing. Must be between 0 and 1.
+        device_cpu (torch.device): The CPU device to be used.
+        device_gpu (torch.device): The GPU device to be used.
+
+    Returns:
+        Tuple[torch.Tensor, List[float], List[float]]: A tuple containing weights,
+                                                       training losses, and test losses.
+
+    Example:
+        weights, training_losses, test_losses = learn(
+            input_file="my_dataset.dat",
+            learn_rate=0.01,
+            gamma=0.1,
+            weight_decay=0,
+            epochs=15,
+            hidden_dim=100,
+            train_set_size=0.8,
+            batch_size=32,
+            test_batch_size=32,
+            device_cpu=torch.device("cpu"),
+            device_gpu=torch.device("cuda"),
+            )
+    """
+
+    kwargs = {}
+    train_dataset = mydl.DatDataset(input_file, train_set_size, True, device_cpu)
+    train_loader = torch.utils.data.DataLoader(
+        train_dataset, batch_size=batch_size, shuffle=True, **kwargs
+    )
+    test_loader = torch.utils.data.DataLoader(
+        mydl.DatDataset(input_file, train_set_size, False, device_cpu),
+        batch_size=test_batch_size,
+        shuffle=True,
+        **kwargs,
+    )
+
+    if hidden_dim == -1:
+        hidden_dim = train_dataset.ncol()
+
+    weights = torch.zeros(hidden_dim, train_dataset.ncol(), device=device_gpu)
+    initWeights(weights, train_dataset.data)
+    weights.clamp_(1 / (train_dataset.ncol()), 1)
+    bias_init = torch.zeros(hidden_dim, device=device_gpu)
+    init.constant_(bias_init, -1)
+
+    model = Net(weights, bias_init, train_dataset.getSparsity(), device_cpu, device_gpu).to(
+        device_gpu
+    )
+    optimizer = optim.Adam(model.parameters(), lr=learn_rate)
+
+    loss_function = mylo.weightedXor(train_dataset.getSparsity(), weight_decay, device_gpu)
+
+    scheduler = MultiStepLR(optimizer, [5, 7], gamma=gamma)
+
+    training_losses = []
+    test_losses = []
+
+    for _ in range(epochs):
+        training_loss = train(model, device_gpu, train_loader, optimizer, loss_function)
+        test_loss = test(model, device_gpu, test_loader, loss_function)
+
+        scheduler.step()
+        test_loss_numpy = test_loss.cpu().numpy()
+
+        training_losses.append(training_loss)
+        test_losses.append(test_loss_numpy)
+
+    return weights, training_losses, test_losses
+
+
+def test(
+    model: Net,
+    torch_device: torch.device,
+    test_loader: torch.utils.data.DataLoader,
+    loss_function: callable,
+) -> Tuple[torch.Tensor, int]:
+    """
+    Test the model on a given dataset.
+
+    This function is based on the test function from the original BinaPs implementation found at
+    binaps/original/Binaps_code/network.py:test
+
+    Args:
+        model (Net): The model to be tested.
+        torch_device (torch.device): The GPU device to be used.
+        test_loader (torch.utils.data.DataLoader): The data loader for the test dataset.
+        loss_function (callable): The loss function to be used.
+
+    Returns:
+        int: The test loss.
+    """
+    model.eval()
+    test_loss = 0
+    with torch.no_grad():
+        for data, _ in test_loader:
+            data = data.to(torch_device)
+            output = model(data)
+            iteration_ew = [
+                par for name, par in model.named_parameters() if name.endswith("enc.weight")
+            ]
+            test_loss += loss_function(output, data, next(iter(iteration_ew)))
+
+    return test_loss
+
+
+def train(model, torch_device, train_loader, optimizer, loss_function):
+    """
+    Train the model on a given dataset.
+
+    This function is based on the train function from the original BinaPs implementation found at
+    binaps/original/Binaps_code/network.py:train
+
+    Args:
+        model (Net): The model to be trained.
+        torch_device (torch.device): The GPU device to be used.
+        train_loader (torch.utils.data.DataLoader): The data loader for the training dataset.
+        optimizer (torch.optim.Optimizer): The optimizer to be used.
+        loss_function (callable): The loss function to be used.
+
+    Returns:
+        int: The training loss.
+    """
+    model.train()
+    for _, (data, _) in enumerate(train_loader):
+        data = data.to(torch_device)
+        optimizer.zero_grad()
+        output = model(data)
+        iteration_ew = [
+            par for name, par in model.named_parameters() if name.endswith("enc.weight")
+        ]
+        loss = loss_function(output, data, next(iter(iteration_ew)))
+        loss.backward()
+        optimizer.step()
+        model.clipWeights()
+
+    return loss.item()
