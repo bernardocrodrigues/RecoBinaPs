@@ -32,7 +32,9 @@ def convert_raw_rating_list_into_trainset(raw_data, shuffle=True) -> Trainset:
         random.shuffle(raw_data)
     rating_dataframe = pd.DataFrame(raw_data, columns=["userID", "itemID", "rating"])
     reader = Reader(rating_scale=(0, 5))
-    return Dataset.load_from_df(rating_dataframe[["userID", "itemID", "rating"]], reader).build_full_trainset()
+    return Dataset.load_from_df(
+        rating_dataframe[["userID", "itemID", "rating"]], reader
+    ).build_full_trainset()
 
 
 # fmt: off
