@@ -103,11 +103,13 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
 
     def estimate(self, user: int, item: int):
         """
-        Predicts the rating of a given user for a given item.
+        Estimates the rating of a given user for a given item. This function is not supposed to be called directly since
+        it uses the Surprise's internal user and item ids. Surprise uses this callback internally to make predictions.
+        Use the predict() or test() methods instead which use the raw user and item ids.
 
         Args:
-            user (int): The user ID.
-            item (int): The item ID.
+            user (int): internal user id.
+            item (int): internal item id.
 
         Returns:
             tuple: A tuple containing the predicted rating and a dictionary with
