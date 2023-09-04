@@ -5,7 +5,7 @@ from fca.formal_concept_analysis import get_factor_matrices_from_concepts, Conce
 from dataset.binary_dataset import BinaryDataset
 
 from tests.ToyDatasets import my_toy_binary_dataset, my_toy_binary_2_dataset, zaki_binary_dataset, belohlavek_binary_dataset, belohlavek_binary_dataset_2, nenova_dataset_dataset
-from tests.mushroom import MushroomDataset
+from dataset.mushroom_dataset import MushroomDataset
 
 def test_get_matrices_belohlavek():
     # example from belohlavek paper page 14 and 15
@@ -283,8 +283,10 @@ def test_GreConD_mushroom():
 
     found_factors_per_coverage = []
 
+    dataset = MushroomDataset()
+
     for coverage in coverages:
-        concepts, _ = GreConD(MushroomDataset, coverage=coverage)
+        concepts, _ = GreConD(dataset, coverage=coverage)
         found_factors_per_coverage.append(len(concepts))
 
     assert mushroom_factors_per_coverage == found_factors_per_coverage

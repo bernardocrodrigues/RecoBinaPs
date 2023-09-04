@@ -5,6 +5,7 @@ import random
 import os
 from binaps.binaps_wrapper import generate_synthetic_data
 
+from pathlib import Path
 
 from tests.ToyDatasets import (
     convert_raw_rating_list_into_trainset,
@@ -364,7 +365,9 @@ def test_load_and_save_procedures_on_synthetic_data():
     noise = random.uniform(0, 1)
     density = random.uniform(0, 1)
 
-    generate_synthetic_data(row_quantity, column_quantity, prefix, max_pattern_size, noise, density)
+    tmp_dir = Path(tempfile.mkdtemp())
+
+    generate_synthetic_data(tmp_dir, row_quantity, column_quantity, prefix, max_pattern_size, noise, density)
 
     test_against_synthetic_data(non_overlapping_data_path)
     test_against_synthetic_data(overlapping_data_path)
