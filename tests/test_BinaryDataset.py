@@ -1,11 +1,13 @@
-import tempfile
-from surprise import Dataset
-import numpy as np
-import random
+""" 
+tests for BinaryDataset class
+"""
 import os
-from binaps.binaps_wrapper import generate_synthetic_data
-
+import random
+import tempfile
 from pathlib import Path
+import numpy as np
+from surprise import Dataset, Trainset
+from binaps.binaps_wrapper import generate_synthetic_data
 
 from tests.ToyDatasets import (
     convert_raw_rating_list_into_trainset,
@@ -22,6 +24,50 @@ from dataset.binary_dataset import BinaryDataset
 CONVERT_DATASET_SHUFFLE_TIMES = 10
 
 
+def assert_dataset_and_trainset_are_equal(
+    converted_binary_dataset: BinaryDataset, trainset: Trainset, original_dataset: BinaryDataset
+):
+    """
+    This method asserts that the converted_binary_dataset and the original_dataset are equal to the
+    trainset. This enforces that the conversion from the trainset to the binary_dataset and back
+    to the trainset is correct.
+
+    Args:
+        converted_binary_dataset: The binary_dataset that was converted from the trainset
+        trainset: The trainset that was converted to the binary_dataset
+        original_dataset: The original binary_dataset that was converted to the trainset
+
+    Returns:
+        None
+
+    Raises:
+        AssertionError: If the converted_binary_dataset and the original_dataset are not equal to
+        the trainset
+
+    """
+    assert np.count_nonzero(converted_binary_dataset.binary_dataset) == trainset.n_ratings
+    assert np.count_nonzero(converted_binary_dataset.binary_dataset) == np.count_nonzero(
+        original_dataset.binary_dataset
+    )
+
+    for iuid, row in enumerate(converted_binary_dataset.binary_dataset):
+        for iiid, item in enumerate(row):
+            if item:
+                uid = trainset.to_raw_uid(iuid)
+                iid = trainset.to_raw_iid(iiid)
+
+                assert original_dataset.binary_dataset[uid][iid]
+
+                user_ratings = trainset.ur[iuid]
+                for this_iiid, rating in user_ratings:
+                    if trainset.to_raw_iid(this_iiid) == iid:
+                        assert rating
+                        break
+                else:
+                    raise AssertionError(iuid, iiid, uid, iid, user_ratings)
+
+
+# pylint: disable=missing-function-docstring
 def test_i_on_my_toy_binary_dataset():
     assert np.array_equal(my_toy_binary_dataset.i(np.array([0])), [0, 1, 3])
     assert np.array_equal(my_toy_binary_dataset.i(np.array([1])), [0, 1, 2, 3])
@@ -115,10 +161,12 @@ def test_t_on_zaki_binary_dataset():
 
 
 def test_closed_itemsets_on_zaki_binary_dataset():
-    # example from zaki page 245
+    """
+    Example from zaki page 245
+    """
 
-    def get_closure(X):
-        return zaki_binary_dataset.i(zaki_binary_dataset.t(X))
+    def get_closure(itemset):
+        return zaki_binary_dataset.i(zaki_binary_dataset.t(itemset))
 
     closed_itemset = np.array([1])
     assert np.array_equal(get_closure(closed_itemset), closed_itemset)
@@ -142,40 +190,40 @@ def test_closed_itemsets_on_zaki_binary_dataset():
     assert np.array_equal(get_closure(closed_itemset), closed_itemset)
 
     closed_itemset = np.array([0])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([2])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([3])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([4])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([0, 3])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([3, 4])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([0, 1])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([0, 4])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([2, 4])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([0, 1, 3])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([0, 3, 4])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
     closed_itemset = np.array([1, 3, 4])
-    assert np.array_equal(get_closure(closed_itemset), closed_itemset) == False
+    assert np.array_equal(get_closure(closed_itemset), closed_itemset) is False
 
 
 def test_i_on_belohlavek_binary_dataset():
@@ -186,29 +234,6 @@ def test_i_on_belohlavek_binary_dataset():
 def test_t_on_belohlavek_binary_dataset():
     assert np.array_equal(belohlavek_binary_dataset.t(np.array([0])), [0, 2])
     assert np.array_equal(belohlavek_binary_dataset.t(np.array([1])), [2, 4])
-
-
-def assert_dataset_and_trainset_are_equal(converted_binary_dataset, trainset, original_dataset):
-    assert np.count_nonzero(converted_binary_dataset.binary_dataset) == trainset.n_ratings
-    assert np.count_nonzero(converted_binary_dataset.binary_dataset) == np.count_nonzero(
-        original_dataset.binary_dataset
-    )
-
-    for iuid, row in enumerate(converted_binary_dataset.binary_dataset):
-        for iiid, item in enumerate(row):
-            if item:
-                uid = trainset.to_raw_uid(iuid)
-                iid = trainset.to_raw_iid(iiid)
-
-                assert original_dataset.binary_dataset[uid][iid]
-
-                user_ratings = trainset.ur[iuid]
-                for this_iiid, rating in user_ratings:
-                    if trainset.to_raw_iid(this_iiid) == iid:
-                        assert rating
-                        break
-                else:
-                    raise Exception(iuid, iiid, uid, iid, user_ratings)
 
 
 def test_load_from_trainset_my_toy():
@@ -238,12 +263,12 @@ def test_load_from_trainset_belohlavek():
 
 def test_save_as_binaps_compatible_input():
     def write_and_assert_file_output(dataset, line_results):
-        with tempfile.TemporaryFile(mode="w+t") as f:
-            dataset.save_as_binaps_compatible_input(f)
+        with tempfile.TemporaryFile(mode="w+t") as file_object:
+            dataset.save_as_binaps_compatible_input(file_object)
 
-            f.seek(0)
+            file_object.seek(0)
 
-            for file_line, reference_line in zip(f, line_results):
+            for file_line, reference_line in zip(file_object, line_results):
                 assert file_line == reference_line
 
     my_toy_binary_dataset_line_results = [
@@ -286,11 +311,11 @@ def test_save_as_binaps_compatible_input_on_movielens():
     trainset = dataset.build_full_trainset()
     binary_dataset = BinaryDataset.load_from_trainset(trainset, threshold=1)
 
-    with tempfile.TemporaryFile(mode="r+") as f:
-        binary_dataset.save_as_binaps_compatible_input(f)
+    with tempfile.TemporaryFile(mode="r+") as file_object:
+        binary_dataset.save_as_binaps_compatible_input(file_object)
 
-        f.seek(0)
-        file_lines = f.read().split("\n")
+        file_object.seek(0)
+        file_lines = file_object.read().split("\n")
 
         for user, item, rating in trainset.all_ratings():
             if rating >= threshold:
@@ -301,11 +326,11 @@ def test_save_as_binaps_compatible_input_on_movielens():
     trainset = dataset.build_full_trainset()
     binary_dataset = BinaryDataset.load_from_trainset(trainset, threshold=1)
 
-    with tempfile.TemporaryFile(mode="r+") as f:
-        binary_dataset.save_as_binaps_compatible_input(f)
+    with tempfile.TemporaryFile(mode="r+") as file_object:
+        binary_dataset.save_as_binaps_compatible_input(file_object)
 
-        f.seek(0)
-        file_lines = f.read().split("\n")
+        file_object.seek(0)
+        file_lines = file_object.read().split("\n")
 
         for user, item, rating in trainset.all_ratings():
             if rating >= threshold:
@@ -335,7 +360,9 @@ def test_load_and_save_procedures_on_synthetic_data():
         synthetic_dataset.save_as_binaps_compatible_input(file_object)
         file_object.close()
 
-        with open(file_object.name) as generated, open(synthetic_data_path) as reference:
+        with open(file_object.name, encoding="UTF-8") as generated, open(
+            synthetic_data_path, encoding="UTF-8"
+        ) as reference:
             assert generated.read() == reference.read()
 
         yet_another_synthetic_dataset = BinaryDataset.load_from_binaps_compatible_input(
@@ -350,8 +377,8 @@ def test_load_and_save_procedures_on_synthetic_data():
         yet_another_synthetic_dataset.save_as_binaps_compatible_input(yet_another_file_object)
         yet_another_file_object.close()
 
-        with open(yet_another_file_object.name) as generated, open(
-            synthetic_data_path
+        with open(yet_another_file_object.name, encoding="UTF-8") as generated, open(
+            synthetic_data_path, encoding="UTF-8"
         ) as reference:
             assert generated.read() == reference.read()
 
@@ -414,5 +441,7 @@ def test_load_and_save_procedures_on_movielens():
             if rating >= threshold:
                 assert str(item + 1) in file_lines[user]
 
+
+# pylint: enable=missing-function-docstring
 
 # todo: add sparsity and number of zeros tests
