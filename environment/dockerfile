@@ -17,7 +17,7 @@ RUN pip install numpy \
 # Install Jupyter and IPython support
 RUN pip install jupyterlab \
                 ipykernel \
-                ipython \
+                ipython
 RUN python3 -m ipykernel install --name=binaps
 
 ## Install R
