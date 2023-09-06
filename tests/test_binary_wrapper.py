@@ -32,6 +32,7 @@ BINAPS_PATTERNS_STRING = """
 [ 50  51  52  53  54 119 120 121 122 123 124 125 126 127 128]
 """
 
+# pylint: disable=line-too-long
 # fmt: off
 BINAPS_PATTERNS = [
     [129, 130, 131, 132, 133, 134, 264, 265, 266, 267, 268, 269, 270, 271, 272],
@@ -56,8 +57,10 @@ BINAPS_PATTERNS = [
     [50, 51, 52, 53, 54, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128],
 ]
 # fmt: on
+# pylint: enable=line-too-long
 
 
+# pylint: disable=missing-function-docstring
 def test_parse_binaps_patterns():
     with StringIO(BINAPS_PATTERNS_STRING) as file_object:
         # Call the function under test
