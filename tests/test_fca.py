@@ -1,6 +1,9 @@
-import numpy as np
+"""
+Tests for the fca module.
+"""
 
 from unittest.mock import Mock, call
+import numpy as np
 from fca.formal_concept_analysis import (
     get_factor_matrices_from_concepts,
     Concept,
@@ -8,6 +11,7 @@ from fca.formal_concept_analysis import (
     construct_context_from_binaps_patterns,
 )
 from dataset.binary_dataset import BinaryDataset
+from dataset.mushroom_dataset import MushroomDataset
 
 from tests.ToyDatasets import (
     my_toy_binary_dataset,
@@ -17,8 +21,8 @@ from tests.ToyDatasets import (
     belohlavek_binary_dataset_2,
     nenova_dataset_dataset,
 )
-from dataset.mushroom_dataset import MushroomDataset
 
+# pylint: disable=missing-function-docstring
 
 def test_get_matrices_belohlavek():
     # example from belohlavek paper page 14 and 15
@@ -30,12 +34,12 @@ def test_get_matrices_belohlavek():
         Concept(np.array([0, 1, 3, 4]), np.array([2])),
     ]
 
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, belohlavek_binary_dataset.shape[0], belohlavek_binary_dataset.shape[1]
     )
 
     assert np.array_equal(
-        Af,
+        A,
         [
             [True, False, True, True],
             [False, False, False, True],
@@ -46,7 +50,7 @@ def test_get_matrices_belohlavek():
     )
 
     assert np.array_equal(
-        Bf,
+        B,
         [
             [False, False, True, False, False, True],
             [False, True, False, True, False, True],
@@ -55,7 +59,7 @@ def test_get_matrices_belohlavek():
         ],
     )
 
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     assert (I == belohlavek_binary_dataset.binary_dataset).all()
 
@@ -63,20 +67,20 @@ def test_get_matrices_belohlavek():
 def test_get_matrices_belohlavek_2():
     # example from belohlavek paper page 9 to 11
 
-    C1 = Concept(np.array([0, 4, 8, 10]), np.array([0, 1, 2, 4]))
-    C2 = Concept(np.array([1, 3, 11]), np.array([0, 1, 5, 7]))
-    C3 = Concept(np.array([2, 5, 6]), np.array([1, 4, 6]))
-    C4 = Concept(np.array([2, 5, 6, 7, 9]), np.array([6]))
-    C5 = Concept(np.array([0, 2, 4, 5, 6, 8, 10]), np.array([1, 4]))
+    concept_1 = Concept(np.array([0, 4, 8, 10]), np.array([0, 1, 2, 4]))
+    concept_2 = Concept(np.array([1, 3, 11]), np.array([0, 1, 5, 7]))
+    concept_3 = Concept(np.array([2, 5, 6]), np.array([1, 4, 6]))
+    concept_4 = Concept(np.array([2, 5, 6, 7, 9]), np.array([6]))
+    concept_5 = Concept(np.array([0, 2, 4, 5, 6, 8, 10]), np.array([1, 4]))
 
-    formal_context_1 = [C1, C2, C3, C4]
+    formal_context_1 = [concept_1, concept_2, concept_3, concept_4]
 
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context_1, belohlavek_binary_dataset_2.shape[0], belohlavek_binary_dataset_2.shape[1]
     )
 
     assert np.array_equal(
-        Af,
+        A,
         [
             [True, False, False, False],
             [False, True, False, False],
@@ -94,7 +98,7 @@ def test_get_matrices_belohlavek_2():
     )
 
     assert np.array_equal(
-        Bf,
+        B,
         [
             [True, True, True, False, True, False, False, False],
             [True, True, False, False, False, True, False, True],
@@ -103,15 +107,15 @@ def test_get_matrices_belohlavek_2():
         ],
     )
 
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     assert (I == belohlavek_binary_dataset_2.binary_dataset).all()
 
-    formal_context_2 = [C1, C2, C4, C5]
-    Af, Bf = get_factor_matrices_from_concepts(
+    formal_context_2 = [concept_1, concept_2, concept_4, concept_5]
+    A, B = get_factor_matrices_from_concepts(
         formal_context_2, belohlavek_binary_dataset_2.shape[0], belohlavek_binary_dataset_2.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
     assert (I == belohlavek_binary_dataset_2.binary_dataset).all()
 
 
@@ -123,12 +127,12 @@ def test_get_matrices_nenova():
         Concept(np.array([3, 4, 5]), np.array([5, 6])),
     ]
 
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
 
     assert np.array_equal(
-        Af,
+        A,
         [
             [True, False, False],
             [True, True, False],
@@ -140,7 +144,7 @@ def test_get_matrices_nenova():
     )
 
     assert np.array_equal(
-        Bf,
+        B,
         [
             [True, True, True, False, False, False, False],
             [False, False, False, True, True, False, False],
@@ -148,48 +152,48 @@ def test_get_matrices_nenova():
         ],
     )
 
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     assert (I == nenova_dataset_dataset.binary_dataset).all()
 
 
-def test_GreConD_my_toy_dataset():
+def test_grecond_my_toy_dataset():
     formal_context, coverage = GreConD(my_toy_binary_dataset)
 
     assert coverage == 1
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, my_toy_binary_dataset.shape[0], my_toy_binary_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     assert (I == my_toy_binary_dataset.binary_dataset).all()
 
 
-def test_GreConD_my_toy_2_dataset():
+def test_grecond_my_toy_2_dataset():
     formal_context, coverage = GreConD(my_toy_binary_2_dataset)
 
     assert coverage == 1
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, my_toy_binary_2_dataset.shape[0], my_toy_binary_2_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     assert (I == my_toy_binary_2_dataset.binary_dataset).all()
 
 
-def test_GreConD_zaki():
+def test_grecond_zaki():
     formal_context, coverage = GreConD(zaki_binary_dataset)
 
     assert coverage == 1
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, zaki_binary_dataset.shape[0], zaki_binary_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     assert (I == zaki_binary_dataset.binary_dataset).all()
 
 
-def test_GreConD_belohlavek():
+def test_grecond_belohlavek():
     formal_context, coverage = GreConD(belohlavek_binary_dataset)
 
     assert coverage == 1
@@ -207,15 +211,15 @@ def test_GreConD_belohlavek():
     assert np.array_equal(formal_context[3].extent, [0, 2, 3, 4])
     assert np.array_equal(formal_context[3].intent, [5])
 
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, belohlavek_binary_dataset.shape[0], belohlavek_binary_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     assert (I == belohlavek_binary_dataset.binary_dataset).all()
 
 
-def test_GreConD_nenova():
+def test_grecond_nenova():
     formal_context, coverage = GreConD(nenova_dataset_dataset)
 
     assert coverage == 1
@@ -230,20 +234,20 @@ def test_GreConD_nenova():
     assert np.array_equal(formal_context[2].extent, [3, 4, 5])
     assert np.array_equal(formal_context[2].intent, [5, 6])
 
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     assert (I == nenova_dataset_dataset.binary_dataset).all()
 
 
-def test_GreConD_partial():
+def test_grecond_partial():
     formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.1)
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     real_coverage = np.count_nonzero(I) / np.count_nonzero(
         I == nenova_dataset_dataset.binary_dataset
@@ -253,12 +257,12 @@ def test_GreConD_partial():
     assert real_coverage <= 0.6
 
 
-def test_GreConD_partial_2():
+def test_grecond_partial_2():
     formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.1)
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     real_coverage = np.count_nonzero(I) / np.count_nonzero(nenova_dataset_dataset.binary_dataset)
 
@@ -267,10 +271,10 @@ def test_GreConD_partial_2():
     assert real_coverage < 0.34
 
     formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.2)
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     real_coverage = np.count_nonzero(I) / np.count_nonzero(nenova_dataset_dataset.binary_dataset)
 
@@ -279,10 +283,10 @@ def test_GreConD_partial_2():
     assert real_coverage <= 0.34
 
     formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.3)
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     real_coverage = np.count_nonzero(I) / np.count_nonzero(nenova_dataset_dataset.binary_dataset)
 
@@ -291,10 +295,10 @@ def test_GreConD_partial_2():
     assert real_coverage <= 0.34
 
     formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.4)
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     real_coverage = np.count_nonzero(I) / np.count_nonzero(nenova_dataset_dataset.binary_dataset)
 
@@ -303,10 +307,10 @@ def test_GreConD_partial_2():
     assert real_coverage <= 0.7
 
     formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.7)
-    Af, Bf = get_factor_matrices_from_concepts(
+    A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
-    I = np.matmul(Af, Bf)
+    I = np.matmul(A, B)
 
     real_coverage = np.count_nonzero(I) / np.count_nonzero(nenova_dataset_dataset.binary_dataset)
 
@@ -315,14 +319,16 @@ def test_GreConD_partial_2():
     assert real_coverage <= 1
 
 
-def test_GreConD_mushroom():
+def test_grecond_mushroom():
     coverages = np.arange(0, 1.01, 0.01)
     # fmt: off
+    # pylint: disable=line-too-long
     mushroom_factors_per_coverage = [0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3,
                                      3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7, 8, 8, 9, 9, 10,
                                      10, 11, 11, 12, 12, 13, 13, 14, 15, 16, 16, 17, 18, 18, 19, 20, 21, 22, 23, 24, 25,
                                      26, 27, 28, 28, 29, 31, 32, 34, 35, 37, 38, 40, 42, 44, 46, 49, 52, 55, 58, 62, 66,
                                      70, 75, 85, 120]
+    # pylint: enable=line-too-long
     # fmt: on
     found_factors_per_coverage = []
 
