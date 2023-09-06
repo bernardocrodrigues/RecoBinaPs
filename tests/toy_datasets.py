@@ -1,33 +1,46 @@
-# Copyright 2022 Bernardo C. Rodrigues
-#
-# This program is free software: you can redistribute it and/or modify it under the terms of the GNU
-# General Public License as published by the Free Software Foundation, either version 3 of the
-# License, or (at your option) any later version. This program is distributed in the hope that it
-# will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-# FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should
-# have received a copy of the GNU General Public License along with this program. If not, see
-# <https://www.gnu.org/licenses/>.
-#
-# This module comprises a series o example datasets to be used in tests and demos. Some of them are taken from books or
-# papers which enable us to cross check if our implementation is doing what it is supposed to given what the literature
-# reports.
-#
-# Bibliography
-# [1] Mohammed J. Zaki and Wagner Meira, Jr., 'Data Mining and Analysis: Fundamental Concepts and Algorithms'
-#     <https://dataminingbook.info/first_edition/>
-# [2] Radim Belohlavek, Vilem Vychodil, 'Discovery of optimal factors in binary data via a novel method of matrix
-#     decomposition' <https://www.sciencedirect.com/science/article/pii/S0022000009000415>
-# [3] Elena Nenova, Dmitry I. Ignatov, and Andrey V. Konstantinov, 'An FCA-based Boolean Matrix Factorisation for
-#     Collaborative Filtering <https://publications.hse.ru/pubs/share/folder/2yoq2ezea5/97014436.pdf>
+"""
+toy_datasets.py
 
+This file contains some toy datasets that can be used to test the algorithms. Some of them are taken
+from the literature, some of them are created by me. The datasets are:
+
+Bibliography
+[1] Mohammed J. Zaki and Wagner Meira, Jr., 'Data Mining and Analysis: Fundamental Concepts and
+    Algorithms' <https://dataminingbook.info/first_edition/>
+[2] Radim Belohlavek, Vilem Vychodil, 'Discovery of optimal factors in binary data via a novel
+    method of matrix decomposition' 
+    <https://www.sciencedirect.com/science/article/pii/S0022000009000415>
+[3] Elena Nenova, Dmitry I. Ignatov, and Andrey V. Konstantinov, 'An FCA-based Boolean Matrix
+    Factorization for Collaborative Filtering 
+    <https://publications.hse.ru/pubs/share/folder/2yoq2ezea5/97014436.pdf>
+"""
+
+
+import random
+from typing import List
 import numpy as np
 import pandas as pd
-from dataset.binary_dataset import BinaryDataset
 from surprise import Dataset, Reader, Trainset
-import random
+from dataset.binary_dataset import BinaryDataset
 
 
-def convert_raw_rating_list_into_trainset(raw_data, shuffle=True) -> Trainset:
+def convert_raw_rating_list_into_trainset(
+    raw_data: List[List[int]], shuffle: bool = True
+) -> Trainset:
+    """
+    Convert a list of raw ratings into a surprise Trainset object.
+
+    Raw data must be a list of lists, where each list is a rating. Each rating must be a list of
+    three elements: the first is the user ID, the second is the item ID, the third is the rating.
+
+    Args:
+        raw_data (List[List[int]]): The raw data.
+        shuffle (bool, optional): If True, the raw data will be shuffled before being converted
+            into a Trainset. Defaults to True.
+
+    Returns:
+        Trainset: The Trainset object.
+    """
     if shuffle:
         random.shuffle(raw_data)
     rating_dataframe = pd.DataFrame(raw_data, columns=["userID", "itemID", "rating"])

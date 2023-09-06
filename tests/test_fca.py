@@ -13,7 +13,7 @@ from fca.formal_concept_analysis import (
 from dataset.binary_dataset import BinaryDataset
 from dataset.mushroom_dataset import MushroomDataset
 
-from tests.ToyDatasets import (
+from tests.toy_datasets import (
     my_toy_binary_dataset,
     my_toy_binary_2_dataset,
     zaki_binary_dataset,

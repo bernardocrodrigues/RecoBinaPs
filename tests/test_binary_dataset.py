@@ -9,7 +9,7 @@ import numpy as np
 from surprise import Dataset, Trainset
 from binaps.binaps_wrapper import generate_synthetic_data
 
-from tests.ToyDatasets import (
+from tests.toy_datasets import (
     convert_raw_rating_list_into_trainset,
     my_toy_binary_dataset,
     my_toy_dataset_raw_rating,

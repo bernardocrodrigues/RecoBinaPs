@@ -6,7 +6,7 @@ from unittest.mock import Mock
 import numpy as np
 from pytest import approx
 from recommenders.common import jaccard_distance, cosine_distance, get_similarity_matrix
-from tests.ToyDatasets import zaki_binary_dataset
+from tests.toy_datasets import zaki_binary_dataset
 
 
 # pylint: disable=missing-function-docstring
