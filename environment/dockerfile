@@ -27,15 +27,11 @@ RUN pip install surprise
 RUN pip install numba
 
 # Data visualization dependencies
-RUN pip install matplotlib
-RUN pip install plotly
-RUN pip install tabulate
-RUN pip install plotext
-RUN pip install statsmodels
-RUN pip install kaleido
+RUN DEBIAN_FRONTEND=noninteractive apt -y install msttcorefonts
 
 # Unit test tooling
 RUN pip install pytest
 RUN pip install coverage
+RUN pip install nbmake
 
 RUN DEBIAN_FRONTEND=noninteractive apt -y install msttcorefonts
