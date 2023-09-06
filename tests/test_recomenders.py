@@ -1,73 +1,79 @@
+"""
+Tests for recommenders module.
+"""
+
+from unittest.mock import Mock
+import numpy as np
+from pytest import approx
 from recommenders.common import jaccard_distance, cosine_distance, get_similarity_matrix
 from tests.ToyDatasets import zaki_binary_dataset
 
-import numpy as np
 
-from pytest import approx
-
-from unittest.mock import Mock
-
-
+# pylint: disable=missing-function-docstring
 def test_cosine_distance_of_booleans():
-    a = [1, 1, 0, 0]
-    b = [0, 1, 1, 1]
+    vector_a = [1, 1, 0, 0]
+    vector_b = [0, 1, 1, 1]
 
-    distance = cosine_distance(a, b)
+    distance = cosine_distance(vector_a, vector_b)
 
     assert distance == cosine_distance([True, True, False, False], [False, True, True, True])
 
-    alternative_consine_distance = 1 - (np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+    alternative_cosine_distance = 1 - (
+        np.dot(vector_a, vector_b) / (np.linalg.norm(vector_a) * np.linalg.norm(vector_b))
+    )
 
-    assert distance == approx(alternative_consine_distance, 0.00000001)
+    assert distance == approx(alternative_cosine_distance, 0.00000001)
     assert distance == approx(0.592, 0.001)
 
 
 def test_cosine_distance_of_booleans_2():
-    a = [1, 0, 1]
-    b = [0, 1, 1]
+    vector_a = [1, 0, 1]
+    vector_b = [0, 1, 1]
 
-    distance = cosine_distance(a, b)
+    distance = cosine_distance(vector_a, vector_b)
 
     assert distance == cosine_distance([True, False, True], [False, True, True])
 
-    alternative_consine_distance = 1 - (np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+    alternative_cosine_distance = 1 - (
+        np.dot(vector_a, vector_b) / (np.linalg.norm(vector_a) * np.linalg.norm(vector_b))
+    )
 
-    assert distance == approx(alternative_consine_distance, 0.00000001)
+    assert distance == approx(alternative_cosine_distance, 0.00000001)
     assert distance == 0.5
 
 
 def test_cosine_distance():
-    a = [True, False, True]
-    b = [False, True, False]
+    vector_a = [True, False, True]
+    vector_b = [False, True, False]
 
-    distance = cosine_distance(a, b)
+    distance = cosine_distance(vector_a, vector_b)
 
     assert distance == 1
 
 
 def test_cosine_distance_2():
-    a = [True, False, True]
-    b = [True, False, True]
+    vector_a = [True, False, True]
+    vector_b = [True, False, True]
 
-    distance = cosine_distance(a, b)
+    distance = cosine_distance(vector_a, vector_b)
 
     assert distance == 0
 
 
 def test_jaccard_distance():
-    a = [True, False, True]
-    b = [False, True, False]
+    vector_a = [True, False, True]
+    vector_b = [False, True, False]
 
-    distance = jaccard_distance(a, b)
+    distance = jaccard_distance(vector_a, vector_b)
 
     assert distance == 1
 
 
 def test_jaccard_distance_2():
-    a = [True, False, True]
-    b = [True, False, True]
+    vector_a = [True, False, True]
+    vector_b = [True, False, True]
 
-    distance = jaccard_distance(a, b)
+    distance = jaccard_distance(vector_a, vector_b)
 
     assert distance == 0
 
