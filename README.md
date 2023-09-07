@@ -91,7 +91,9 @@ Follow the instructions below to build and run the environment.
 2. Run the unit tests.
    ```bash
    cd ci
-   ./test
+   ./test -f # Run the complete test suite, including the notebooks and coverage analysis
+   ./test -h # See help for more options
+
    ```
    This will run the unit tests inside the environment and output the results to the terminal.
 
