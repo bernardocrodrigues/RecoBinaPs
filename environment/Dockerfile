@@ -43,4 +43,6 @@ RUN pip install pytest \
                 coverage \
                 nbmake
 RUN pip install coverage
-RUN pip install nbmake
+
+# Install Pedro's implementation dependencies
+RUN pip install scikit-learn
