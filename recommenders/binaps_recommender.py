@@ -5,7 +5,7 @@ This module contains the BinaPsRecommender class.
 
 import logging
 from typing import List
-from tempfile import TemporaryFile
+from tempfile import TemporaryDirectory
 import numpy as np
 
 from fca.formal_concept_analysis import construct_context_from_binaps_patterns
@@ -77,9 +77,12 @@ class BinaPsRecommender(KNNOverLatentSpaceRecommender):
         # If patterns were not previously computed, run BinaPs
         if not self.patterns:
             # Run BinaPs from a temporary file since it only accepts file paths
-            with TemporaryFile("w", encoding="UTF-8") as file_object:
-                self.binary_dataset.save_as_binaps_compatible_input(file_object)
-                weights, _, _ = run_binaps(input_dataset_path=file_object.name, epochs=self.epochs)
+            with TemporaryDirectory() as temporary_directory:
+                with open(f"{temporary_directory}/dataset", "w+", encoding="UTF-8") as file_object:
+                    self.binary_dataset.save_as_binaps_compatible_input(file_object)
+                    weights, _, _ = run_binaps(
+                        input_dataset_path=file_object.name, epochs=self.epochs
+                    )
 
             self.patterns = get_patterns_from_weights(
                 weights=weights, threshold=self.weights_binarization_threshold
