@@ -32,7 +32,10 @@ def get_global_precision(predictions, relevance_threshold=1):
             else:
                 false_positives += 1
 
-    return true_positives / (true_positives + false_positives)
+    try:
+        return true_positives / (true_positives + false_positives)
+    except ZeroDivisionError:
+        return 0
 
 
 def get_user_averaged_precision(predictions, relevance_threshold=1):
