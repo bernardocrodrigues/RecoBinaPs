@@ -1,30 +1,63 @@
+# This docker-compose file defines various environments for running the code. Depending on your
+# needs, you can run the code in a CPU-only environment, or in a GPU environment. The point is not
+# to run all the services at once (e.g docker compose up), but to choose the one that suits your
+# needs. For example, if you want to run the code in a GPU environment, you can run:
+#
+# docker-compose run --rm notebook-cuda
+#
+# This will start a container with the notebook-cuda service, and will run the command defined in
+# the notebook-cuda service (i.e jupyter-lab). The --rm flag will remove the container once the
+# command has finished running. You can also run the code in a CPU-only environment by running:
+#
+# docker-compose run --rm notebook
+#
+# What actually is packaged in the docker image is defined in the Dockerfile. The docker-compose
+# file only defines the how the image is run. For example, the Dockerfile defines the base image
+# (i.e the image that will be used as a base for the image we are building), the packages that
+# will be installed in the image, etc. The docker-compose file defines how the image will be run
+# (e.g which command will be run, which volumes will be mounted, etc).
+#
+# Use the base services if using with VSCode Devcontainers.
+
 services:
-  notebook:
+
+  # This service defines the base environment for running the code. Every other service will
+  # extend this service.
+  base:
     build: .
-    ports:
-      - "8888:8888"
+    # Keep the container running indefinitely.
+    command: /bin/sh -c "while sleep 1000; do :; done" 
     volumes:
+      # Make the host users available in the container.
       - /etc/passwd:/etc/passwd:ro
       - /etc/group:/etc/group:ro
+      # Make the project folder available in the container.
       - $SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR
-      #By sharing the tmp folder with the host, we'll only donwload surprise's builtin datasets once per session
+      # By sharing the tmp folder with the host, we'll only donwload surprise's builtin datasets 
+      # once per session
       - /tmp:/tmp
     tmpfs:
+      # Some services (e.g notebook and VSCode Devcontainers) will write to these folders, so
+      # mounting them in memory will speed up the code.
       - /home/$USER/.local
       - /home/$USER/.config
+      - /home/$USER/.vscode-server
     environment:
       # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
       - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
+      # Given the way BinaPs importing is done, we need to add the root of the original BinaPs
+      # code to the PYTHONPATH so it can find the modules correctly.
       - PYTHONPATH=$SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR/binaps/original/Binaps_code
       - SOURCE_ROOT_DIR=$SOURCE_ROOT_DIR
+    # Run the container as the current user.
     user: $UID:$GID
     working_dir: $SOURCE_ROOT_DIR
-    entrypoint: jupyter-lab
-    command: --no-browser --allow-root --notebook-dir=$SOURCE_ROOT_DIR --NotebookApp.allow_origin='*' --NotebookApp.ip='0.0.0.0' --NotebookApp.token='something_secret'
     network_mode: host
-  notebook-cuda:
+
+  # This service extends the base service and adds CUDA support.
+  base-cuda:
     extends:
-      service: notebook
+      service: base
     deploy:
       resources:
         reservations:
@@ -32,3 +65,17 @@ services:
           - driver: nvidia
             device_ids: ['0']
             capabilities: [gpu]
+
+  # This service extends the base and runs a Jupiter Lab server.
+  notebook:
+    extends:
+        service: base
+    entrypoint: jupyter-lab
+    command: --no-browser --allow-root --notebook-dir=$SOURCE_ROOT_DIR --NotebookApp.allow_origin='*' --NotebookApp.ip='0.0.0.0' --NotebookApp.token='something_secret'
+
+  # This service extends the base-cuda and runs a Jupiter Lab server.
+  notebook-cuda:
+    extends:
+        service: base-cuda
+    entrypoint: jupyter-lab
+    command: --no-browser --allow-root --notebook-dir=$SOURCE_ROOT_DIR --NotebookApp.allow_origin='*' --NotebookApp.ip='0.0.0.0' --NotebookApp.token='something_secret'
