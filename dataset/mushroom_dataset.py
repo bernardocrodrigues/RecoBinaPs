@@ -92,10 +92,9 @@ def _parse_mushroom_dataset(raw_dataset_path: Path):
 
 import tempfile
 
+
 class MushroomDataset(BinaryDataset):
-
     def __init__(self, dataset_dowload_path: Path = None):
-
         if dataset_dowload_path is None:
             directory = Path(tempfile.mkdtemp())
         else:
@@ -107,8 +106,3 @@ class MushroomDataset(BinaryDataset):
         dataset = _parse_mushroom_dataset(directory / "agaricus-lepiota.data")
 
         super(MushroomDataset, self).__init__(dataset)
-            
-
-
-# MushroomDataset = 1
-# MushroomDataset = parse_mushroom_dataset("/home/brodrigues/Projects/RecoBinaPs/dataset/mushroom/agaricus-lepiota.data")
