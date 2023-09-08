@@ -1,0 +1,9 @@
+{
+	"name": "Existing Dockerfile",
+	"dockerComposeFile": [
+		"../environment/docker-compose.yml"
+	],
+	"service": "notebook-cuda",
+	"workspaceFolder": "${localWorkspaceFolder}",
+	"remoteUser": "1000"
+}
