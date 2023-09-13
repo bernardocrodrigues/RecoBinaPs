@@ -11,24 +11,29 @@ set -e
 RUN_FULL_SUITE=false
 RUN_TESTS=false
 SPECIFIC_TESTS=""
+PROFILE=false
 
 function print_help {
-    echo "Usage: $0 [-f] [-t] [-s specific_tests]"
+    echo "Usage: $0 [-f] [-t] [[-p] -s specific_tests]"
     echo "Options:"
     echo "  -f: Run full test suite. This will run all tests (including notebooks) and generate"
     echo "      a coverage report"
     echo "  -t: Run tests unit tests"
     echo "  -s: Run specific tests. Use the tests' names as they appear in the pytest implementation"
+    echo "  -p: Run specific tests while profiling.
     echo "  -h: Print this help message"
 }
 
-while getopts "fthrs:" opt; do
+while getopts "hftps:" opt; do
     case $opt in
     f)
         RUN_FULL_SUITE=true
         ;;
     t)
         RUN_TESTS=true
+        ;;
+    p)
+        PROFILE=true
         ;;
     s)
         SPECIFIC_TESTS="$OPTARG"
@@ -40,10 +45,17 @@ while getopts "fthrs:" opt; do
     esac
 done
 
-# Check if no options are provided or if -h is provided, then print help and exit
+# Check if no options are provided or if -h is provided
 if [[ $OPTIND -eq 1 || "$1" == "-h" ]]; then
     print_help
     exit 0
+fi
+
+# Check if either -f, -t, or -s is provided
+if ! $RUN_FULL_SUITE && ! $RUN_TESTS && [ -z "$SPECIFIC_TESTS" ]; then
+    echo "No valid options provided"
+    print_help
+    exit 1
 fi
 
 # Shift the options and arguments so that $1, $2, etc. contain the non-option arguments
@@ -68,8 +80,15 @@ fi
 
 if [ -n "$SPECIFIC_TESTS" ]; then
     # Run specific tests if -s flag is set
-    docker compose run --rm --entrypoint="python3" notebook-cuda -m pytest --durations=0 -vs -k "$SPECIFIC_TESTS"
+    if $PROFILE; then
+        # Run specific tests while profiling if -p flag is set
+        docker compose run --rm --entrypoint="python3" notebook-cuda -m cProfile -o profile -m pytest --durations=0 -vs -k "$SPECIFIC_TESTS"
+        # Use snakeviz to visualize the profiling results
+    else
+        docker compose run --rm --entrypoint="python3" notebook-cuda -m pytest --durations=0 -vs -k "$SPECIFIC_TESTS"
+    fi
     exit 0
 fi
+
 
 cd -
