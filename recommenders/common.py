@@ -147,10 +147,10 @@ def generic_thread(
     output[fold_index] = {
         "mae": mae(predictions=predictions, verbose=False),
         "rmse": rmse(predictions=predictions, verbose=False),
-        "global_recall": get_micro_averaged_recall(
+        "micro_averaged_recall": get_micro_averaged_recall(
             predictions=predictions, threshold=threshold
         ),
-        "user_averaged_recall": get_macro_averaged_precision(
+        "macro_averaged_recall": get_macro_averaged_precision(
             predictions=predictions, threshold=threshold
         ),
         "recall_at_k": get_recall_at_k(
@@ -158,10 +158,10 @@ def generic_thread(
             threshold=threshold,
             k=number_of_top_recommendations,
         ),
-        "global_precision": get_micro_averaged_precision(
+        "micro_averaged_precision": get_micro_averaged_precision(
             predictions=predictions, threshold=threshold
         ),
-        "user_averaged_precision": get_macro_averaged_precision(
+        "macro_averaged_precision": get_macro_averaged_precision(
             predictions=predictions, threshold=threshold
         ),
         "precision_at_k": get_precision_at_k(
