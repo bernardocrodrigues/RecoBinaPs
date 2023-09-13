@@ -218,94 +218,152 @@ def get_precision_at_k(predictions: List[Prediction], threshold: float = 1, k: i
         return 0
 
 
-def get_global_recall(predictions, relevance_threshold=1):
+def get_micro_averaged_recall(predictions: List[Prediction], threshold: float = 1):
     """
-    Returns the recall from a predictions list.
+    Returns the micro-averaged, or global, recall from a predictions list.
 
-    Recall is defined as the fraction of relevant instances that were retrieved. In recommender systems,
-    it measures the fraction of items that are liked by the user among all the items that are available.
+    Recall is defined as the fraction of relevant (liked by the user) instances that are retrieved
+    (recommended). It is the conditional probability that a relevant item is retrieved, given that
+    it was relevant - P(retrieved|relevant).
 
-    Recall = True Positives / (True Positives + False Negatives)
+    Micro-averaged recall calculates the recall globally, by considering all the items recommended
+    to all users.
 
-    For example, if you have a recommender system that suggests movies to a user, and you have 100 movies in total,
-    10 of which are liked by the user. If your system misses 6 movies that are liked by the user (false negatives), then
-    your recall is 4 / (4 + 6) = 0.4. This means that 40% of the movies that are actually liked by the user were
-    recommended by your system.
+        micro_averaged_recall = true_positives / (true_positives + false_negatives)
+
+    Where true_positives is the number of relevant items that were retrieved, false_negatives is
+    the number of relevant items that were not retrieved and (true_positives + false_negatives) is
+    the total number of relevant items.
+
+    Args:
+        predictions (List[Prediction]): A list of predictions.
+        threshold (float, optional): The threshold used to determine if an item is relevant and
+                                     should be retrieved. Defaults to 1.
+
+    Returns:
+        float: The micro-averaged recall.
+    """
+
+    contingency_table = generate_contingency_table(predictions, threshold)
+
+    try:
+        return contingency_table.true_positives / (
+            contingency_table.true_positives + contingency_table.false_negatives
+        )
+    except ZeroDivisionError:
+        return 0
+
+
+def get_macro_averaged_recall(predictions, threshold=1):
+    """
+    Returns the macro-averaged, or the user-averaged, recall for a list of predictions.
+
+    Recall is defined as the fraction of relevant (liked by the user) instances that are retrieved
+    (recommended). It is the conditional probability that a relevant item is retrieved, given that
+    it was relevant - P(retrieved|relevant).
+
+    Macro-averaged recall calculates the recall for each user and then averages the results.
+
+    The recall for the k-th user (recall[k]) is defined as:
+
+        recall[k] = true_positives[k] / (true_positives[k] + false_negatives[k])
+
+    Where true_positives[k] is the number of relevant items that were retrieved for the k-th user,
+    and false_negatives[k] is the number of relevant items that were not retrieved for the k-th user
+    and n is the number of users.
+
+    Macro-averaged recall (macro_averaged_recall) is defined as:
+
+        macro_averaged_recall = (recall[1] + recall[2] + ... + recall[n]) / n
+
+    Where n is the number of users.
+
+    Args:
+        predictions (List[Prediction]): A list of predictions.
+        threshold (float, optional): The threshold used to determine if an item is relevant and
+                                        should be retrieved. Defaults to 1.
+    Returns:
+        float: The macro-averaged recall.
 
     """
 
-    def is_relevant(measure):
-        return measure >= relevance_threshold
-
-    true_positives = 0
-    false_negatives = 0
-
-    for _, _, true_rating, estimate, _ in predictions:
-        if is_relevant(estimate):
-            if is_relevant(true_rating):
-                true_positives += 1
-        else:
-            if is_relevant(true_rating):
-                false_negatives += 1
-
-    return true_positives / (true_positives + false_negatives)
-
-
-def get_user_averaged_recall(predictions, relevance_threshold=1):
-    def is_relevant(measure):
-        return measure >= relevance_threshold
+    predictions_per_user = defaultdict(list)
+    for prediction in predictions:
+        predictions_per_user[prediction.uid].append(prediction)
 
     recalls = []
-    ratings_per_user = defaultdict(list)
-    for user_id, _, true_rating, estimate, _ in predictions:
-        ratings_per_user[user_id].append((estimate, true_rating))
-
-    for _, user_ratings in ratings_per_user.items():
-        true_positives = 0
-        false_negatives = 0
-
-        for estimate, true_rating in user_ratings:
-            if is_relevant(estimate):
-                if is_relevant(true_rating):
-                    true_positives += 1
-            else:
-                if is_relevant(true_rating):
-                    false_negatives += 1
-        try:
-            recall = true_positives / (true_positives + false_negatives)
-        except ZeroDivisionError:
-            pass
-        else:
-            recalls.append(recall)
+    for user_ratings in predictions_per_user.values():
+        recalls.append(get_micro_averaged_recall(user_ratings, threshold))
 
     return statistics.mean(recalls)
 
 
-def get_recall_at_k(predictions, relevance_threshold=1, k=20):
-    def is_relevant(measure):
-        return measure >= relevance_threshold
+def get_recall_at_k(predictions, threshold=1, k=20):
+    """
+    Calculate the recall at K (Recall@K) for a list of predictions.
 
-    recalls = []
-    ratings_per_user = defaultdict(list)
-    for user_id, _, true_rating, estimate, _ in predictions:
-        ratings_per_user[user_id].append((estimate, true_rating))
+    Recall@K is the macro-averaged recall for the top K recommendations. In other words,
+    it is the recall calculated for the top K recommendations for each user, and then averaged.If
+    there are not enough selected items to reach K, the user is skipped.
 
-    for _, user_ratings in ratings_per_user.items():
-        relevant_itens_in_the_top_k = 0
-        total_relevant_itens = 0
+    The recall for the i-th user in the top K recommendations (recall_at_k[i]) is defined as:
 
-        user_ratings.sort(key=lambda x: x[0], reverse=True)
+        recall_at_k[i] = true_positives_at_k[i] / true_positives + false_negatives
 
-        for estimate, true_rating in user_ratings[:k]:
-            if is_relevant(true_rating):
-                relevant_itens_in_the_top_k += 1
+    Where True true_positives_at_k[i] is the number of relevant items that were retrieved for the
+    i-th user in the top K recommendations, and false_negatives is the number of relevant items that
+    were not retrieved for the i-th user. Note that the value of (true_positives + false_negatives)
+    is the subset of items that the i-th user found relevant. Therefore, is is computed over the
+    entire predictions list, not just the top K recommendations.
 
-        for estimate, true_rating in user_ratings:
-            if is_relevant(true_rating):
-                total_relevant_itens += 1
+    Finally, the macro-averaged recall at K (recall_at_k) is defined as:
+
+        recall_at_k = (recall_at_k[1] + recall_at_k[2] + ... + recall_at_k[n]) / n
+
+    Where n is the number of users.
+
+    Args:
+        predictions (List[Prediction]): A list of predictions.
+        threshold (float, optional): The threshold used to determine if an item is relevant and
+                                        should be retrieved. Defaults to 1.
+        k (int, optional): The number of recommendations to consider. Defaults to 20.
+
+    Returns:
+        float: The recall at K.
+    """
+
+    predictions_per_user = defaultdict(list)
+    for prediction in predictions:
+        predictions_per_user[prediction.uid].append(prediction)
+
+    recalls = set()
+    for user_predictions in predictions_per_user.values():
+        if len(user_predictions) < k:
+            # skip this user if there are not enough recommendations to reach k
+            continue
+
+        user_predictions.sort(key=lambda prediction: prediction.est, reverse=True)
+
+        if user_predictions[k - 1].est < threshold:
+            # skip this user if the k-th item is not relevant
+            continue
+
+        top_k_ratings = user_predictions[:k]
+
+        predictions_contingency_table = generate_contingency_table(user_predictions, threshold)
+        top_k_contingency_table = generate_contingency_table(top_k_ratings, threshold)
+
         try:
-            recalls.append(relevant_itens_in_the_top_k / total_relevant_itens)
+            recall = top_k_contingency_table.true_positives / (
+                predictions_contingency_table.true_positives
+                + predictions_contingency_table.false_negatives
+            )
         except ZeroDivisionError:
-            pass
+            recall = 0
 
-    return statistics.mean(recalls)
+        recalls.add(recall)
+
+    try:
+        return statistics.mean(recalls)
+    except statistics.StatisticsError:
+        return 0
