@@ -15,17 +15,34 @@ Usage:
 """
 
 import logging
+from typing import Tuple, List, Dict
+
+from surprise.accuracy import mae, rmse
+from surprise import Trainset
+
 from fca.formal_concept_analysis import GreConD
+from evaluation import (
+    get_micro_averaged_recall,
+    get_macro_averaged_recall,
+    get_recall_at_k,
+    get_micro_averaged_precision,
+    get_macro_averaged_precision,
+    get_precision_at_k,
+)
+
 from . import DEFAULT_LOGGER
 from .common import jaccard_distance
 from .formal_context_based_recommender import KNNOverLatentSpaceRecommender
 
 
+
+
+
 class GreConDRecommender(KNNOverLatentSpaceRecommender):
     """
     GreConDRecommender is a recommendation engine that uses the GreConD algorithm
-    for formal concept enumeration. It extends the functionality of the KNNOverLatentSpaceRecommender
-    class and provides methods for generating recommendations.
+    for formal concept enumeration. It extends the functionality of the 
+    KNNOverLatentSpaceRecommender class and provides methods for generating recommendations.
 
     Args:
         grecond_coverage (float): The original dataset coverage of the formal context.
@@ -65,3 +82,61 @@ class GreConDRecommender(KNNOverLatentSpaceRecommender):
         )
 
         self.logger.info("Generating Formal Context OK")
+
+    @classmethod
+    def thread(
+        cls,
+        fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
+        output: Dict,
+        grecond_recommender: "GreConDRecommender",
+        threshold: float = 5.0,
+        number_of_top_recommendations: int = 20,
+    ):
+        """
+        This function is used to parallelize the GreConD recommender. It puts the results on a
+        dictionary called 'output'. 'output' is expected to be a Manager().dict() object since it is
+        shared between processes.
+
+        Args:
+            fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be
+                                                                              processed.
+            output (Dict): The dictionary to put the results on.
+            grecond_recommender (GreConDRecommender): The GreConDRecommender object to use.
+            threshold (float): The relevance threshold to use.
+            number_of_top_recommendations (int): The number of top recommendations to use.
+
+        Returns:
+            None
+        """
+        fold_index, (trainset, testset) = fold
+
+        grecond_recommender.fit(trainset)
+        predictions = grecond_recommender.test(testset)
+        output[(grecond_recommender.grecond_coverage, grecond_recommender.knn_k, fold_index)] = {
+            "actual_coverage": grecond_recommender.actual_coverage,
+            "number_of_factors": grecond_recommender.number_of_factors,
+            "mae": mae(predictions=predictions, verbose=False),
+            "rmse": rmse(predictions=predictions, verbose=False),
+            "micro_averaged_recall": get_micro_averaged_recall(
+                predictions=predictions, threshold=threshold
+            ),
+            "macro_averaged_recall": get_macro_averaged_recall(
+                predictions=predictions, threshold=threshold
+            ),
+            "recall_at_k": get_recall_at_k(
+                predictions=predictions,
+                threshold=threshold,
+                k=number_of_top_recommendations,
+            ),
+            "micro_averaged_precision": get_micro_averaged_precision(
+                predictions=predictions, threshold=threshold
+            ),
+            "macro_averaged_precision": get_macro_averaged_precision(
+                predictions=predictions, threshold=threshold
+            ),
+            "precision_at_k": get_precision_at_k(
+                predictions=predictions,
+                threshold=threshold,
+                k=number_of_top_recommendations,
+            ),
+        }
