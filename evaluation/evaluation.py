@@ -69,7 +69,7 @@ def generate_contingency_table(
     )
 
 
-def get_micro_averaged_precision(predictions: List[Prediction], relevance_threshold: float = 1):
+def get_micro_averaged_precision(predictions: List[Prediction], threshold: float = 1):
     """
     Returns the micro-averaged, or global, precision from a predictions list.
 
@@ -80,18 +80,22 @@ def get_micro_averaged_precision(predictions: List[Prediction], relevance_thresh
     Micro-averaged precision calculates the precision globally, by considering all the items
     recommended to all users.
 
-    Precision = True Positives / (True Positives + False Positives)
+        micro_averaged_precision = true_positives / (true_positives + false_positives)
+
+    Where true_positives is the number of relevant items that were retrieved, false_positives is
+    the number of irrelevant items that were retrieved and (true_positives + false_positives) is
+    the total number of retrieved items.
 
     Args:
         predictions (List[Prediction]): A list of predictions.
-        relevance_threshold (float, optional): The threshold used to determine if an item is
-                                                  relevant and should be retrieved. Defaults to 1.
+        threshold (float, optional): The threshold used to determine if an item is relevant and
+                                     should be retrieved. Defaults to 1.
 
     Returns:
         float: The micro-averaged precision.
     """
 
-    contingency_table = generate_contingency_table(predictions, relevance_threshold)
+    contingency_table = generate_contingency_table(predictions, threshold)
 
     try:
         return contingency_table.true_positives / (
@@ -101,7 +105,7 @@ def get_micro_averaged_precision(predictions: List[Prediction], relevance_thresh
         return 0
 
 
-def get_macro_averaged_precision(predictions: List[Prediction], relevance_threshold: float = 1):
+def get_macro_averaged_precision(predictions: List[Prediction], threshold: float = 1):
     """
      Returns the macro-averaged, or the user-averaged, precision for a list of predictions.
 
@@ -111,26 +115,37 @@ def get_macro_averaged_precision(predictions: List[Prediction], relevance_thresh
 
     Macro-averaged precision calculates the precision for each user and then averages the results.
 
-    Precision[k] = True Positives[k] / (True Positives[k] + False Positives[k])
-    Macro-averaged Precision = (Precision[1] + Precision[2] + ... + Precision[n]) / n
+    The precision for the k-th user (Precision[k]) is defined as:
 
-    Where Precision[k] is the precision for the k-th user, True Positives[k] is the number of
-    relevant items that were retrieved for the k-th user, and False Positives[k] is the number of
+        precision[k] = true_positives[k] / (true_positives[k] + false_positives[k])
+
+    Where precision[k] is the precision for the k-th user, true_positives[k] is the number of
+    relevant items that were retrieved for the k-th user, and false_positives[k] is the number of
     irrelevant items that were retrieved for the k-th user and n is the number of users.
+
+    Macro-averaged precision (macro_averaged_precision) is defined as:
+
+        macro_averaged_precision = (precision[1] + precision[2] + ... + precision[n]) / n
+
+    Where n is the number of users.
 
     Args:
         predictions (List[Prediction]): A list of predictions.
-        relevance_threshold (float, optional): The threshold used to determine if an item is
+        threshold (float, optional): The threshold used to determine if an item is
                                                relevant and should be retrieved. Defaults to 1.
+
+    Returns:
+        float: The macro-averaged precision.
+
     """
 
-    ratings_per_user = defaultdict(list)
+    predictions_per_user = defaultdict(list)
     for prediction in predictions:
-        ratings_per_user[prediction.uid].append(prediction)
+        predictions_per_user[prediction.uid].append(prediction)
 
     precisions = []
-    for user_ratings in ratings_per_user.values():
-        precisions.append(get_micro_averaged_precision(user_ratings, relevance_threshold))
+    for user_ratings in predictions_per_user.values():
+        precisions.append(get_micro_averaged_precision(user_ratings, threshold))
 
     try:
         return statistics.mean(precisions)
@@ -138,39 +153,69 @@ def get_macro_averaged_precision(predictions: List[Prediction], relevance_thresh
         return 0
 
 
-def get_precision_at_k(predictions: List[Prediction], relevance_threshold: float = 1, k: int = 20):
+def get_precision_at_k(predictions: List[Prediction], threshold: float = 1, k: int = 20):
     """
     Calculate the precision at K (Precision@K) for a list of predictions.
 
     Precision@K is the macro-averaged precision for the top K recommendations. In other words,
-    it is the precision calculated for the top K recommendations for each user, and then averaged.
+    it is the precision calculated for the top K recommendations for each user, and then averaged.If
+    there are not enough selected items to reach K, the user is skipped.
 
-    If there are not enough recommendations to reach K, the user is skipped.
+    The precision for the i-th user in the top K recommendations (precision_at_k[i]) is defined as:
 
-    Precision@K_i = True Positives[i] / (True Positives[i] + False Positives[i])
+        precision_at_k[i] = true_positives_at_k[i] / (true_positives_at_k[i] +
+                                                                    false_positives_at_k[i])
 
+    Where True true_positives_at_k[i] is the number of relevant items that were retrieved for the
+    i-th user in the top K recommendations, and false_positives_at_k[i] is the number of irrelevant
+    items that were retrieved for the i-th user in the top K recommendations. Since we are limiting
+    the number of recommendations to K, the value of (true_positives_at_k[i] +
+    false_positives_at_k[i]) is always equal to K.
+
+    Therefore, the formula can be simplified to:
+
+        precision_at_k[i] = true_positives_at_k[i] / k
+
+    Finally, the macro-averaged precision at K (precision_at_k) is defined as:
+
+        precision_at_k = (precision_at_k[1] + precision_at_k[2] + ... + precision_at_k[n]) / n
+
+    Where n is the number of users.
+
+    Args:
+        predictions (List[Prediction]): A list of predictions.
+        threshold (float, optional): The threshold used to determine if an item is relevant and
+                                        should be retrieved. Defaults to 1.
+        k (int, optional): The number of recommendations to consider. Defaults to 20.
+
+    Returns:
+        float: The precision at K.
     """
 
-    uid_index = 0
-
-    ratings_per_user = defaultdict(list)
+    predictions_per_user = defaultdict(list)
     for prediction in predictions:
-        ratings_per_user[prediction[uid_index]].append(prediction)
+        predictions_per_user[prediction.uid].append(prediction)
 
-    precisions = []
-    for user_ratings in ratings_per_user.values():
-
-        user_ratings.sort(key=lambda prediction: prediction.est, reverse=True)
-
-        top_k_ratings = user_ratings[:k]
-
-        if len(top_k_ratings) < k:
+    precisions = set()
+    for user_predictions in predictions_per_user.values():
+        if len(user_predictions) < k:
             # skip this user if there are not enough recommendations to reach k
             continue
 
-        precisions.append(get_micro_averaged_precision(top_k_ratings, relevance_threshold))
+        user_predictions.sort(key=lambda prediction: prediction.est, reverse=True)
 
-    return statistics.mean(precisions)
+        if user_predictions[k - 1].est < threshold:
+            # skip this user if the k-th item is not relevant
+            continue
+
+        top_k_ratings = user_predictions[:k]
+
+        precisions.add(get_micro_averaged_precision(top_k_ratings, threshold))
+
+    try:
+        return statistics.mean(precisions)
+    except statistics.StatisticsError:
+        return 0
 
 
 def get_global_recall(predictions, relevance_threshold=1):
