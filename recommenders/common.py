@@ -4,9 +4,21 @@ common.py
 This module contains common functions used by the recommenders.
 """
 
+from typing import Tuple, List, Dict
 import numpy as np
 from scipy.spatial import distance
+from surprise import Trainset, AlgoBase
+from surprise.accuracy import mae, rmse
+
 from fca.formal_concept_analysis import BinaryDataset
+from evaluation import (
+    get_micro_averaged_recall,
+    get_macro_averaged_recall,
+    get_recall_at_k,
+    get_micro_averaged_precision,
+    get_macro_averaged_precision,
+    get_precision_at_k,
+)
 
 
 def jaccard_distance(A: np.array, B: np.array) -> float:
@@ -104,3 +116,57 @@ def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int)
     k_most_similar = nearest_neighbors[1 : k + 1]
 
     return k_most_similar
+
+
+def generic_thread(
+    fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
+    output: Dict,
+    recommender: AlgoBase,
+    threshold: float = 5.0,
+    number_of_top_recommendations: int = 20,
+):
+    """
+    This function is used to parallelize the GreConD recommender. It puts the results on a
+    dictionary called 'output'. 'output' is expected to be a Manager().dict() object since it is
+    shared between processes.
+
+    Args:
+        fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be processed.
+        output (Dict): The dictionary to put the results on.
+        grecond_recommender (GreConDRecommender): The GreConDRecommender object to use.
+        threshold (float): The relevance threshold to use.
+        number_of_top_recommendations (int): The number of top recommendations to use.
+
+    Returns:
+        None
+    """
+    fold_index, (trainset, testset) = fold
+
+    recommender.fit(trainset)
+    predictions = recommender.test(testset)
+    output[fold_index] = {
+        "mae": mae(predictions=predictions, verbose=False),
+        "rmse": rmse(predictions=predictions, verbose=False),
+        "global_recall": get_micro_averaged_recall(
+            predictions=predictions, threshold=threshold
+        ),
+        "user_averaged_recall": get_macro_averaged_precision(
+            predictions=predictions, threshold=threshold
+        ),
+        "recall_at_k": get_recall_at_k(
+            predictions=predictions,
+            threshold=threshold,
+            k=number_of_top_recommendations,
+        ),
+        "global_precision": get_micro_averaged_precision(
+            predictions=predictions, threshold=threshold
+        ),
+        "user_averaged_precision": get_macro_averaged_precision(
+            predictions=predictions, threshold=threshold
+        ),
+        "precision_at_k": get_precision_at_k(
+            predictions=predictions,
+            threshold=threshold,
+            k=number_of_top_recommendations,
+        ),
+    }
