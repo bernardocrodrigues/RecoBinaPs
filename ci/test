@@ -8,26 +8,35 @@
 set -e
 
 # Define default values for options
-RUN_FULL_SUITE=false
+COVERAGE=false
+XML=false
+NOTEBOOKS=false
 RUN_TESTS=false
 SPECIFIC_TESTS=""
 PROFILE=false
 
 function print_help {
-    echo "Usage: $0 [-f] [-t] [[-p] -s specific_tests]"
+    echo "Usage: $0 [-c [-x][-b]] | [-t] | [[-p] -s specific_tests]"
     echo "Options:"
-    echo "  -f: Run full test suite. This will run all tests (including notebooks) and generate"
-    echo "      a coverage report"
+    echo "  -c: Run the test suite and generate coverage report"
+    echo "  -x: Generate coverage report in xml format"
+    echo "  -b: Include notebooks in tests and the coverage report"
     echo "  -t: Run tests unit tests"
     echo "  -s: Run specific tests. Use the tests' names as they appear in the pytest implementation"
-    echo "  -p: Run specific tests while profiling.
+    echo "  -p: Run specific tests while profiling."
     echo "  -h: Print this help message"
 }
 
-while getopts "hftps:" opt; do
+while getopts "cxbtps:" opt; do
     case $opt in
-    f)
-        RUN_FULL_SUITE=true
+    c)
+        COVERAGE=true
+        ;;
+    x)
+        XML=true
+        ;;
+    b)
+        NOTEBOOKS=true
         ;;
     t)
         RUN_TESTS=true
@@ -51,8 +60,8 @@ if [[ $OPTIND -eq 1 || "$1" == "-h" ]]; then
     exit 0
 fi
 
-# Check if either -f, -t, or -s is provided
-if ! $RUN_FULL_SUITE && ! $RUN_TESTS && [ -z "$SPECIFIC_TESTS" ]; then
+# Check if either -c, -t, or -s is provided
+if ! $COVERAGE && ! $RUN_TESTS && [ -z "$SPECIFIC_TESTS" ]; then
     echo "No valid options provided"
     print_help
     exit 1
@@ -65,10 +74,18 @@ shift $((OPTIND - 1))
 THIS_SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 cd "$THIS_SCRIPT_DIR/../environment"
 
-if $RUN_FULL_SUITE; then
-    # Run full test suite if -f flag is set
-    docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage run --source=. -m pytest --ignore=tmp --nbmake --durations=0 -vs
+if $COVERAGE; then
+
+    if $NOTEBOOKS; then
+        notebook_args="--ignore=tmp --nbmake"
+    fi
+
+    docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage run --source=. -m pytest --durations=0 -vs $notebook_args
     docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage report --omit=/usr/local/*,/usr/lib/* -m
+
+    if $XML; then
+        docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage xml --omit=/usr/local/*,/usr/lib/* 
+    fi
     exit 0
 fi
 
