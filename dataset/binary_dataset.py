@@ -16,13 +16,15 @@ Bibliography
 """
 
 import numpy as np
-from numba import njit
+import numba as nb
 from surprise import Trainset
 from binaps.original.Binaps_code.dataLoader import readDatFile
 
 
-@njit
-def _it(binary_dataset: np.array, T: np.array) -> np.array:  # pragma: no cover # pylint: disable=invalid-name
+@nb.njit
+def _it(
+    binary_dataset: nb.types.Array, T: nb.types.ListType(nb.types.int64)
+) -> nb.types.ListType(nb.types.int64):
     """
     Given a binary dataset and a tidset T, compute the set of items that are common to all
     transactions in the tidset T. This is equivalent to the 'up' operation in [1]. This method is
@@ -41,9 +43,9 @@ def _it(binary_dataset: np.array, T: np.array) -> np.array:  # pragma: no cover 
     """
 
     if len(T) == 0:
-        return np.zeros((0), dtype="int64")
+        return nb.typed.List.empty_list(nb.types.int64)
 
-    t = [] # pylint: disable=invalid-name
+    t = nb.typed.List.empty_list(nb.types.int64) # pylint: disable=invalid-name
 
     for index, tid in enumerate(binary_dataset):
         result = True
@@ -54,7 +56,7 @@ def _it(binary_dataset: np.array, T: np.array) -> np.array:  # pragma: no cover 
         if result:
             t.append(index)
 
-    return np.array(t)
+    return t
 
 
 class BinaryDataset(object):
