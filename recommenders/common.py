@@ -6,6 +6,7 @@ This module contains common functions used by the recommenders.
 
 from typing import Tuple, List, Dict
 import numpy as np
+import numba as nb
 from scipy.spatial import distance
 from surprise import Trainset, AlgoBase
 from surprise.accuracy import mae, rmse
@@ -92,6 +93,56 @@ def get_similarity_matrix(dataset: BinaryDataset, distance_strategy=jaccard_dist
     return similarity_matrix
 
 
+@nb.njit
+def get_cosine_similarity_matrix(dataset: np.array):
+    """
+    Given a dataset, computes the similarity matrix between all rows using the cosine
+    similarity metric. This function is faster than the get_similarity_matrix function
+    since it uses numba to compile the code.
+
+    The cosine similarity metric is defined as follows:
+        sim(u, v) = cos(u, v) = (u . v) / (||u|| * ||v||)
+
+    where u and v are two vectors and ||u|| is the norm of u.
+
+    Args:
+        dataset (np.array): The dataset to compute the similarity matrix from.
+
+    Returns:
+        np.array: The similarity matrix.
+    """
+    similarity_matrix = np.ones((dataset.shape[0], dataset.shape[0]), dtype=np.float32)
+
+    similarity_matrix = -2 * similarity_matrix
+
+    for i, row1 in enumerate(dataset):
+        for j, row2 in enumerate(dataset):
+            if similarity_matrix[i, j] != -2:
+                continue
+
+            if not row1.any() or not row2.any():
+                similarity_matrix[i, j] = np.NaN
+                similarity_matrix[j, i] = np.NaN
+                continue
+
+            # The snippet below was taken from scipy.spatial.distance.cosine
+            u = row1
+            v = row2
+            uv = np.average(u * v)
+            uu = np.average(np.square(u))
+            vv = np.average(np.square(v))
+            dist = 1.0 - uv / np.sqrt(uu * vv)
+            a = np.abs(dist)
+            dissimilarity = max(0, min(a, 2.0))
+            # end of snippet
+
+            similarity = 1 - dissimilarity
+            similarity_matrix[i, j] = similarity
+            similarity_matrix[j, i] = similarity
+
+    return similarity_matrix
+
+
 def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int) -> np.array:
     """
     Given a similarity matrix, a reference index and a number k, returns the k most similar
@@ -170,3 +221,10 @@ def generic_thread(
             k=number_of_top_recommendations,
         ),
     }
+
+
+# Numba Compilation
+# Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
+# be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
+# of compiling the functions when they are called.
+get_cosine_similarity_matrix(np.array([[1, 1, 0, 0], [1, 0, 1, 0]]))
