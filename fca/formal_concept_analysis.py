@@ -158,59 +158,30 @@ def grecond(binary_dataset: np.array, coverage=1) -> List[Concept]:  # pragma: n
     return F, current_coverage
 
 
-@njit
-def _get_matrices(concepts: List, dataset_number_rows, dataset_number_cols):  # pragma: no cover
+def _get_matrices(
+    concepts: List[Concept], dataset_number_rows: int, dataset_number_cols: int
+):  # pragma: no cover
     """
     This function acts as a kernel for the get_factor_matrices_from_concepts function. It is
     implemented in Numba to speed up the process of creating the matrices. It is not meant to be
     called directly. Use the get_factor_matrices_from_concepts function instead.
-
-    It takes a list of formal concepts and returns two matrices as described in section 2.1 (page 6)
-    from [1]. If the given formal concepts cover all values from a matrix I, I = Af x Bf.
-
-    Args:
-        concepts: A list of formal concepts.
-        dataset_number_rows: The number of rows in the dataset.
-        dataset_number_cols: The number of columns in the dataset.
-
-    Returns:
-        Af: A matrix with the same number of rows as the dataset and the same number of columns as
-            the number of concepts. Each column represents a formal concept and each row represents
-            an object in the dataset. If an object belongs to a concept, the value in the
-            corresponding cell will be 1, otherwise it will be 0.
-        Bf: A matrix with the same number of rows as the number of concepts and the same number of
-            columns as the dataset. Each row represents a formal concept and each column represents
-            an attribute in the dataset. If an attribute belongs to a concept, the value in the
-            corresponding cell will be 1, otherwise it will be 0.
-
-    Example:
-        concepts = [Concept([0, 1], [0, 1]), Concept([0, 1, 2], [0, 1, 2])]
-        dataset_number_rows = 4
-        dataset_number_cols = 4
-        Af, Bf = _get_matrices(concepts, dataset_number_rows, dataset_number_cols)
-        Af  # returns np.array([[1, 1], [1, 1], [0, 1], [0, 1]])
-        Bf  # returns np.array([[1, 1, 0, 0], [1, 1, 1, 0]])
     """
-    Af = []
-    Bf = []
+    Af = np.zeros(shape=(dataset_number_rows, len(concepts)), dtype=nb.bool_)
+    Bf = np.zeros(shape=(len(concepts), dataset_number_cols), dtype=nb.bool_)
 
-    for concept in concepts:
-        column = [0] * dataset_number_rows
-        row = [0] * dataset_number_cols
-
+    for concept_index, concept in enumerate(concepts):
         for item in concept.extent:
-            column[item] = 1
+            Af[item][concept_index] = True
 
         for item in concept.intent:
-            row[item] = 1
-
-        Af.append(column)
-        Bf.append(row)
+            Bf[concept_index][item] = True
 
     return Af, Bf
 
 
-def get_factor_matrices_from_concepts(concepts, dataset_number_rows, dataset_number_cols):
+def get_factor_matrices_from_concepts(
+    concepts: List[Concept], dataset_number_rows: int, dataset_number_cols: int
+):
     """
     This function takes a list of formal concepts and returns two matrices as described in section
     2.1 (page 6) from [1]. If the given formal concepts cover all values from a matrix I,
@@ -242,16 +213,13 @@ def get_factor_matrices_from_concepts(concepts, dataset_number_rows, dataset_num
         Bf  # returns np.array([[1, 1, 0, 0], [1, 1, 1, 0]])
     """
 
-    typed_a = List()
-    for x in concepts:
-        typed_a.append(x)
+    # We need to convert the list of concepts to a Numba typed list to be able to use it in the
+    # _get_matrices function.
+    typed_concept_list = nb.typed.List()
+    for concept in concepts:
+        typed_concept_list.append(concept)
 
-    Af, Bf = _get_matrices(typed_a, dataset_number_rows, dataset_number_cols)
-
-    Af = np.array(Af, dtype=bool).T
-    Bf = np.array(Bf, dtype=bool)
-
-    return Af, Bf
+    return _get_matrices(typed_concept_list, dataset_number_rows, dataset_number_cols)
 
 
 def construct_context_from_binaps_patterns(
