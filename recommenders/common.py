@@ -201,7 +201,7 @@ def generic_thread(
         "micro_averaged_recall": get_micro_averaged_recall(
             predictions=predictions, threshold=threshold
         ),
-        "macro_averaged_recall": get_macro_averaged_precision(
+        "macro_averaged_recall": get_macro_averaged_recall(
             predictions=predictions, threshold=threshold
         ),
         "recall_at_k": get_recall_at_k(
