@@ -20,7 +20,7 @@ from typing import Tuple, List, Dict
 from surprise.accuracy import mae, rmse
 from surprise import Trainset
 
-from fca.formal_concept_analysis import GreConD
+from fca.formal_concept_analysis import grecond
 from evaluation import (
     get_micro_averaged_recall,
     get_macro_averaged_recall,
@@ -77,7 +77,7 @@ class GreConDRecommender(KNNOverLatentSpaceRecommender):
     def generate_formal_context(self):
         self.logger.info("Generating Formal Context...")
 
-        self.formal_context, self.actual_coverage = GreConD(
+        self.formal_context, self.actual_coverage = grecond(
             self.binary_dataset, coverage=self.grecond_coverage, logger=self.logger
         )
 
@@ -89,7 +89,7 @@ class GreConDRecommender(KNNOverLatentSpaceRecommender):
         fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
         output: Dict,
         grecond_recommender: "GreConDRecommender",
-        threshold: float = 5.0,
+        threshold: float = 1.0,
         number_of_top_recommendations: int = 20,
     ):
         """

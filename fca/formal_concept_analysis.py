@@ -88,7 +88,7 @@ def erase_submatrix_values(
             U[row][column] = False
 
 
-def GreConD(binary_dataset: BinaryDataset, coverage=1, logger=DEFAULTLOGGER):
+def grecond(binary_dataset: np.array, coverage=1) -> List[Concept]:  # pragma: no cover
     """
     Implements Algorithm 2 in section 2.5.2 (page 15) from [1].
 

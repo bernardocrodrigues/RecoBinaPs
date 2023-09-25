@@ -7,7 +7,7 @@ import numpy as np
 from fca.formal_concept_analysis import (
     get_factor_matrices_from_concepts,
     Concept,
-    GreConD,
+    grecond,
     construct_context_from_binaps_patterns,
 )
 from dataset.binary_dataset import BinaryDataset
@@ -158,7 +158,7 @@ def test_get_matrices_nenova():
 
 
 def test_grecond_my_toy_dataset():
-    formal_context, coverage = GreConD(my_toy_binary_dataset)
+    formal_context, coverage = grecond(my_toy_binary_dataset.binary_dataset)
 
     assert coverage == 1
     A, B = get_factor_matrices_from_concepts(
@@ -170,7 +170,7 @@ def test_grecond_my_toy_dataset():
 
 
 def test_grecond_my_toy_2_dataset():
-    formal_context, coverage = GreConD(my_toy_binary_2_dataset)
+    formal_context, coverage = grecond(my_toy_binary_2_dataset)
 
     assert coverage == 1
     A, B = get_factor_matrices_from_concepts(
@@ -182,7 +182,7 @@ def test_grecond_my_toy_2_dataset():
 
 
 def test_grecond_zaki():
-    formal_context, coverage = GreConD(zaki_binary_dataset)
+    formal_context, coverage = grecond(zaki_binary_dataset)
 
     assert coverage == 1
     A, B = get_factor_matrices_from_concepts(
@@ -194,7 +194,7 @@ def test_grecond_zaki():
 
 
 def test_grecond_belohlavek():
-    formal_context, coverage = GreConD(belohlavek_binary_dataset)
+    formal_context, coverage = grecond(belohlavek_binary_dataset)
 
     assert coverage == 1
     assert len(formal_context) == 4
@@ -220,7 +220,7 @@ def test_grecond_belohlavek():
 
 
 def test_grecond_nenova():
-    formal_context, coverage = GreConD(nenova_dataset_dataset)
+    formal_context, coverage = grecond(nenova_dataset_dataset)
 
     assert coverage == 1
     assert len(formal_context) == 3
@@ -243,7 +243,7 @@ def test_grecond_nenova():
 
 
 def test_grecond_partial():
-    formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.1)
+    formal_context, _ = grecond(nenova_dataset_dataset, coverage=0.1)
     A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
@@ -258,7 +258,7 @@ def test_grecond_partial():
 
 
 def test_grecond_partial_2():
-    formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.1)
+    formal_context, _ = grecond(nenova_dataset_dataset, coverage=0.1)
     A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
@@ -270,7 +270,7 @@ def test_grecond_partial_2():
     assert real_coverage >= 0.1
     assert real_coverage < 0.34
 
-    formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.2)
+    formal_context, _ = grecond(nenova_dataset_dataset, coverage=0.2)
     A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
@@ -282,7 +282,7 @@ def test_grecond_partial_2():
     assert real_coverage >= 0.1
     assert real_coverage <= 0.34
 
-    formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.3)
+    formal_context, _ = grecond(nenova_dataset_dataset, coverage=0.3)
     A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
@@ -294,7 +294,7 @@ def test_grecond_partial_2():
     assert real_coverage >= 0.1
     assert real_coverage <= 0.34
 
-    formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.4)
+    formal_context, _ = grecond(nenova_dataset_dataset, coverage=0.4)
     A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
@@ -306,7 +306,7 @@ def test_grecond_partial_2():
     assert real_coverage >= 0.4
     assert real_coverage <= 0.7
 
-    formal_context, _ = GreConD(nenova_dataset_dataset, coverage=0.7)
+    formal_context, _ = grecond(nenova_dataset_dataset, coverage=0.7)
     A, B = get_factor_matrices_from_concepts(
         formal_context, nenova_dataset_dataset.shape[0], nenova_dataset_dataset.shape[1]
     )
@@ -335,7 +335,7 @@ def test_grecond_mushroom():
     dataset = MushroomDataset()
 
     for coverage in coverages:
-        concepts, _ = GreConD(dataset, coverage=coverage)
+        concepts, _ = grecond(dataset, coverage=coverage)
         found_factors_per_coverage.append(len(concepts))
 
     assert mushroom_factors_per_coverage == found_factors_per_coverage
