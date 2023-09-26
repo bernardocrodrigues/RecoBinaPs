@@ -42,26 +42,6 @@ def jaccard_distance(A: np.array, B: np.array) -> float:
     return distance.jaccard(A, B)
 
 
-def cosine_distance(A: np.array, B: np.array) -> float:
-    """
-    Calculate the cosine distance between two boolean numpy arrays A and B.
-
-    Args:
-        A (np.array): The first boolean input array.
-        B (np.array): The second boolean input array.
-
-    Returns:
-        float: The cosine distance between A and B.
-
-    Example:
-        A = np.array([True, True, False, False])
-        B = np.array([True, False, True, False])
-        distance = cosine_distance(A, B)
-        # Output: 0.29289321881345254
-    """
-    return distance.cosine(A, B)
-
-
 def get_similarity_matrix(dataset: BinaryDataset, distance_strategy=jaccard_distance):
     """
     Given a BinaryDataset and some method that calculates some distance between two vector,

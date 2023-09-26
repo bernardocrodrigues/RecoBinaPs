@@ -68,7 +68,7 @@ class GreConDRecommender(KNNOverLatentSpaceRecommender):
         super().__init__(
             knn_k=knn_k,
             dataset_binarization_threshold=dataset_binarization_threshold,
-            knn_distance_strategy=knn_distance_strategy,
+            knn_similarity_matrix_strategy=knn_distance_strategy,
             logger=logger,
         )
         self.grecond_coverage = grecond_coverage

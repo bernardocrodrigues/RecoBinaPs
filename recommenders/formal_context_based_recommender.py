@@ -7,6 +7,7 @@ recommendations using the Binaps, GreConD, and FCA-BMF algorithms.
 """
 
 import logging
+from typing import Callable
 from abc import ABC, abstractmethod
 import numpy as np
 
@@ -14,7 +15,7 @@ from surprise import AlgoBase, PredictionImpossible, Trainset
 from fca import BinaryDataset, get_factor_matrices_from_concepts
 
 from . import DEFAULT_LOGGER
-from .common import jaccard_distance, get_similarity_matrix
+from .common import get_cosine_similarity_matrix
 
 
 class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
@@ -31,7 +32,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
         self,
         dataset_binarization_threshold: float = 1.0,
         knn_k: int = 30,
-        knn_distance_strategy: callable = jaccard_distance,
+        knn_similarity_matrix_strategy: Callable = get_cosine_similarity_matrix,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
         AlgoBase.__init__(self)
@@ -51,7 +52,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
 
         # KNN attributes
         self.knn_k = knn_k
-        self.knn_distance_strategy = knn_distance_strategy
+        self.knn_distance_strategy = knn_similarity_matrix_strategy
 
     @abstractmethod
     def generate_formal_context(self):
@@ -96,7 +97,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
             self.binary_dataset.shape[1],
         )
         latent_binary_dataset = BinaryDataset(self.A)
-        self.sim = get_similarity_matrix(latent_binary_dataset, self.knn_distance_strategy)
+        self.sim = get_cosine_similarity_matrix(latent_binary_dataset.binary_dataset)
         self.logger.info("Generating Similarity Matrix OK")
 
         return self
