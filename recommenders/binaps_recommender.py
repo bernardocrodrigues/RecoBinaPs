@@ -82,24 +82,36 @@ class BinaPsRecommender(KNNOverLatentSpaceRecommender):
     def generate_formal_context(self):
         self.logger.info("Generating Formal Context...")
 
-        # If patterns were not previously computed, run BinaPs
         if not self.patterns:
-            # Run BinaPs from a temporary file since it only accepts file paths
+            # If patterns were not previously computed, run BinaPs
+            self.logger.debug("No patterns were previously computed. Running BinaPs...")
+
             with TemporaryDirectory() as temporary_directory:
+                # Run BinaPs from a temporary file since it only accepts file paths
                 with open(f"{temporary_directory}/dataset", "w+", encoding="UTF-8") as file_object:
                     self.binary_dataset.save_as_binaps_compatible_input(file_object)
+                    self.logger.debug("Dataset saved to temporary file at %s", file_object.name)
+                    self.logger.debug(
+                        "Calling run_binaps({}, {}, {})".format(
+                            file_object.name, self.epochs, self.hidden_dimension_neurons_number
+                        )
+                    )
                     weights, _, _ = run_binaps(
                         input_dataset_path=file_object.name,
                         epochs=self.epochs,
                         hidden_dimension=self.hidden_dimension_neurons_number,
                     )
-
+                    self.logger.debug("BinaPs OK")
+            
+            self.logger.debug("Binarizing weights...")
             self.patterns = get_patterns_from_weights(
                 weights=weights, threshold=self.weights_binarization_threshold
             )
+            self.logger.debug("Binarizing weights OK")
 
+        self.logger.debug("Constructing Formal Context...")
         self.formal_context = construct_context_from_binaps_patterns(
             self.binary_dataset, self.patterns, True
         )
-
+        
         self.logger.info("Generating Formal Context OK")
