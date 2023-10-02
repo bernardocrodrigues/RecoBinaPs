@@ -24,6 +24,12 @@ class BinaPsRecommender(KNNOverLatentSpaceRecommender):
 
     Args:
         epochs (int): The number of epochs to train BinaPs.
+        hidden_dimension_neurons_number (int): The number of neurons in the hidden layer. This
+                                               equals the max number of patterns to mine. If set
+                                               to -1, the number of neurons is set to the number
+                                               of items in the dataset. The bigger the number of
+                                               neurons, the bigger the size of the underlying
+                                               autoenconder and thus the longer the training time.
         weights_binarization_threshold (float): The threshold for binarizing the weights into
                                                 patterns.
         dataset_binarization_threshold (float): The threshold for binarizing the dataset.
@@ -40,6 +46,7 @@ class BinaPsRecommender(KNNOverLatentSpaceRecommender):
     def __init__(
         self,
         epochs: int = 100,
+        hidden_dimension_neurons_number: int = -1,
         weights_binarization_threshold: float = 0.2,
         dataset_binarization_threshold: float = 1.0,
         knn_k: int = 30,
@@ -54,6 +61,7 @@ class BinaPsRecommender(KNNOverLatentSpaceRecommender):
         )
 
         self.epochs = epochs
+        self.hidden_dimension_neurons_number = hidden_dimension_neurons_number
         self.weights_binarization_threshold = weights_binarization_threshold
 
         self.patterns = None
@@ -81,7 +89,9 @@ class BinaPsRecommender(KNNOverLatentSpaceRecommender):
                 with open(f"{temporary_directory}/dataset", "w+", encoding="UTF-8") as file_object:
                     self.binary_dataset.save_as_binaps_compatible_input(file_object)
                     weights, _, _ = run_binaps(
-                        input_dataset_path=file_object.name, epochs=self.epochs
+                        input_dataset_path=file_object.name,
+                        epochs=self.epochs,
+                        hidden_dimension=self.hidden_dimension_neurons_number,
                     )
 
             self.patterns = get_patterns_from_weights(
