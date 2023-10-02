@@ -7,12 +7,12 @@ recommendations using the Binaps, GreConD, and FCA-BMF algorithms.
 """
 
 import logging
-from typing import Callable
+from typing import Callable, List
 from abc import ABC, abstractmethod
 import numpy as np
 
 from surprise import AlgoBase, PredictionImpossible, Trainset
-from fca import BinaryDataset, get_factor_matrices_from_concepts
+from fca import BinaryDataset, get_factor_matrices_from_concepts, Concept
 
 from . import DEFAULT_LOGGER
 from .common import get_cosine_similarity_matrix
@@ -44,7 +44,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
         self.binary_dataset = None
 
         # Pattern extraction attributes
-        self.formal_context = None
+        self.formal_context: List[Concept] = []
         self.number_of_factors = None
         self.A = None
         self.B = None
@@ -87,6 +87,10 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
         self.logger.debug("Generating formal context...")
         self.generate_formal_context()
         self.number_of_factors = len(self.formal_context)
+
+        if self.number_of_factors == 0:
+            raise ValueError("No factors were extracted from the dataset.")
+
         self.logger.debug("Generating formal context OK")
 
         # Generate similarity matrix
