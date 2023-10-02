@@ -18,8 +18,8 @@ Bibliography
 from collections import namedtuple
 
 import numpy as np
-from numba import njit
-from numba.typed import List
+import numba as nb
+from typing import List
 from dataset.binary_dataset import BinaryDataset
 
 from . import DEFAULTLOGGER
@@ -27,7 +27,7 @@ from . import DEFAULTLOGGER
 Concept = namedtuple("Concept", "extent intent")
 
 
-@njit
+@nb.njit
 def submatrix_intersection_size(
     rows, columns, U
 ) -> int:  # pragma: no cover # pylint: disable=invalid-name
@@ -58,7 +58,7 @@ def submatrix_intersection_size(
     return intersection_size
 
 
-@njit
+@nb.njit
 def erase_submatrix_values(
     rows, columns, U
 ) -> None:  # pragma: no cover # pylint: disable=invalid-name
@@ -88,7 +88,9 @@ def erase_submatrix_values(
             U[row][column] = False
 
 
-def grecond(binary_dataset: np.array, coverage=1) -> List[Concept]:  # pragma: no cover
+def grecond(
+    binary_dataset: np.array, coverage=1, logger=DEFAULTLOGGER
+) -> List[Concept]:  # pragma: no cover
     """
     Implements Algorithm 2 in section 2.5.2 (page 15) from [1].
 
@@ -158,6 +160,7 @@ def grecond(binary_dataset: np.array, coverage=1) -> List[Concept]:  # pragma: n
     return F, current_coverage
 
 
+@nb.njit
 def _get_matrices(
     concepts: List[Concept], dataset_number_rows: int, dataset_number_cols: int
 ):  # pragma: no cover
@@ -264,3 +267,16 @@ def construct_context_from_binaps_patterns(
         context.append(Concept(tidset, itemset))
 
     return context
+
+
+# Numba Compilation
+# Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
+# be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
+# of compiling the functions when they are called.
+get_factor_matrices_from_concepts([Concept([0, 1], [0, 1]), Concept([0, 1, 2], [0, 1, 2])], 4, 4)
+erase_submatrix_values(
+    [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
+)
+submatrix_intersection_size(
+    [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
+)

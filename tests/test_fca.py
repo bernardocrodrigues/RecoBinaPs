@@ -158,7 +158,7 @@ def test_get_matrices_nenova():
 
 
 def test_grecond_my_toy_dataset():
-    formal_context, coverage = grecond(my_toy_binary_dataset.binary_dataset)
+    formal_context, coverage = grecond(my_toy_binary_dataset)
 
     assert coverage == 1
     A, B = get_factor_matrices_from_concepts(
