@@ -66,6 +66,15 @@ class BinaryDataset(object):
     """
 
     def __init__(self, binary_dataset: np.array) -> None:
+        assert isinstance(binary_dataset, np.ndarray)
+        assert (
+            binary_dataset.dtype == bool
+            or binary_dataset.dtype == np.bool_
+            or binary_dataset.dtype == nb.types.bool_
+        )
+        assert binary_dataset.ndim == 2
+        assert binary_dataset.size > 0
+
         self.binary_dataset = binary_dataset
         self.transposed_binary_dataset = binary_dataset.T
 
