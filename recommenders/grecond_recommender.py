@@ -35,13 +35,10 @@ from .common import jaccard_distance
 from .formal_context_based_recommender import KNNOverLatentSpaceRecommender
 
 
-
-
-
 class GreConDRecommender(KNNOverLatentSpaceRecommender):
     """
     GreConDRecommender is a recommendation engine that uses the GreConD algorithm
-    for formal concept enumeration. It extends the functionality of the 
+    for formal concept enumeration. It extends the functionality of the
     KNNOverLatentSpaceRecommender class and provides methods for generating recommendations.
 
     Args:
