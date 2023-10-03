@@ -19,78 +19,18 @@ from collections import namedtuple
 
 import numpy as np
 import numba as nb
+
 from typing import List
-from dataset.binary_dataset import BinaryDataset
+
+from dataset.binary_dataset import BinaryDataset, _it
 
 from . import DEFAULTLOGGER
 
 Concept = namedtuple("Concept", "extent intent")
 
 
-@nb.njit
-def submatrix_intersection_size(
-    rows, columns, U
-) -> int:  # pragma: no cover # pylint: disable=invalid-name
-    """
-    Given a submatrix, or bicluster, defined by the rows and columns, this function returns the
-    number of True values in the intersection of the submatrix and the matrix U.
-
-    Args:
-        rows: A list of row indexes that define the submatrix.
-        columns: A list of column indexes that define the submatrix.
-        U: The matrix to be intersected with the submatrix.
-
-    Returns:
-        The number of True values in the intersection of the submatrix and the matrix U.
-
-    Example:
-        U = np.array([[True, False, True], [False, True, True], [True, True, True]])
-        rows = [0, 1]
-        columns = [0, 2]
-        submatrix_intersection_size(rows, columns, U)  # returns 2
-    """
-
-    intersection_size = 0
-    for row in rows:
-        for column in columns:
-            if U[row][column]:
-                intersection_size += 1
-    return intersection_size
-
-
-@nb.njit
-def erase_submatrix_values(
-    rows, columns, U
-) -> None:  # pragma: no cover # pylint: disable=invalid-name
-    """
-    Given a submatrix, or bicluster, defined by the rows and columns, this function sets the values
-    of the matrix U that are in the intersection of the submatrix and U to False. This effectively
-    removes the submatrix from U.
-
-    Args:
-        rows: A list of row indexes that define the submatrix.
-        columns: A list of column indexes that define the submatrix.
-        U: The matrix to be intersected with the submatrix.
-
-    Returns:
-        None
-
-    Example:
-        U = np.array([[True, False, True], [False, True, True], [True, True, True]])
-        rows = [0, 1]
-        columns = [0, 2]
-        erase_submatrix_values(rows, columns, U)
-        U  # returns np.array([[False, False, True], [False, False, True], [True, True, True]])
-    """
-
-    for row in rows:
-        for column in columns:
-            U[row][column] = False
-
-
-def grecond(
-    binary_dataset: np.array, coverage=1, logger=DEFAULTLOGGER
-) -> List[Concept]:  # pragma: no cover
+# @nb.njit
+def grecond(binary_dataset: np.array, coverage=1) -> List[Concept]:  # pragma: no cover
     """
     Implements Algorithm 2 in section 2.5.2 (page 15) from [1].
 
@@ -102,38 +42,57 @@ def grecond(
     F covers the given coverage.
     """
 
-    logger.info("Mining Formal Concepts...")
+    def get_submatrix_intersection_size(rows: List[int], columns: List[int], U: np.array) -> int:
+        intersection_size = 0
+        for row in rows:
+            for column in columns:
+                if U[row][column]:
+                    intersection_size += 1
+        return intersection_size
 
-    U = binary_dataset.get_raw_copy()
+    def erase_submatrix_values(
+        rows: List[int], columns: List[int], U: np.array
+    ) -> None:  # pragma: no cover # pylint: disable=invalid-name
+        for row in rows:
+            for column in columns:
+                U[row][column] = False
+
+    U = binary_dataset.copy()
+    transposed = binary_dataset.T
     initial_number_of_trues = np.count_nonzero(U)
 
-    F = []
+    Y = np.arange(binary_dataset.shape[1])  # pylint: disable=invalid-name
+
+    F = nb.typed.List()
     current_coverage = 0
 
     while coverage > current_coverage:
-        current_coverage = 1 - np.count_nonzero(U) / initial_number_of_trues
-        D = np.array([])
+        D = nb.typed.List.empty_list(nb.types.int64)  # analogous to D = []
         V = 0
-        D_u_j = np.array([])  # current D union {j}
+        D_u_j = nb.typed.List.empty_list(nb.types.int64)  # analogous to D_u_j = []
 
         searching = True
-        js_not_in_D = [j for j in binary_dataset.Y if j not in D_u_j]
+        js_not_in_D = [j for j in Y if j not in D_u_j]
 
         while searching:
-            best_D_u_j_closed_intent = None
+            best_D_u_j_closed_intent = nb.typed.List.empty_list(nb.types.int64)
             best_D_u_j_V = 0
 
             for j in js_not_in_D:
-                D_u_j = np.append(D, j).astype(int)
+                D_u_j.append(j)
 
-                D_u_j_closed_extent = binary_dataset.t(D_u_j)
-                D_u_j_closed_intent = binary_dataset.i(D_u_j_closed_extent)
+                D_u_j_closed_extent = _it(binary_dataset, D_u_j)
+                D_u_j_closed_intent = _it(transposed, D_u_j_closed_extent)
 
-                D_u_j_V = submatrix_intersection_size(D_u_j_closed_extent, D_u_j_closed_intent, U)
+                D_u_j_V = get_submatrix_intersection_size(
+                    D_u_j_closed_extent, D_u_j_closed_intent, U
+                )
 
                 if D_u_j_V > best_D_u_j_V:
                     best_D_u_j_V = D_u_j_V
                     best_D_u_j_closed_intent = D_u_j_closed_intent.copy()
+                else:
+                    D_u_j.remove(j)
 
             if best_D_u_j_V > V:
                 D = best_D_u_j_closed_intent
@@ -141,21 +100,15 @@ def grecond(
             else:
                 searching = False
 
-        C = binary_dataset.t(D)
+        C = _it(binary_dataset, D)
 
-        new_concept = Concept(C, D)
+        new_concept = Concept(extent=C, intent=D)
 
         F.append(new_concept)
 
-        erase_submatrix_values(new_concept.extent, new_concept.intent, U)
+        erase_submatrix_values(C, D, U)
 
         current_coverage = 1 - np.count_nonzero(U) / initial_number_of_trues
-
-        logger.debug(f"Current Coverage: {current_coverage*100:.2f}%")
-
-    logger.info("Mining Formal Concepts DONE")
-    logger.info(f"Formal Concepts mined: {len(F)}")
-    logger.info(f"Final Concepts Coverage {current_coverage*100:.2f}%")
 
     return F, current_coverage
 
@@ -269,14 +222,14 @@ def construct_context_from_binaps_patterns(
     return context
 
 
-# Numba Compilation
-# Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
-# be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
-# of compiling the functions when they are called.
-get_factor_matrices_from_concepts([Concept([0, 1], [0, 1]), Concept([0, 1, 2], [0, 1, 2])], 4, 4)
-erase_submatrix_values(
-    [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
-)
-submatrix_intersection_size(
-    [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
-)
+# # Numba Compilation
+# # Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
+# # be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
+# # of compiling the functions when they are called.
+# get_factor_matrices_from_concepts([Concept([0, 1], [0, 1]), Concept([0, 1, 2], [0, 1, 2])], 4, 4)
+# erase_submatrix_values(
+#     [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
+# )
+# submatrix_intersection_size(
+#     [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
+# )
