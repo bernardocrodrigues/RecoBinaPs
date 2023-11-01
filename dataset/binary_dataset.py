@@ -22,9 +22,7 @@ from binaps.original.Binaps_code.dataLoader import readDatFile
 
 
 @nb.njit
-def _it(
-    binary_dataset: nb.types.Array, T: nb.types.ListType(nb.types.int64)
-) -> nb.types.ListType(nb.types.int64):
+def _it(binary_dataset: np.ndarray, T: np.ndarray) -> np.ndarray:
     """
     Given a binary dataset and a tidset T, compute the set of items that are common to all
     transactions in the tidset T. This is equivalent to the 'up' operation in [1]. This method is
@@ -41,11 +39,10 @@ def _it(
         np.array: The set of items that are common to all transactions in the tidset T.
 
     """
+    t = nb.typed.List.empty_list(nb.types.int64)  # pylint: disable=invalid-name
 
     if len(T) == 0:
-        return nb.typed.List.empty_list(nb.types.int64)
-
-    t = nb.typed.List.empty_list(nb.types.int64) # pylint: disable=invalid-name
+        return np.asarray(t)
 
     for index, tid in enumerate(binary_dataset):
         result = True
@@ -56,7 +53,7 @@ def _it(
         if result:
             t.append(index)
 
-    return t
+    return np.asarray(t)
 
 
 class BinaryDataset(object):
