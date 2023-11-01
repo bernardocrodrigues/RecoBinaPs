@@ -21,7 +21,6 @@ from typing import List
 import numpy as np
 import pandas as pd
 from surprise import Dataset, Reader, Trainset
-from dataset.binary_dataset import BinaryDataset
 
 
 def convert_raw_rating_list_into_trainset(
@@ -51,7 +50,7 @@ def convert_raw_rating_list_into_trainset(
 
 
 # fmt: off
-my_toy_dataset_raw = np.array(
+my_toy_binary_dataset = np.array(
     [#   0      1       2       3       4       5       6
         [True,  True,   False,  True,   False,  False,  False], # 0
         [True,  True,   True,   True,   False,  False,  False], # 1
@@ -88,10 +87,10 @@ my_toy_dataset_raw_rating = [  # User ID     Item ID     Rating
                                 [6,          6,          5],
                             ]
 # fmt: on
-my_toy_binary_dataset = BinaryDataset(my_toy_dataset_raw)
+
 
 # fmt: off
-my_toy_dataset_2_raw = np.array(
+my_toy_binary_2_dataset = np.array(
     [#   0      1       2       3       4       5       6
         [True,  True,   False,  True,   False,  False,  False], # 0
         [True,  True,   True,   True,   False,  False,  False], # 1
@@ -105,12 +104,12 @@ my_toy_dataset_2_raw = np.array(
     dtype=bool,
 )
 # fmt: on
-my_toy_binary_2_dataset = BinaryDataset(my_toy_dataset_2_raw)
+
 
 # Zaki Dataset
 # Dataset taken from Zaki's [1] at page 219
 # fmt: off
-zaki_dataset_raw = np.array(
+zaki_binary_dataset = np.array(
     [ #  0      1     2      3      4
         [True,  True, False, True,  True ],  # 0
         [False, True, True,  False, True ],  # 1
@@ -146,12 +145,11 @@ zaki_dataset_raw_rating = [  # User ID     Item ID     Rating
                               [5,          3,          5],
                         ]
 # fmt: on
-zaki_binary_dataset = BinaryDataset(zaki_dataset_raw)
 
 # Belohlavek Dataset
 # Dataset taken from Belohlavek's [2] at page 14
 # fmt: off
-belohlavek_dataset_raw = np.array(
+belohlavek_binary_dataset = np.array(
     [ #     0      1     2      3       4       5
         [True,  False,  True,   False,  True,   True],  # 0
         [False, False,  True,   False,  False,  False], # 1
@@ -181,12 +179,12 @@ belohlavek_dataset_raw_rating = [  # User ID     Item ID     Rating
                                     [4,          5,          5],
                                 ]
 # fmt: on
-belohlavek_binary_dataset = BinaryDataset(belohlavek_dataset_raw)
+
 
 # Belohlavek Dataset 2
 # Dataset taken from Belohlavek's [2] at page 9
 # fmt: off
-belohlavek_dataset_raw_2 = np.array(
+belohlavek_binary_dataset_2 = np.array(
     [ #     0       1       2       3       4       5       6       7
         [True,  True,   True,   False,  True,   False,  False,  False],  # 0
         [True,  True,   False,  False,  False,  True,   False,  True],   # 1
@@ -206,12 +204,12 @@ belohlavek_dataset_raw_2 = np.array(
     dtype=bool,
 )
 # fmt: on
-belohlavek_binary_dataset_2 = BinaryDataset(belohlavek_dataset_raw_2)
+
 
 # Nenova Dataset
 # Dataset taken from Nenova's [3] at page 62
 # fmt: off
-nenova_dataset_raw = np.array(
+nenova_dataset_dataset = np.array(
     [ #  0      1       2       3       4       5       6
         [True,  True,   True,   False,  False,  False,  False], # 0
         [True,  True,   True,   True,   True,   False,  False], # 1
@@ -225,4 +223,3 @@ nenova_dataset_raw = np.array(
     dtype=bool,
 )
 # fmt: on
-nenova_dataset_dataset = BinaryDataset(nenova_dataset_raw)

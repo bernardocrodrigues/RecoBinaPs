@@ -20,7 +20,9 @@ from collections import namedtuple
 import numpy as np
 import numba as nb
 from typing import List
-from dataset.binary_dataset import BinaryDataset
+
+from dataset.binary_dataset import i, t, _it, assert_binary_dataset
+
 
 from . import DEFAULTLOGGER
 
@@ -88,9 +90,7 @@ def erase_submatrix_values(
             U[row][column] = False
 
 
-def grecond(
-    binary_dataset: np.array, coverage=1, logger=DEFAULTLOGGER
-) -> List[Concept]:  # pragma: no cover
+def grecond(binary_dataset: np.ndarray, coverage: float = 1.0) -> List[Concept]:  # pragma: no cover
     """
     Implements Algorithm 2 in section 2.5.2 (page 15) from [1].
 
@@ -100,11 +100,32 @@ def grecond(
 
     It is also possible to define the desired coverage. The algorithm will stop when the current set
     F covers the given coverage.
+
+    Args:
+        binary_dataset: A binary dataset.
+        coverage: A float value between 0 and 1 that defines the desired coverage.
+
+    Returns:
+        A list of formal concepts.
+
     """
 
-    logger.info("Mining Formal Concepts...")
+    assert isinstance(binary_dataset, np.ndarray)
+    assert (
+        binary_dataset.dtype == bool
+        or binary_dataset.dtype == np.bool_
+        or binary_dataset.dtype == nb.types.bool_
+    )
+    assert binary_dataset.ndim == 2
+    assert binary_dataset.size > 0
 
-    U = binary_dataset.get_raw_copy()
+    assert isinstance(coverage, float)
+    assert 0 < coverage <= 1
+
+    U = binary_dataset.copy()
+    Y = np.arange(binary_dataset.shape[1], dtype=int)
+    transposed_binary_dataset = binary_dataset.T
+
     initial_number_of_trues = np.count_nonzero(U)
 
     F = []
@@ -117,7 +138,7 @@ def grecond(
         D_u_j = np.array([])  # current D union {j}
 
         searching = True
-        js_not_in_D = [j for j in binary_dataset.Y if j not in D_u_j]
+        js_not_in_D = [j for j in Y if j not in D_u_j]
 
         while searching:
             best_D_u_j_closed_intent = None
@@ -126,8 +147,8 @@ def grecond(
             for j in js_not_in_D:
                 D_u_j = np.append(D, j).astype(int)
 
-                D_u_j_closed_extent = binary_dataset.t(D_u_j)
-                D_u_j_closed_intent = binary_dataset.i(D_u_j_closed_extent)
+                D_u_j_closed_extent = _it(binary_dataset, D_u_j)
+                D_u_j_closed_intent = _it(transposed_binary_dataset, D_u_j_closed_extent)
 
                 D_u_j_V = submatrix_intersection_size(D_u_j_closed_extent, D_u_j_closed_intent, U)
 
@@ -141,7 +162,7 @@ def grecond(
             else:
                 searching = False
 
-        C = binary_dataset.t(D)
+        C = _it(binary_dataset, D)
 
         new_concept = Concept(C, D)
 
@@ -226,7 +247,7 @@ def get_factor_matrices_from_concepts(
 
 
 def construct_context_from_binaps_patterns(
-    binary_dataset: BinaryDataset, patterns: List[List[int]], closed_itemsets: bool = True
+    binary_dataset: np.ndarray, patterns: List[np.ndarray], closed_itemsets: bool = True
 ) -> List[Concept]:
     """
     Construct a context from binaps patterns.
@@ -255,12 +276,16 @@ def construct_context_from_binaps_patterns(
     """
     context = []
 
+    assert_binary_dataset(binary_dataset)
+
     for pattern in patterns:
-        tidset = binary_dataset.t(pattern)  # a pattern equals an itemset
+        max_item = np.max(pattern)
+        assert max_item < binary_dataset.shape[1]
+        tidset = t(binary_dataset, pattern)  # a pattern equals an itemset
 
         if closed_itemsets:
-            itemset = binary_dataset.i(tidset)
-            tidset = binary_dataset.t(itemset)
+            itemset = i(binary_dataset, tidset)
+            tidset = t(binary_dataset, itemset)
         else:
             itemset = pattern
 

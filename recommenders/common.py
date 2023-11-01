@@ -11,7 +11,6 @@ from scipy.spatial import distance
 from surprise import Trainset, AlgoBase
 from surprise.accuracy import mae, rmse
 
-from fca.formal_concept_analysis import BinaryDataset
 from evaluation import (
     get_micro_averaged_recall,
     get_macro_averaged_recall,
@@ -42,7 +41,7 @@ def jaccard_distance(A: np.array, B: np.array) -> float:
     return distance.jaccard(A, B)
 
 
-def get_similarity_matrix(dataset: BinaryDataset, distance_strategy=jaccard_distance):
+def get_similarity_matrix(dataset, distance_strategy=jaccard_distance):
     """
     Given a BinaryDataset and some method that calculates some distance between two vector,
     computes the similarity matrix between all users (rows).
@@ -55,8 +54,8 @@ def get_similarity_matrix(dataset: BinaryDataset, distance_strategy=jaccard_dist
 
     similarity_matrix = -1 * similarity_matrix
 
-    for i, row1 in enumerate(dataset.binary_dataset):
-        for j, row2 in enumerate(dataset.binary_dataset):
+    for i, row1 in enumerate(dataset):
+        for j, row2 in enumerate(dataset):
             if similarity_matrix[i, j] != -1:
                 continue
 

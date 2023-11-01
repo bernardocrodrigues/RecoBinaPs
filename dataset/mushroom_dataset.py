@@ -1,6 +1,5 @@
 from pathlib import Path
 import numpy as np
-from dataset.binary_dataset import BinaryDataset
 from urllib.request import urlopen
 from shutil import copyfileobj
 import zipfile
@@ -93,16 +92,15 @@ def _parse_mushroom_dataset(raw_dataset_path: Path):
 import tempfile
 
 
-class MushroomDataset(BinaryDataset):
-    def __init__(self, dataset_dowload_path: Path = None):
-        if dataset_dowload_path is None:
-            directory = Path(tempfile.mkdtemp())
-        else:
-            directory = dataset_dowload_path
+def get_mushroom_dataset(dataset_dowload_path: Path = None):
+    if dataset_dowload_path is None:
+        directory = Path(tempfile.mkdtemp())
+    else:
+        directory = dataset_dowload_path
 
-        if not any(Path(directory).iterdir()):
-            _download_mushroom_dataset(directory)
+    if not any(Path(directory).iterdir()):
+        _download_mushroom_dataset(directory)
 
-        dataset = _parse_mushroom_dataset(directory / "agaricus-lepiota.data")
+    dataset = _parse_mushroom_dataset(directory / "agaricus-lepiota.data")
 
-        super(MushroomDataset, self).__init__(dataset)
+    return dataset

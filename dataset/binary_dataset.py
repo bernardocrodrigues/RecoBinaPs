@@ -56,133 +56,142 @@ def _it(binary_dataset: np.ndarray, T: np.ndarray) -> np.ndarray:
     return np.asarray(t)
 
 
-class BinaryDataset(object):
+def assert_binary_dataset(binary_dataset: np.ndarray) -> None:
     """
-    This class works as a wrapper over a binary numpy matrix to add some helper functions to aid us
-    perform FCA related tasks such as computation of intents/extents.
+    Helper function to assert that a given numpy array is a valid binary dataset.
+
+    Args:
+        binary_dataset (np.array): A binary dataset.
+
+    Raises:
+        AssertionError: If the given numpy array is not a valid binary dataset. That is,
+        if it is not a numpy array, if it is not a 2D array, if it is not a boolean array
+        or if it is an empty array.
+    """
+    assert isinstance(binary_dataset, np.ndarray)
+    assert (
+        binary_dataset.dtype == bool
+        or binary_dataset.dtype == np.bool_
+        or binary_dataset.dtype == nb.types.bool_
+    )
+    assert binary_dataset.ndim == 2
+    assert binary_dataset.size > 0
+
+
+def i(binary_dataset: np.ndarray, T: np.ndarray):  # pylint: disable=invalid-name
+    """
+    Given [1]'s nomenclature, this method will compute the set of items that are common to all
+    transactions in the tidset T.
+
+    Given [2]'s nomenclature, this equivalent to the 'up' operation.
     """
 
-    def __init__(self, binary_dataset: np.array) -> None:
-        assert isinstance(binary_dataset, np.ndarray)
-        assert (
-            binary_dataset.dtype == bool
-            or binary_dataset.dtype == np.bool_
-            or binary_dataset.dtype == nb.types.bool_
-        )
-        assert binary_dataset.ndim == 2
-        assert binary_dataset.size > 0
+    assert_binary_dataset(binary_dataset)
+    assert isinstance(T, np.ndarray)
 
-        self.binary_dataset = binary_dataset
-        self.transposed_binary_dataset = binary_dataset.T
+    transposed_binary_dataset = binary_dataset.T
 
-        self.shape = binary_dataset.shape
+    return _it(transposed_binary_dataset, T)
 
-        self.X = np.arange(binary_dataset.shape[0], dtype=int)  # pylint: disable=invalid-name
-        self.Y = np.arange(binary_dataset.shape[1], dtype=int)  # pylint: disable=invalid-name
 
-        self.number_of_trues = np.count_nonzero(binary_dataset)
-        self.sparsity = self.number_of_trues / binary_dataset.size
+def t(binary_dataset: np.ndarray, X: np.ndarray):  # pylint: disable=invalid-name
+    """Given [1]'s nomenclature, this method will compute the set of all tids that contain all
+    the items in the itemset X.
 
-    def get_raw_copy(self):
-        """
-        Get a copy of the binary dataset as a numpy array.
+    Given [2]'s nomenclature, this equivalent to the 'down' operation.
+    """
+    assert_binary_dataset(binary_dataset)
+    assert isinstance(X, np.ndarray)
 
-        Returns:
-            np.array: A copy of the binary dataset as a numpy array.
+    return _it(binary_dataset, X)
 
-        Example:
-            dataset = BinaryDataset.load_from_binaps_compatible_input('data.dat')
-            raw_dataset = dataset.get_raw_copy()
-        """
-        return self.binary_dataset.copy()
 
-    def i(self, T):  # pylint: disable=invalid-name
-        """
-        Given [1]'s nomenclature, this method will compute the set of items that are common to all
-        transactions in the tidset T.
+def load_from_trainset(trainset: Trainset, threshold: float = 1.0):
+    """
+    Given a existing trainset, build a binary dataset from it. Note that the item's columns and
+    rows will follow the internal trainset representation and will almost certainly differ from
+    the original dataset from which the trainset was derived. Use the trainset's to_raw_*
+    methods to convert correctly between this spaces.
 
-        Given [2]'s nomenclature, this equivalent to the 'up' operation.
-        """
-        return _it(self.transposed_binary_dataset, T)
+    Args:
+        trainset (Trainset): A surprise Trainset object.
+        threshold (int, optional): The threshold to use to binarize the ratings. Defaults to 1.
 
-    def t(self, X):  # pylint: disable=invalid-name
-        """Given [1]'s nomenclature, this method will compute the set of all tids that contain all
-        the items in the itemset X.
+    Returns:
+        np.array: A binary dataset.
+    """
 
-        Given [2]'s nomenclature, this equivalent to the 'down' operation.
-        """
-        return _it(self.binary_dataset, X)
+    assert isinstance(trainset, Trainset)
+    assert isinstance(threshold, float)
+    assert threshold > 0
 
-    @staticmethod
-    def load_from_trainset(trainset: Trainset, threshold=1):
-        """
-        Given a existing trainset, build a binary dataset from it. Note that the item's columns and
-        rows will follow the internal trainset representation and will almost certainly differ from
-        the original dataset from which the trainset was derived. Use the trainset's to_raw_*
-        methods to convert correctly between this spaces.
-        """
+    dataset = np.zeros((trainset.n_users, trainset.n_items), dtype=bool)
 
-        raw_dataset = np.zeros((trainset.n_users, trainset.n_items), bool)
+    for uid, iid, rating in trainset.all_ratings():
+        if rating >= threshold:
+            dataset[uid][iid] = True
 
-        for uid, iid, rating in trainset.all_ratings():
-            if rating >= threshold:
-                raw_dataset[uid][iid] = True
+    assert_binary_dataset(dataset)
 
-        return BinaryDataset(raw_dataset)
+    return dataset
 
-    @staticmethod
-    def load_from_binaps_compatible_input(file_path):
-        """
-        Instantiate a binary dataset based on the contents of a file that follows the format
-        used by BinAps.
 
-        Args:
-            file_path (str): The path to the file containing the binary dataset.
+def load_from_binaps_compatible_input(file_path):
+    """
+    Instantiate a binary dataset based on the contents of a file that follows the format
+    used by BinAps.
 
-        Returns:
-            BinaryDataset: A BinaryDataset object initialized with the data from the file.
+    Args:
+        file_path (str): The path to the file containing the binary dataset.
 
-        Raises:
-            FileNotFoundError: If the specified file_path does not exist.
-            IOError: If there is an error reading the file.
+    Returns:
+        BinaryDataset: A BinaryDataset object initialized with the data from the file.
 
-        Example:
-            dataset = BinaryDataset.load_from_binaps_compatible_input('data.dat')
-        """
-        raw_dataset = readDatFile(file_path)
-        return BinaryDataset(raw_dataset.astype(bool))
+    Raises:
+        FileNotFoundError: If the specified file_path does not exist.
+        IOError: If there is an error reading the file.
 
-    def save_as_binaps_compatible_input(self, stream):
-        """
-        Save the binary dataset as a binaps-compatible input.
+    Example:
+        dataset = BinaryDataset.load_from_binaps_compatible_input('data.dat')
+    """
 
-        Args:
-            stream: A file-like object to write the binaps-compatible input.
+    dataset = readDatFile(file_path).astype(bool)
+    assert_binary_dataset(dataset)
 
-        Returns:
-            None
+    return dataset
 
-        This method takes the binary dataset and writes its binaps-compatible representation
-        to the provided stream. Each row of the binary dataset is processed, and the indices
-        of non-zero elements in the row are converted to a string representation. The string
-        representations of all rows are concatenated with a newline character and written to
-        the stream.
 
-        Example:
-            binary_dataset = np.array([[1, 0, 1],
-                                       [0, 1, 0],
-                                       [1, 1, 0]])
+def save_as_binaps_compatible_input(binary_dataset, stream):
+    """
+    Save the binary dataset as a binaps-compatible input.
 
-            with open('binaps_input.txt', 'w') as stream:
-                save_as_binaps_compatible_input(binary_dataset, stream)
+    Args:
+        stream: A file-like object to write the binaps-compatible input.
 
-            # Contents of 'binaps_input.txt':
-            # 1 3
-            # 2
-            # 1 2
-        """
+    Returns:
+        None
 
-        for row in self.binary_dataset:
-            non_zero_indices = np.add(row.nonzero(), 1)[0]
-            str_representation = " ".join((str(index) for index in non_zero_indices)) + "\n"
-            stream.write(str_representation)
+    This method takes the binary dataset and writes its binaps-compatible representation
+    to the provided stream. Each row of the binary dataset is processed, and the indices
+    of non-zero elements in the row are converted to a string representation. The string
+    representations of all rows are concatenated with a newline character and written to
+    the stream.
+
+    Example:
+        binary_dataset = np.array([[1, 0, 1],
+                                    [0, 1, 0],
+                                    [1, 1, 0]])
+
+        with open('binaps_input.txt', 'w') as stream:
+            save_as_binaps_compatible_input(binary_dataset, stream)
+
+        # Contents of 'binaps_input.txt':
+        # 1 3
+        # 2
+        # 1 2
+    """
+
+    for row in binary_dataset:
+        non_zero_indices = np.add(row.nonzero(), 1)[0]
+        str_representation = " ".join((str(index) for index in non_zero_indices)) + "\n"
+        stream.write(str_representation)
