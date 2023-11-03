@@ -102,7 +102,7 @@ class BinaPsRecommender(KNNOverLatentSpaceRecommender):
                         hidden_dimension=self.hidden_dimension_neurons_number,
                     )
                     self.logger.debug("BinaPs OK")
-            
+
             self.logger.debug("Binarizing weights...")
             self.patterns = get_patterns_from_weights(
                 weights=weights, threshold=self.weights_binarization_threshold
@@ -113,5 +113,5 @@ class BinaPsRecommender(KNNOverLatentSpaceRecommender):
         self.formal_context = construct_context_from_binaps_patterns(
             self.binary_dataset, self.patterns, True
         )
-        
+
         self.logger.info("Generating Formal Context OK")

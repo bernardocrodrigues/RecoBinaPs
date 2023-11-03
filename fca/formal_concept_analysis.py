@@ -29,6 +29,38 @@ from . import DEFAULTLOGGER
 Concept = namedtuple("Concept", "extent intent")
 
 
+def create_concept(extent, intent):
+    """
+    Creates a formal concept from the given extent and intent.
+
+    Args:
+        extent: A list of row indexes that define the extent of the concept.
+        intent: A list of column indexes that define the intent of the concept.
+
+    Returns:
+        A Concept object.
+
+    """
+
+    if isinstance(extent, np.ndarray):
+        assert extent.dtype == np.int64
+        assert extent.ndim == 1
+        assert extent.size >= 0
+        processed_extent = extent
+    else:
+        processed_extent = np.asarray(extent, dtype=np.int64)
+
+    if isinstance(intent, np.ndarray):
+        assert intent.dtype == np.int64
+        assert intent.ndim == 1
+        assert intent.size >= 0
+        processed_intent = intent
+    else:
+        processed_intent = np.asarray(intent, dtype=np.int64)
+
+    return Concept(processed_extent, processed_intent)
+
+
 @nb.njit
 def submatrix_intersection_size(
     rows, columns, U
@@ -164,19 +196,13 @@ def grecond(binary_dataset: np.ndarray, coverage: float = 1.0) -> List[Concept]:
 
         C = _it(binary_dataset, D)
 
-        new_concept = Concept(C, D)
+        new_concept = create_concept(C, D)
 
         F.append(new_concept)
 
         erase_submatrix_values(new_concept.extent, new_concept.intent, U)
 
         current_coverage = 1 - np.count_nonzero(U) / initial_number_of_trues
-
-        logger.debug(f"Current Coverage: {current_coverage*100:.2f}%")
-
-    logger.info("Mining Formal Concepts DONE")
-    logger.info(f"Formal Concepts mined: {len(F)}")
-    logger.info(f"Final Concepts Coverage {current_coverage*100:.2f}%")
 
     return F, current_coverage
 
@@ -298,10 +324,10 @@ def construct_context_from_binaps_patterns(
 # Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
 # be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
 # of compiling the functions when they are called.
-get_factor_matrices_from_concepts([Concept([0, 1], [0, 1]), Concept([0, 1, 2], [0, 1, 2])], 4, 4)
-erase_submatrix_values(
-    [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
-)
-submatrix_intersection_size(
-    [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
-)
+# get_factor_matrices_from_concepts([Concept([0, 1], [0, 1]), Concept([0, 1, 2], [0, 1, 2])], 4, 4)
+# erase_submatrix_values(
+#     [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
+# )
+# submatrix_intersection_size(
+#     [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
+# )

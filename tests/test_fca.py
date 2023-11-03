@@ -7,7 +7,7 @@ from unittest.mock import patch
 import numpy as np
 from fca.formal_concept_analysis import (
     get_factor_matrices_from_concepts,
-    Concept,
+    create_concept,
     grecond,
     construct_context_from_binaps_patterns,
 )
@@ -30,10 +30,10 @@ def test_get_matrices_belohlavek():
     # example from belohlavek paper page 14 and 15
 
     formal_context = [
-        Concept(np.array([0, 3, 4]), np.array([2, 5])),
-        Concept(np.array([2, 4]), np.array([1, 3, 5])),
-        Concept(np.array([0, 2]), np.array([0, 4, 5])),
-        Concept(np.array([0, 1, 3, 4]), np.array([2])),
+        create_concept(np.array([0, 3, 4]), np.array([2, 5])),
+        create_concept(np.array([2, 4]), np.array([1, 3, 5])),
+        create_concept(np.array([0, 2]), np.array([0, 4, 5])),
+        create_concept(np.array([0, 1, 3, 4]), np.array([2])),
     ]
 
     A, B = get_factor_matrices_from_concepts(
@@ -69,11 +69,11 @@ def test_get_matrices_belohlavek():
 def test_get_matrices_belohlavek_2():
     # example from belohlavek paper page 9 to 11
 
-    concept_1 = Concept(np.array([0, 4, 8, 10]), np.array([0, 1, 2, 4]))
-    concept_2 = Concept(np.array([1, 3, 11]), np.array([0, 1, 5, 7]))
-    concept_3 = Concept(np.array([2, 5, 6]), np.array([1, 4, 6]))
-    concept_4 = Concept(np.array([2, 5, 6, 7, 9]), np.array([6]))
-    concept_5 = Concept(np.array([0, 2, 4, 5, 6, 8, 10]), np.array([1, 4]))
+    concept_1 = create_concept(np.array([0, 4, 8, 10]), np.array([0, 1, 2, 4]))
+    concept_2 = create_concept(np.array([1, 3, 11]), np.array([0, 1, 5, 7]))
+    concept_3 = create_concept(np.array([2, 5, 6]), np.array([1, 4, 6]))
+    concept_4 = create_concept(np.array([2, 5, 6, 7, 9]), np.array([6]))
+    concept_5 = create_concept(np.array([0, 2, 4, 5, 6, 8, 10]), np.array([1, 4]))
 
     formal_context_1 = [concept_1, concept_2, concept_3, concept_4]
 
@@ -124,9 +124,9 @@ def test_get_matrices_belohlavek_2():
 def test_get_matrices_nenova():
     # example from nenova paper at page 62
     formal_context = [
-        Concept(np.array([0, 1]), np.array([0, 1, 2])),
-        Concept(np.array([1, 2, 3]), np.array([3, 4])),
-        Concept(np.array([3, 4, 5]), np.array([5, 6])),
+        create_concept(np.array([0, 1]), np.array([0, 1, 2])),
+        create_concept(np.array([1, 2, 3]), np.array([3, 4])),
+        create_concept(np.array([3, 4, 5]), np.array([5, 6])),
     ]
 
     A, B = get_factor_matrices_from_concepts(
@@ -403,9 +403,9 @@ class TestConstructContextFromBinapsPatterns:
         assert t_mock.call_count == 3
 
         assert context == [
-            Concept(extent=np.array([4], dtype=np.int64), intent=patterns[0]),
-            Concept(extent=np.array([5], dtype=np.int64), intent=patterns[1]),
-            Concept(extent=np.array([6], dtype=np.int64), intent=patterns[2]),
+            create_concept(extent=np.array([4], dtype=np.int64), intent=patterns[0]),
+            create_concept(extent=np.array([5], dtype=np.int64), intent=patterns[1]),
+            create_concept(extent=np.array([6], dtype=np.int64), intent=patterns[2]),
         ]
 
     @patch("fca.formal_concept_analysis.t")
@@ -449,7 +449,7 @@ class TestConstructContextFromBinapsPatterns:
         assert t_mock.call_count == 6
 
         assert context == [
-            Concept(extent=np.array([5], dtype=np.int64), intent=np.array([40], dtype=np.int64)),
-            Concept(extent=np.array([400], dtype=np.int64), intent=np.array([50], dtype=np.int64)),
-            Concept(extent=np.array([600], dtype=np.int64), intent=np.array([60], dtype=np.int64)),
+            create_concept(extent=np.array([5], dtype=np.int64), intent=np.array([40], dtype=np.int64)),
+            create_concept(extent=np.array([400], dtype=np.int64), intent=np.array([50], dtype=np.int64)),
+            create_concept(extent=np.array([600], dtype=np.int64), intent=np.array([60], dtype=np.int64)),
         ]
