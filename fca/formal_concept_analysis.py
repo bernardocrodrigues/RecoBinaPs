@@ -22,7 +22,7 @@ import numba as nb
 from typing import List
 
 from dataset.binary_dataset import i, t, _it, assert_binary_dataset
-
+from fca.formal_concept_analysis import Concept
 
 from . import DEFAULTLOGGER
 
@@ -265,6 +265,15 @@ def get_factor_matrices_from_concepts(
 
     # We need to convert the list of concepts to a Numba typed list to be able to use it in the
     # _get_matrices function.
+
+    assert isinstance(concepts, list)
+    assert len(concepts) > 0
+    assert all(isinstance(concept, Concept) for concept in concepts)
+    assert isinstance(dataset_number_rows, int)
+    assert dataset_number_rows > 0
+    assert isinstance(dataset_number_cols, int)
+    assert dataset_number_cols > 0
+
     typed_concept_list = nb.typed.List()
     for concept in concepts:
         typed_concept_list.append(concept)
@@ -296,7 +305,6 @@ def construct_context_from_binaps_patterns(
     the itemset into a closed itemset based on the binary dataset.
 
     Example:
-        binary_dataset = BinaryDataset(...)
         patterns = [[1, 2, 3], [4, 5], [2, 4, 6]]
         context = construct_context_from_binaps_patterns(binary_dataset, patterns)
     """
