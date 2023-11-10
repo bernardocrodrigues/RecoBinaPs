@@ -4,21 +4,9 @@ common.py
 This module contains common functions used by the recommenders.
 """
 
-from typing import Tuple, List, Dict
 import numpy as np
 import numba as nb
 from scipy.spatial import distance
-from surprise import Trainset, AlgoBase
-from surprise.accuracy import mae, rmse
-
-from evaluation import (
-    get_micro_averaged_recall,
-    get_macro_averaged_recall,
-    get_recall_at_k,
-    get_micro_averaged_precision,
-    get_macro_averaged_precision,
-    get_precision_at_k,
-)
 
 
 def jaccard_distance(A: np.array, B: np.array) -> float:
@@ -72,7 +60,6 @@ def get_similarity_matrix(dataset, distance_strategy=jaccard_distance):
     return similarity_matrix
 
 
-@nb.njit
 def get_cosine_similarity_matrix(dataset: np.array):
     """
     Given a dataset, computes the similarity matrix between all rows using the cosine
@@ -90,6 +77,23 @@ def get_cosine_similarity_matrix(dataset: np.array):
     Returns:
         np.array: The similarity matrix.
     """
+
+    assert isinstance(dataset, np.ndarray)
+    assert dataset.ndim == 2
+    assert dataset.shape[0] > 0
+    assert dataset.shape[1] > 0
+    assert np.issubdtype(dataset.dtype, np.number)
+
+    similarity_matrix _= _get_cosine_similarity_matrix(dataset)
+
+    assert similarity_matrix.shape == (dataset.shape[0], dataset.shape[0])
+    assert np.all(np.isfinite(similarity_matrix))
+
+    return similarity_matrix
+
+
+@nb.njit
+def _get_cosine_similarity_matrix(dataset: np.array):
     similarity_matrix = np.ones((dataset.shape[0], dataset.shape[0]), dtype=np.float32)
 
     similarity_matrix = -2 * similarity_matrix
@@ -146,60 +150,6 @@ def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int)
     k_most_similar = nearest_neighbors[1 : k + 1]
 
     return k_most_similar
-
-
-def generic_thread(
-    fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
-    output: Dict,
-    recommender: AlgoBase,
-    threshold: float = 5.0,
-    number_of_top_recommendations: int = 20,
-):
-    """
-    This function is used to parallelize the GreConD recommender. It puts the results on a
-    dictionary called 'output'. 'output' is expected to be a Manager().dict() object since it is
-    shared between processes.
-
-    Args:
-        fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be processed.
-        output (Dict): The dictionary to put the results on.
-        grecond_recommender (GreConDRecommender): The GreConDRecommender object to use.
-        threshold (float): The relevance threshold to use.
-        number_of_top_recommendations (int): The number of top recommendations to use.
-
-    Returns:
-        None
-    """
-    fold_index, (trainset, testset) = fold
-
-    recommender.fit(trainset)
-    predictions = recommender.test(testset)
-    output[fold_index] = {
-        "mae": mae(predictions=predictions, verbose=False),
-        "rmse": rmse(predictions=predictions, verbose=False),
-        "micro_averaged_recall": get_micro_averaged_recall(
-            predictions=predictions, threshold=threshold
-        ),
-        "macro_averaged_recall": get_macro_averaged_recall(
-            predictions=predictions, threshold=threshold
-        ),
-        "recall_at_k": get_recall_at_k(
-            predictions=predictions,
-            threshold=threshold,
-            k=number_of_top_recommendations,
-        ),
-        "micro_averaged_precision": get_micro_averaged_precision(
-            predictions=predictions, threshold=threshold
-        ),
-        "macro_averaged_precision": get_macro_averaged_precision(
-            predictions=predictions, threshold=threshold
-        ),
-        "precision_at_k": get_precision_at_k(
-            predictions=predictions,
-            threshold=threshold,
-            k=number_of_top_recommendations,
-        ),
-    }
 
 
 # Numba Compilation
