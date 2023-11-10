@@ -12,7 +12,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from surprise import AlgoBase, PredictionImpossible, Trainset
-from fca import BinaryDataset, get_factor_matrices_from_concepts, Concept
+from fca.formal_concept_analysis import get_factor_matrices_from_concepts, Concept
+from dataset.binary_dataset import load_from_trainset
 
 from . import DEFAULT_LOGGER
 from .common import get_cosine_similarity_matrix
@@ -78,7 +79,8 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
 
         # Generate binary dataset
         self.logger.debug("Generating binary dataset...")
-        self.binary_dataset = BinaryDataset.load_from_trainset(
+
+        self.binary_dataset = load_from_trainset(
             trainset, threshold=self.dataset_binarization_threshold
         )
         self.logger.debug("Generating binary dataset OK")
@@ -100,8 +102,8 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
             self.binary_dataset.shape[0],
             self.binary_dataset.shape[1],
         )
-        latent_binary_dataset = BinaryDataset(self.A)
-        self.sim = get_cosine_similarity_matrix(latent_binary_dataset.binary_dataset)
+
+        self.sim = get_cosine_similarity_matrix(self.A)
         self.logger.info("Generating Similarity Matrix OK")
 
         return self

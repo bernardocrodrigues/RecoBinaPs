@@ -75,7 +75,7 @@ class GreConDRecommender(KNNOverLatentSpaceRecommender):
         self.logger.info("Generating Formal Context...")
 
         self.formal_context, self.actual_coverage = grecond(
-            self.binary_dataset, coverage=self.grecond_coverage, logger=self.logger
+            self.binary_dataset, coverage=self.grecond_coverage
         )
 
         self.logger.info("Generating Formal Context OK")

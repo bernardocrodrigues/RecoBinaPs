@@ -123,7 +123,7 @@ def load_from_trainset(trainset: Trainset, threshold: float = 1.0):
 
     assert isinstance(trainset, Trainset)
     assert isinstance(threshold, float)
-    assert threshold > 0
+    assert threshold >= 0.0 and threshold <= 1.0
 
     dataset = np.zeros((trainset.n_users, trainset.n_items), dtype=bool)
 
@@ -145,14 +145,14 @@ def load_from_binaps_compatible_input(file_path):
         file_path (str): The path to the file containing the binary dataset.
 
     Returns:
-        BinaryDataset: A BinaryDataset object initialized with the data from the file.
+        np.array: A binary dataset.
 
     Raises:
         FileNotFoundError: If the specified file_path does not exist.
         IOError: If there is an error reading the file.
 
     Example:
-        dataset = BinaryDataset.load_from_binaps_compatible_input('data.dat')
+        dataset = load_from_binaps_compatible_input('data.dat')
     """
 
     dataset = readDatFile(file_path).astype(bool)

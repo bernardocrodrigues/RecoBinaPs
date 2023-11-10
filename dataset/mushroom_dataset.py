@@ -61,7 +61,7 @@ def _download_mushroom_dataset(destination_dir: Path) -> None:
 
 def _parse_mushroom_dataset(raw_dataset_path: Path):
     """
-    Parse the raw Mushroom dataset file and return a BinaryDataset object. The dataset is
+    Parse the raw Mushroom dataset file and return a np.array object. The dataset is
     represented as a numpy array of booleans, where each row is a sample and each column is an
     attribute.
 

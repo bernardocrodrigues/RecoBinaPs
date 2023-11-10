@@ -43,7 +43,7 @@ def jaccard_distance(A: np.array, B: np.array) -> float:
 
 def get_similarity_matrix(dataset, distance_strategy=jaccard_distance):
     """
-    Given a BinaryDataset and some method that calculates some distance between two vector,
+    Given a np.array and some method that calculates some distance between two vector,
     computes the similarity matrix between all users (rows).
 
     The distance strategy must compute the distance between two numpy arrays. A return value of 1
