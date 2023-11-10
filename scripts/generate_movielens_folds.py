@@ -31,13 +31,13 @@ from pathlib import Path
 from surprise import Dataset, Reader
 from surprise.model_selection import PredefinedKFold
 
-from dataset.binary_dataset import BinaryDataset
+from dataset.binary_dataset import load_from_trainset, save_as_binaps_compatible_input
 
 
 MOVIELENS_DOWNLOAD_URL = "https://files.grouplens.org/datasets/movielens/ml-100k.zip"
 
 
-def generate_folds(movielens_path: Path):
+def convert_to_binaps_compatible_folds(movielens_path: Path):
     """
     Generate the folds in the format required by BinaPs. Given the MovieLens 100K dataset, which
     includes pre-defined folds, this script generates the folds in the format required by BinaPs.
@@ -62,18 +62,22 @@ def generate_folds(movielens_path: Path):
     pkf = PredefinedKFold()
 
     for index, (trainset, _) in enumerate(pkf.split(data)):
-        binary_dataset = BinaryDataset.load_from_trainset(trainset)
+        binary_dataset = load_from_trainset(trainset)
 
         with open(movielens_path / f"u{index}.base.dat", "w", encoding="UTF-8") as file_object:
-            binary_dataset.save_as_binaps_compatible_input(file_object)
+            save_as_binaps_compatible_input(binary_dataset, file_object)
 
 
-def download_movielens(destination_dir: Path):
+def download_movielens(destination_dir: Path = None):
     """Download the MovieLens 100K dataset to the given directory.
 
     Args:
         destination_dir: The directory where the dataset will be downloaded.
     """
+
+    if (destination_dir / "ml-100k").exists():
+        print("Already downloaded!. Nothing to do.")
+        return
 
     destination_dir.mkdir(parents=True, exist_ok=True)
 
@@ -122,7 +126,7 @@ def main():
     output_dir = Path(args.output_dir)
 
     download_movielens(output_dir)
-    generate_folds(output_dir / "ml-100k")
+    convert_to_binaps_compatible_folds(output_dir / "ml-100k")
 
 
 if __name__ == "__main__":
