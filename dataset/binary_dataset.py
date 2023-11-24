@@ -161,7 +161,7 @@ def load_from_binaps_compatible_input(file_path):
     return dataset
 
 
-def save_as_binaps_compatible_input(binary_dataset, stream):
+def save_as_binaps_compatible_input(binary_dataset: np.ndarray, stream: typing.IO):
     """
     Save the binary dataset as a binaps-compatible input.
 
@@ -191,6 +191,7 @@ def save_as_binaps_compatible_input(binary_dataset, stream):
         # 1 2
     """
 
+    assert_binary_dataset(binary_dataset)
     for row in binary_dataset:
         non_zero_indices = np.add(row.nonzero(), 1)[0]
         str_representation = " ".join((str(index) for index in non_zero_indices)) + "\n"
