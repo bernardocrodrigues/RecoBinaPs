@@ -4,9 +4,13 @@ common.py
 This module contains common functions used by the recommenders.
 """
 
+import math
 import numpy as np
 import numba as nb
+import pandas as pd
+
 from scipy.spatial import distance
+from typing import List
 
 
 def jaccard_distance(A: np.array, B: np.array) -> float:
@@ -90,6 +94,48 @@ def get_cosine_similarity_matrix(dataset: np.array):
     assert np.all(np.isfinite(similarity_matrix))
 
     return similarity_matrix
+
+
+def get_user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
+    """
+    Calculates the similarity between a user and a pattern based on the number of items they have
+    in common. The similarity is defined as follows:
+
+            similarity = |I_u ∩ I_p| / |I_u ∩ I_p| + |I_p \ I_u|
+
+        where I_u is the set of relevant items for the user and I_p is the set of relevant items
+        for the pattern.
+
+    This similarity metric is used is defined by Symeonidis[1].
+
+    [1] Symeonidis, P., Nanopoulos, A., Papadopoulos, A., & Manolopoulos, Y. (n.d.).
+        Nearest-Biclusters Collaborative Filtering with Constant Values. Lecture Notes in Computer
+        Science, 36-55. doi:10.1007/978-3-540-77485-3
+
+    Args:
+        user (np.ndarray): A 1D numpy array representing the user's preferences. The array must
+        be an itemset representation.
+        pattern (np.ndarray): A 1D numpy array representing the pattern's preferences.The array must
+        be an itemset representation.
+
+    Returns:
+        float: A value between 0 and 1 representing the similarity between the user and the pattern.
+    """
+    assert isinstance(user, np.ndarray)
+    assert issubclass(user.dtype.type, np.integer)
+    assert user.ndim == 1
+
+    assert isinstance(pattern, np.ndarray)
+    assert pattern.ndim == 1
+    assert issubclass(pattern.dtype.type, np.integer)
+
+    number_of_itens_from_pattern_in_user = np.intersect1d(user, pattern).size
+    try:
+        similarity = number_of_itens_from_pattern_in_user / pattern.size
+    except ZeroDivisionError:
+        similarity = 0
+
+    return similarity
 
 
 def get_top_k_patterns_for_user(
@@ -269,7 +315,9 @@ def compute_targets_neighborhood_cosine_similarity(
     assert np.all(neighborhood >= 0)
     assert np.all(neighborhood < dataset.shape[1])
 
-    _compute_targets_neighborhood_cosine_similarity(dataset, similarity_matrix, target, neighborhood)
+    _compute_targets_neighborhood_cosine_similarity(
+        dataset, similarity_matrix, target, neighborhood
+    )
 
 
 def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int) -> np.array:
