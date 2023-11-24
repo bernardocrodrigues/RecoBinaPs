@@ -13,7 +13,7 @@ import numpy as np
 
 from surprise import AlgoBase, PredictionImpossible, Trainset
 from pattern_mining.formal_concept_analysis import get_factor_matrices_from_concepts, Concept
-from dataset.binary_dataset import load_from_trainset
+from dataset.binary_dataset import load_binary_dataset_from_trainset
 
 from . import DEFAULT_LOGGER
 from .common import get_cosine_similarity_matrix
@@ -80,7 +80,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
         # Generate binary dataset
         self.logger.debug("Generating binary dataset...")
 
-        self.binary_dataset = load_from_trainset(
+        self.binary_dataset = load_binary_dataset_from_trainset(
             trainset, threshold=self.dataset_binarization_threshold
         )
         self.logger.debug("Generating binary dataset OK")

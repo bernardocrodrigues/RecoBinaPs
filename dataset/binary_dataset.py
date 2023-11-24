@@ -17,6 +17,7 @@ Bibliography
 
 import numpy as np
 import numba as nb
+import typing
 from surprise import Trainset
 from binaps.original.Binaps_code.dataLoader import readDatFile
 
@@ -106,7 +107,7 @@ def t(binary_dataset: np.ndarray, X: np.ndarray):  # pylint: disable=invalid-nam
     return _it(binary_dataset, X)
 
 
-def load_from_trainset(trainset: Trainset, threshold: float = 1.0):
+def load_binary_dataset_from_trainset(trainset: Trainset, threshold: float = 1.0):
     """
     Given a existing trainset, build a binary dataset from it. Note that the item's columns and
     rows will follow the internal trainset representation and will almost certainly differ from

@@ -9,7 +9,7 @@ import numpy as np
 from surprise import Dataset, Trainset
 from binaps.binaps_wrapper import generate_synthetic_data
 from dataset.binary_dataset import (
-    load_from_trainset,
+    load_binary_dataset_from_trainset,
     load_from_binaps_compatible_input,
     save_as_binaps_compatible_input,
 )
@@ -405,7 +405,7 @@ class TestIT:
 def test_load_from_trainset_my_toy():
     for _ in range(CONVERT_DATASET_SHUFFLE_TIMES):
         my_toy_trainset = convert_raw_rating_list_into_trainset(my_toy_dataset_raw_rating)
-        binary_dataset = load_from_trainset(my_toy_trainset)
+        binary_dataset = load_binary_dataset_from_trainset(my_toy_trainset)
         assert_dataset_and_trainset_are_equal(
             binary_dataset, my_toy_trainset, my_toy_binary_dataset
         )
@@ -414,14 +414,14 @@ def test_load_from_trainset_my_toy():
 def test_load_from_trainset_zaki():
     for _ in range(CONVERT_DATASET_SHUFFLE_TIMES):
         zaki_trainset = convert_raw_rating_list_into_trainset(zaki_dataset_raw_rating)
-        binary_dataset = load_from_trainset(zaki_trainset)
+        binary_dataset = load_binary_dataset_from_trainset(zaki_trainset)
         assert_dataset_and_trainset_are_equal(binary_dataset, zaki_trainset, zaki_binary_dataset)
 
 
 def test_load_from_trainset_belohlavek():
     for _ in range(CONVERT_DATASET_SHUFFLE_TIMES):
         belohlavek_trainset = convert_raw_rating_list_into_trainset(belohlavek_dataset_raw_rating)
-        binary_dataset = load_from_trainset(belohlavek_trainset)
+        binary_dataset = load_binary_dataset_from_trainset(belohlavek_trainset)
         assert_dataset_and_trainset_are_equal(
             binary_dataset, belohlavek_trainset, belohlavek_binary_dataset
         )
@@ -475,7 +475,7 @@ def test_save_as_binaps_compatible_input_on_movielens():
 
     dataset = Dataset.load_builtin("ml-1m", prompt=False)
     trainset = dataset.build_full_trainset()
-    binary_dataset = load_from_trainset(trainset, threshold=threshold)
+    binary_dataset = load_binary_dataset_from_trainset(trainset, threshold=threshold)
 
     with tempfile.TemporaryFile(mode="r+") as file_object:
         save_as_binaps_compatible_input(binary_dataset, file_object)
@@ -490,7 +490,7 @@ def test_save_as_binaps_compatible_input_on_movielens():
 
     dataset = Dataset.load_builtin("ml-100k", prompt=False)
     trainset = dataset.build_full_trainset()
-    binary_dataset = load_from_trainset(trainset, threshold=threshold)
+    binary_dataset = load_binary_dataset_from_trainset(trainset, threshold=threshold)
 
     with tempfile.TemporaryFile(mode="r+") as file_object:
         save_as_binaps_compatible_input(binary_dataset, file_object)
@@ -579,7 +579,7 @@ def test_load_and_save_procedures_on_movielens():
     threshold = 1.0
     dataset = Dataset.load_builtin("ml-100k", prompt=False)
     trainset = dataset.build_full_trainset()
-    binary_dataset = load_from_trainset(trainset, threshold=threshold)
+    binary_dataset = load_binary_dataset_from_trainset(trainset, threshold=threshold)
 
     with tempfile.NamedTemporaryFile(mode="w+t") as file_object:
         save_as_binaps_compatible_input(binary_dataset, file_object)
@@ -592,7 +592,7 @@ def test_load_and_save_procedures_on_movielens():
 
     dataset = Dataset.load_builtin("ml-1m", prompt=False)
     trainset = dataset.build_full_trainset()
-    binary_dataset = load_from_trainset(trainset, threshold=threshold)
+    binary_dataset = load_binary_dataset_from_trainset(trainset, threshold=threshold)
 
     with tempfile.NamedTemporaryFile(mode="w+t") as file_object:
         save_as_binaps_compatible_input(binary_dataset, file_object)

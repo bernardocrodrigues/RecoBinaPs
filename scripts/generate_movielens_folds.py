@@ -31,7 +31,10 @@ from pathlib import Path
 from surprise import Dataset, Reader
 from surprise.model_selection import PredefinedKFold
 
-from dataset.binary_dataset import load_from_trainset, save_as_binaps_compatible_input
+from dataset.binary_dataset import (
+    load_binary_dataset_from_trainset,
+    save_as_binaps_compatible_input,
+)
 
 
 MOVIELENS_DOWNLOAD_URL = "https://files.grouplens.org/datasets/movielens/ml-100k.zip"
