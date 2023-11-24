@@ -126,6 +126,78 @@ def _get_cosine_similarity_matrix(dataset: np.array):
     return similarity_matrix
 
 
+@nb.njit
+def _compute_targets_neighborhood_cosine_similarity(
+    dataset: np.array, similarity_matrix: np.array, target: int, neighborhood: np.array
+):
+    for neighbor in neighborhood:
+        if not math.isnan(similarity_matrix[target, neighbor]):
+            continue
+
+        if not dataset[:, target].any() or not dataset[:, neighbor].any():
+            similarity_matrix[target, neighbor] = 0
+            similarity_matrix[neighbor, target] = 0
+            continue
+
+        # The snippet below was taken from scipy.spatial.distance.cosine
+        u = dataset[:, target]
+        v = dataset[:, neighbor]
+        uv = np.average(u * v)
+        uu = np.average(np.square(u))
+        vv = np.average(np.square(v))
+        dist = 1.0 - uv / np.sqrt(uu * vv)
+        a = np.abs(dist)
+        dissimilarity = max(0, min(a, 2.0))
+        # end of snippet
+
+        similarity = 1 - dissimilarity
+        similarity_matrix[target, neighbor] = similarity
+        similarity_matrix[neighbor, target] = similarity
+
+
+def compute_targets_neighborhood_cosine_similarity(
+    dataset: np.array, similarity_matrix: np.array, target: int, neighborhood: np.array
+):
+    """
+    Computes the cosine similarities between a target item and each item in a given neighborhood.
+    The neighborhood is a list of indices of the items that are in the neighborhood of the target.
+
+    The similarities will be stored in a given similarity matrix. to avoid recomputing the
+    similarities between itens that have already been computed. The similarity matrix is
+    updated in-place.
+
+    Args:
+        dataset (np.array): The dataset.
+        similarity_matrix (np.array): The similarity matrix.
+        target (int): The index of the target item.
+        neighborhood (np.array): The indices of the items in the neighborhood of the target.
+    """
+
+    assert isinstance(dataset, np.ndarray)
+    assert dataset.ndim == 2
+    assert dataset.shape[0] > 0
+    assert dataset.shape[1] > 0
+    assert np.issubdtype(dataset.dtype, np.number)
+
+    assert isinstance(similarity_matrix, np.ndarray)
+    assert similarity_matrix.ndim == 2
+    assert similarity_matrix.shape[0] == dataset.shape[1]
+    assert similarity_matrix.shape[1] == similarity_matrix.shape[0]
+    assert np.issubdtype(similarity_matrix.dtype, np.number)
+
+    assert isinstance(target, int)
+    assert 0 <= target < dataset.shape[1]
+
+    assert isinstance(neighborhood, np.ndarray)
+    assert neighborhood.ndim == 1
+    assert neighborhood.size > 0
+    assert np.issubdtype(neighborhood.dtype, np.integer)
+    assert np.all(neighborhood >= 0)
+    assert np.all(neighborhood < dataset.shape[1])
+
+    _compute_targets_neighborhood_cosine_similarity(dataset, similarity_matrix, target, neighborhood)
+
+
 def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int) -> np.array:
     """
     Given a similarity matrix, a reference index and a number k, returns the k most similar
