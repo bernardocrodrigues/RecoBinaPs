@@ -30,6 +30,25 @@ def convert_trainset_into_rating_matrix(trainset: Trainset) -> np.ndarray:
     return rating_matrix
 
 
+def load_dataset_from_trainset(trainset: Trainset) -> np.ndarray:
+    """
+    Loads a numpy array from a surprise Trainset object.
+
+    Args:
+        trainset (Trainset): The Trainset object.
+
+    Returns:
+        np.ndarray: The loaded dataset.
+    """
+
+    assert isinstance(trainset, Trainset)
+    dataset = np.zeros((trainset.n_users, trainset.n_items), dtype=np.float64)
+
+    for uid, iid, rating in trainset.all_ratings():
+        dataset[uid][iid] = rating
+
+    return dataset
+
 @nb.njit
 def generate_random_dataset(
     number_of_users: int, number_of_items: int, rating_scale: int, sparsity_target: float
