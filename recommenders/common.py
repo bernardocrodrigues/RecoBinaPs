@@ -92,6 +92,39 @@ def get_cosine_similarity_matrix(dataset: np.array):
     return similarity_matrix
 
 
+def get_sparse_representation_of_the_bicluster(
+    bicluster: np.ndarray, bicluster_column_indexes: List[int]
+) -> pd.DataFrame:
+    """
+    Gets the sparse representation of a bicluster. The sparse representation is a list of tuples
+    (user, item, rating).
+
+    This representation is compatible with the Surprise's Dataset class (see Dataset.load_from_df).
+
+    Args:
+        bicluster (np.ndarray): The bicluster.
+        bicluster_column_indexes (List[int]): The original column indexes of the columns in the
+                                              bicluster. This is necessary to map the columns in
+                                              the bicluster to the original columns in the dataset.
+                                              For example, column 0 in the bicluster may be column
+                                              3 in the original dataset. This will be reflected in
+                                              'item' field of the tuple.
+
+    Returns:
+        pandas.DataFrame: The sparse representation of the bicluster.
+    """
+    raw_dataframe = []
+
+    for i, row in enumerate(bicluster):
+        for j, item in enumerate(row):
+            if item > 0:
+                raw_dataframe.append((i, bicluster_column_indexes[j], item))
+
+    dataframe = pd.DataFrame(raw_dataframe, columns=["user", "item", "rating"])
+
+    return dataframe
+
+
 @nb.njit
 def _get_cosine_similarity_matrix(dataset: np.array):
     similarity_matrix = np.ones((dataset.shape[0], dataset.shape[0]), dtype=np.float32)
