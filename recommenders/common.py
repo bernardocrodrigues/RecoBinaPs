@@ -86,9 +86,8 @@ def get_cosine_similarity_matrix(dataset: np.array):
     assert dataset.ndim == 2
     assert dataset.shape[0] > 0
     assert dataset.shape[1] > 0
-    assert np.issubdtype(dataset.dtype, np.number)
 
-    similarity_matrix _= _get_cosine_similarity_matrix(dataset)
+    similarity_matrix = _get_cosine_similarity_matrix(dataset)
 
     assert similarity_matrix.shape == (dataset.shape[0], dataset.shape[0])
     assert np.all(np.isfinite(similarity_matrix))
