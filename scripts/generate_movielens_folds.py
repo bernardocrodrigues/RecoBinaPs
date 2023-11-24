@@ -37,7 +37,9 @@ from dataset.binary_dataset import (
 )
 
 
-MOVIELENS_DOWNLOAD_URL = "https://files.grouplens.org/datasets/movielens/ml-100k.zip"
+MOVIELENS_100K_DOWNLOAD_URL = "https://files.grouplens.org/datasets/movielens/ml-100k.zip"
+MOVIELENS_1M_DOWNLOAD_URL = "https://files.grouplens.org/datasets/movielens/ml-1m.zip"
+MOVIELENS_URLS = {"100k": MOVIELENS_100K_DOWNLOAD_URL, "1m": MOVIELENS_1M_DOWNLOAD_URL}
 
 
 def convert_to_binaps_compatible_folds(movielens_path: Path):
@@ -65,37 +67,44 @@ def convert_to_binaps_compatible_folds(movielens_path: Path):
     pkf = PredefinedKFold()
 
     for index, (trainset, _) in enumerate(pkf.split(data)):
-        binary_dataset = load_from_trainset(trainset)
+        binary_dataset = load_binary_dataset_from_trainset(trainset)
 
         with open(movielens_path / f"u{index}.base.dat", "w", encoding="UTF-8") as file_object:
             save_as_binaps_compatible_input(binary_dataset, file_object)
 
 
-def download_movielens(destination_dir: Path = None):
-    """Download the MovieLens 100K dataset to the given directory.
+def download_movielens(destination_dir: Path, dataset: str = "100k"):
+    """
+    Download the MovieLens 100K or 1M dataset to the specified directory.
 
     Args:
         destination_dir: The directory where the dataset will be downloaded.
-    """
+        dataset: The dataset to download. Supported datasets: 100k, 1m.
 
-    if (destination_dir / "ml-100k").exists():
+    Raises:
+        AssertionError: If the dataset is not supported.
+    """
+    assert (
+        dataset in MOVIELENS_URLS.keys()
+    ), f"Dataset {dataset} not supported. Supported datasets: {MOVIELENS_URLS.keys()}"
+
+    if destination_dir.exists():
         print("Already downloaded!. Nothing to do.")
         return
 
     destination_dir.mkdir(parents=True, exist_ok=True)
 
-    movielens_zip_file = destination_dir / "ml-100k.zip"
+    movielens_zip_file = destination_dir / f"ml-{dataset}.zip"
 
     if not movielens_zip_file.exists():
-        print(movielens_zip_file)
-        print(f"Downloading MovieLens 100K to {destination_dir}...")
-        with urlopen(MOVIELENS_DOWNLOAD_URL) as stream, open(movielens_zip_file, "wb") as out_file:
+        print(f"Downloading MovieLens {dataset} to {destination_dir}...")
+        with urlopen(MOVIELENS_URLS[dataset]) as stream, open(movielens_zip_file, "wb") as out_file:
             copyfileobj(stream, out_file)
         print("Done!")
 
     print("Extracting...")
     with zipfile.ZipFile(movielens_zip_file, "r") as zip_file:
-        zip_file.extractall(destination_dir)
+        zip_file.extractall(destination_dir.parent)
 
     movielens_zip_file.unlink()
 
