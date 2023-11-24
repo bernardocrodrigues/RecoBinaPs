@@ -104,8 +104,8 @@ def _get_cosine_similarity_matrix(dataset: np.array):
                 continue
 
             if not row1.any() or not row2.any():
-                similarity_matrix[i, j] = np.NaN
-                similarity_matrix[j, i] = np.NaN
+                similarity_matrix[i, j] = 0
+                similarity_matrix[j, i] = 0
                 continue
 
             # The snippet below was taken from scipy.spatial.distance.cosine
