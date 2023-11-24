@@ -92,6 +92,47 @@ def get_cosine_similarity_matrix(dataset: np.array):
     return similarity_matrix
 
 
+def get_top_k_patterns_for_user(
+    patterns: List[np.array], binarized_user: np.array, number_of_top_k_patterns: int
+):
+    """
+    Gets the top-k patterns for a given user. The top-k patterns are the patterns that
+    have the highest similarity with the user.
+
+    Args:
+        patterns (List[np.array]): The patterns to consider as itemsets.
+        binarized_user (np.array): The user to consider as an itemset.
+        number_of_top_k_patterns (int): The number of patterns to return.
+    """
+    assert isinstance(patterns, list)
+    assert all(isinstance(pattern, np.ndarray) for pattern in patterns)
+    assert all(pattern.ndim == 1 for pattern in patterns)
+    assert all(issubclass(pattern.dtype.type, np.integer) for pattern in patterns)
+
+    assert isinstance(binarized_user, np.ndarray)
+    assert binarized_user.ndim == 1
+    assert issubclass(binarized_user.dtype.type, np.integer)
+
+    assert isinstance(number_of_top_k_patterns, int)
+    assert number_of_top_k_patterns > 0
+
+    similar_patterns = []
+    similarities = []
+
+    for pattern in patterns:
+        similarity = get_user_pattern_similarity(binarized_user, pattern)
+        if similarity > 0:
+            similar_patterns.append(pattern)
+            similarities.append(similarity)
+
+    similarities = np.array(similarities)
+    sorted_similarities_indexes = np.argsort(similarities)
+    sorted_similar_patterns = [similar_patterns[i] for i in sorted_similarities_indexes]
+    top_k_patterns = sorted_similar_patterns[-number_of_top_k_patterns:]
+
+    return top_k_patterns
+
+
 def get_sparse_representation_of_the_bicluster(
     bicluster: np.ndarray, bicluster_column_indexes: List[int]
 ) -> pd.DataFrame:
