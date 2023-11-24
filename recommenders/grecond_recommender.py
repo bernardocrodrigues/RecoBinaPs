@@ -20,7 +20,7 @@ from typing import Tuple, List, Dict
 from surprise.accuracy import mae, rmse
 from surprise import Trainset
 
-from fca.formal_concept_analysis import grecond
+from pattern_mining.formal_concept_analysis import grecond
 from evaluation import (
     get_micro_averaged_recall,
     get_macro_averaged_recall,

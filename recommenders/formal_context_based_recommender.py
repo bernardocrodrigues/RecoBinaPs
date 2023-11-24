@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 import numpy as np
 
 from surprise import AlgoBase, PredictionImpossible, Trainset
-from fca.formal_concept_analysis import get_factor_matrices_from_concepts, Concept
+from pattern_mining.formal_concept_analysis import get_factor_matrices_from_concepts, Concept
 from dataset.binary_dataset import load_from_trainset
 
 from . import DEFAULT_LOGGER

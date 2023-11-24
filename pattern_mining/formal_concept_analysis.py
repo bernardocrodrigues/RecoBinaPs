@@ -22,7 +22,6 @@ import numba as nb
 from typing import List
 
 from dataset.binary_dataset import i, t, _it, assert_binary_dataset
-from fca.formal_concept_analysis import Concept
 
 from . import DEFAULTLOGGER
 

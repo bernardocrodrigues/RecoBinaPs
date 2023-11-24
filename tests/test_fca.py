@@ -5,7 +5,7 @@ Tests for the fca module.
 import pytest
 from unittest.mock import patch
 import numpy as np
-from fca.formal_concept_analysis import (
+from pattern_mining.formal_concept_analysis import (
     get_factor_matrices_from_concepts,
     create_concept,
     grecond,
