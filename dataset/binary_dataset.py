@@ -123,7 +123,7 @@ def load_from_trainset(trainset: Trainset, threshold: float = 1.0):
 
     assert isinstance(trainset, Trainset)
     assert isinstance(threshold, float)
-    assert threshold >= 0.0 and threshold <= 1.0
+    assert threshold >= 0.0 and threshold <= 5.0
 
     dataset = np.zeros((trainset.n_users, trainset.n_items), dtype=bool)
 
