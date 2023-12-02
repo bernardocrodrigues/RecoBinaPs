@@ -10,6 +10,7 @@ from evaluation import (
     get_micro_averaged_precision,
     get_macro_averaged_precision,
     get_precision_at_k,
+    count_impossible_predictions,
 )
 
 
@@ -71,6 +72,7 @@ def generic_thread(
             threshold=threshold,
             k=number_of_top_recommendations,
         ),
+        "impossible_predictions": count_impossible_predictions(predictions=predictions),
         "fit_time": elapsed_fit_time,
         "test_time": elapsed_test_time,
     }

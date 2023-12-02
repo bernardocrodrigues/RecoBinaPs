@@ -367,3 +367,20 @@ def get_recall_at_k(predictions, threshold=1, k=20):
         return statistics.mean(recalls)
     except statistics.StatisticsError:
         return 0
+
+
+def count_impossible_predictions(predictions: List[Prediction]) -> int:
+    """
+    Returns the number of predictions that were impossible to generate.
+
+    Args:
+        predictions (List[Prediction]): A list of predictions.
+
+    Returns:
+        int: The number of impossible predictions.
+    """
+    count = 0
+    for prediction in predictions:
+        if prediction.details["was_impossible"]:
+            count += 1
+    return count
