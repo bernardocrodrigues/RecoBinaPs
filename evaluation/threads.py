@@ -14,27 +14,31 @@ from evaluation import (
 )
 
 
-def generic_thread(
+def generic_benchmark_thread(
     fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
     recommender: Tuple[str, AlgoBase],
     threshold: float = 5.0,
     number_of_top_recommendations: int = 20,
 ):
     """
-    This function is used to parallelize the GreConD recommender. It puts the results on a
-    dictionary called 'output'. 'output' is expected to be a Manager().dict() object since it is
-    shared between processes.
+    Benchmarks a recommender system and returns the raw results. Even though you can call it
+    directly, this function is expected to be used in a multiprocessing test bench
+    (e.g. multiprocessing.Pool.starmap).
 
     Args:
         fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be processed.
-        output (Dict): The dictionary to put the results on.
-        recommender (Tuple[str, AlgoBase]): The recommender to use. It is a tuple of the name of
-            the recommender and the recommender itself.
-        threshold (float): The relevance threshold to use.
-        number_of_top_recommendations (int): The number of top recommendations to use.
+            It is a tuple of the fold index and the trainset and testset to be used.
+        recommender (Tuple[str, AlgoBase]): The recommender to be evaluated. It is a tuple of the
+            recommender name and the recommender object. The recommender must implement Surprise's
+            AlgoBase API (fit and test methods).
+        threshold (float): The threshold that determines whether a rating is relevant or not. This
+            is used for calculating metrics that assume a binary prediction (e.g. recall).
+        number_of_top_recommendations (int): The number of top recommendations to be considered
+            when calculating metrics that assume a top-k list of recommendations (e.g. precision@k).
 
     Returns:
-        None
+        Tuple[int, str, dict]: The results of the benchmark. It is a tuple of the fold index, the
+            recommender name and the raw results.
     """
     fold_index, (trainset, testset) = fold
     recommender_name, recommender_object = recommender
