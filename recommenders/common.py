@@ -112,10 +112,10 @@ def get_user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
         Science, 36-55. doi:10.1007/978-3-540-77485-3
 
     Args:
-        user (np.ndarray): A 1D numpy array representing the user's preferences. The array must
+        user (np.ndarray): A 1D numpy array representing the user's relevant items. The array must
         be an itemset representation.
-        pattern (np.ndarray): A 1D numpy array representing the pattern's preferences.The array must
-        be an itemset representation.
+        pattern (np.ndarray): A 1D numpy array representing the pattern's relevant items.The array
+        must be an itemset representation.
 
     Returns:
         float: A value between 0 and 1 representing the similarity between the user and the pattern.
@@ -145,8 +145,9 @@ def get_top_k_patterns_for_user(
     have the highest similarity with the user.
 
     Args:
-        patterns (List[np.array]): The patterns to consider as itemsets.
-        binarized_user (np.array): The user to consider as an itemset.
+        patterns (List[np.array]): The patterns that will be analyzed. Each pattern must be an
+                                    itemset representation.
+        binarized_user (np.array): The target user. The array must be an itemset representation.
         number_of_top_k_patterns (int): The number of patterns to return.
     """
     assert isinstance(patterns, list)
