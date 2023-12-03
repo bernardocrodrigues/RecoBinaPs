@@ -62,7 +62,7 @@ GRECOND_METRIC_NAMES = [
 
 def generic_benchmark_thread(
     fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
-    recommender: Tuple[str, AlgoBase],
+    recommender_variation: RecommenderVariation,
     threshold: float = 5.0,
     number_of_top_recommendations: int = 20,
 ):
@@ -72,7 +72,7 @@ def generic_benchmark_thread(
     (e.g. multiprocessing.Pool.starmap).
 
     Args:
-        fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be processed.
+        fold (Tuple[int, Tuple[Trainset, List[Tuple[str, str, float]]]]): The fold to be processed.
             It is a tuple of the fold index and the trainset and testset to be used.
         recommender (Tuple[str, AlgoBase]): The recommender to be evaluated. It is a tuple of the
             recommender name and the recommender object. The recommender must implement Surprise's
@@ -87,7 +87,27 @@ def generic_benchmark_thread(
             recommender name and the raw results.
     """
     fold_index, (trainset, testset) = fold
-    recommender_name, recommender_object = recommender
+    variation, recommender_object = recommender_variation
+
+    assert isinstance(fold_index, int)
+    assert isinstance(trainset, Trainset)
+    assert isinstance(testset, list)
+    assert len(testset) > 0
+    assert all(
+        [
+            isinstance(test_tuple, tuple)
+            and len(test_tuple) == 3
+            and isinstance(test_tuple[0], str)
+            and int(test_tuple[0]) >= 0
+            and isinstance(test_tuple[1], str)
+            and int(test_tuple[1]) >= 0
+            and isinstance(test_tuple[2], float)
+            for test_tuple in testset
+        ]
+    )
+    assert isinstance(variation, str)
+    assert variation != ""
+    assert isinstance(recommender_object, AlgoBase)
 
     start_time = time.time()
     recommender_object.fit(trainset)
@@ -97,7 +117,7 @@ def generic_benchmark_thread(
     predictions = recommender_object.test(testset)
     elapsed_test_time = time.time() - start_time
 
-    output = {
+    metrics = {
         "mae": mae(predictions=predictions, verbose=False),
         "rmse": rmse(predictions=predictions, verbose=False),
         "micro_averaged_recall": get_micro_averaged_recall(
@@ -127,12 +147,12 @@ def generic_benchmark_thread(
         "test_time": elapsed_test_time,
     }
 
-    return fold_index, recommender_name, output
+    return BenchmarkResult(fold_index, variation, metrics)
 
 
-def GreConDKNNRecommender2_benchmark_thread(
+def grecond_knn_2_recommender_benchmark_thread(
     fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
-    recommender: Tuple[str, grecond_recommender.GreConDKNNRecommender2],
+    recommender: RecommenderVariation,
     threshold: float = 5.0,
     number_of_top_recommendations: int = 20,
 ):
@@ -162,7 +182,7 @@ def GreConDKNNRecommender2_benchmark_thread(
 
     fold_index, recommender_name, output = generic_benchmark_thread(
         fold=fold,
-        recommender=recommender,
+        recommender_variation=recommender,
         threshold=threshold,
         number_of_top_recommendations=number_of_top_recommendations,
     )
