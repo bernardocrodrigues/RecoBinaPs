@@ -1,5 +1,6 @@
 import time
 import statistics
+from collections import namedtuple
 from typing import Tuple, List
 from surprise import Trainset, AlgoBase
 from surprise.accuracy import mae, rmse
@@ -15,6 +16,48 @@ from evaluation import (
 )
 
 from recommenders import grecond_recommender
+
+
+BenchmarkResult = namedtuple("BenchmarkResult", "fold_index variation metrics")
+"""
+A named tuple representing the result of a benchmark.
+
+Attributes:
+    fold_index (int): The index of the fold.
+    variation (str): The name of the recommender variation.
+    metrics (dict): The raw results of the benchmark.
+"""
+
+RecommenderVariation = namedtuple("RecommenderVariation", "variation recommender")
+"""
+A named tuple representing a recommender variation. The variation is a particular configuration of
+a recommender. For example, the RecommenderVariation for a UBCF recommender with cosine similarity
+and k=10 could be RecommenderVariation("UBCF_cosine_10", UBCF(k=10,sim_options={"name": 
+"cosine"})). The variation is used to sort the results of the benchmark afterwards. 
+
+Attributes:
+    variation (str): The name of the recommender variation.
+    recommender (AlgoBase): The recommender object.
+"""
+
+GENERIC_METRIC_NAMES = [
+    "mae",
+    "rmse",
+    "micro_averaged_recall",
+    "macro_averaged_recall",
+    "recall_at_k",
+    "micro_averaged_precision",
+    "macro_averaged_precision",
+    "precision_at_k",
+    "fit_time",
+    "test_time",
+    "impossible_predictions",
+]
+
+GRECOND_METRIC_NAMES = [
+    "mean_pattern_size",
+    "actual_coverage",
+]
 
 
 def generic_benchmark_thread(
