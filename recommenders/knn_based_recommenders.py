@@ -41,6 +41,14 @@ def get_item_neighborhood(
     The item neighborhood is the union of the top-k patterns for the user. See
     get_top_k_patterns_for_user() for more details on how the top-k patterns are computed.
 
+    Args:
+        dataset (np.ndarray): The dataset.
+        patterns (List[np.ndarray]): The patterns extracted from the dataset.
+        user_id (int): The target user's id.
+        user_binarization_threshold (float): The threshold used to binarize the user and covert it
+                                             to an itemset.
+        top_k_patterns (int): The number of top patterns to use to generate the item neighborhood.
+
     """
     assert dataset.ndim == 2
     assert dataset.shape[0] > 0
@@ -267,6 +275,24 @@ class KNNOverItemNeighborhood(AlgoBase, ABC):
         knn_k: int = 5,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
+        """
+        Args:
+            dataset_binarization_threshold (float): The threshold used to binarize the dataset.
+                Ratings greater than or equal to the threshold are considered relevant (True) and
+                ratings less than the threshold are considered irrelevant (False).This binarization
+                affects the patterns that will be extracted from the dataset.
+            minimum_pattern_bicluster_sparsity (float): The minimum sparsity of the biclusters
+                associated with each pattern. Patterns whose biclusters have a sparsity less than
+                this value will be discarded. If this value is 0, no filtering will be performed.
+            user_binarization_threshold (float): The threshold used to binarize the user when
+                generating the user-item neighborhood. This happens after the patterns are extracted
+                from the dataset. Ratings greater than or equal to the threshold are considered
+                relevant (True) and ratings less than the threshold are considered irrelevant
+                (False). This binarization affects the user-item neighborhood.
+            knn_k (int): The number of itens to use to estimate ratings within the user-item
+                neighborhood.
+            logger (logging.Logger): The logger that will be used to log messages.
+        """
         AlgoBase.__init__(self)
 
         assert isinstance(minimum_pattern_bicluster_sparsity, float)
