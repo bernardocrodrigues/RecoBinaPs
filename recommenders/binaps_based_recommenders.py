@@ -58,6 +58,4 @@ class BinaPsKNNRecommender(KNNOverItemNeighborhood):
                     hidden_dimension=self.hidden_dimension_neurons_number,
                 )
 
-        patterns = get_patterns_from_weights(weights, self.weights_binarization_threshold)
-
-        return patterns
+        self.patterns = get_patterns_from_weights(weights, self.weights_binarization_threshold)
