@@ -1,3 +1,12 @@
+""" threads.py
+
+This module implements the threads used in the benchmarking process. The benchmarking process is
+performed in parallel using the multiprocessing module. The threads are used to evaluate the
+recommender systems in each fold of the cross-validation process.
+
+Copyright 2023 Bernardo C. Rodrigues
+See LICENSE file for license details
+"""
 import time
 import statistics
 from collections import namedtuple
