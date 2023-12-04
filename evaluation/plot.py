@@ -270,7 +270,7 @@ def calculate_boxplot_values(series: List[float]):
 
     assert isinstance(series, list)
     assert len(series) > 0
-    assert all(isinstance(element, float) for element in series)
+    assert all(isinstance(element, float) or isinstance(element, int)  for element in series)
 
     q_1 = np.percentile(series, 25)
     q_3 = np.percentile(series, 75)
