@@ -171,8 +171,38 @@ def benchmark(
     Args:
         fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be processed.
             It is a tuple of the fold index and the trainset and testset to be used.
-        recommender (Tuple[str, grecond_recommender.GreConDKNNRecommender2]): The recommender to be
-            evaluated. It is a tuple of the recommender name and the recommender object.
+        parallel_recommender_variations (List[RecommenderVariation]): The recommender variations
+            that should be evaluated in parallel.
+        sequential_recommender_variations (List[RecommenderVariation]): The recommender variations
+            that should be evaluated sequentially. This is useful for recommender variations that
+            are not thread-safe or that use up a lot of resources.
+        repeats (int): The number of times each recommender variation should be evaluated.
+        relevance_threshold (float): The threshold that determines whether a rating is relevant or
+            not. This is used for calculating metrics that assume a binary prediction (e.g. recall).
+        number_of_top_recommendations (int): The number of top recommendations to be considered
+            when calculating metrics that assume a top-k list of recommendations (e.g. precision@k).
+        benchmark_thread (Callable): The function that should be used to benchmark a single
+            recommender variation. It should take the same arguments as the generic_benchmark_thread
+            function.
+        thread_count (int): The number of threads to be used for parallelization.
+
+    Returns:
+        Dictionary that maps recommender variations to metrics to lists of results. The dictionary
+        is structured as follows:
+
+        {
+            "Recommender Variation 1": {
+                "Metric 1": [Result 1, Result 2, Result 3, ...],
+                "Metric 2": [Result 1, Result 2, Result 3, ...],
+                ...
+            },
+            "Recommender Variation 2": {
+                "Metric 1": [Result 1, Result 2, Result 3, ...],
+                "Metric 2": [Result 1, Result 2, Result 3, ...],
+                ...
+            },
+            ...
+        }
     """
 
     assert isinstance(folds, list)
