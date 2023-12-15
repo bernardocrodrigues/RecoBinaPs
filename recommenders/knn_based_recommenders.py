@@ -6,7 +6,7 @@ This module defines recommendation engines apply some kind of kNN algorithm to e
 """
 
 import logging
-from typing import Callable, List, Dict
+from typing import Callable, List
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -249,7 +249,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
         return rating, details
 
 
-class KNNOverItemNeighborhood(AlgoBase, ABC):
+class KNNOverItemNeighborhoodRecommender(AlgoBase, ABC):
     """
     Family of recommendation engines that use the KNN algorithm over the a user-item neighborhood
     to estimate ratings.
@@ -361,7 +361,6 @@ class KNNOverItemNeighborhood(AlgoBase, ABC):
                 self.dataset, self.patterns, self.minimum_pattern_bicluster_sparsity
             )
             self.logger.info("Filtered patterns: %d", len(self.patterns))
-
 
         self.user_item_neighborhood = {}
         for user_id in range(self.dataset.shape[0]):

@@ -12,11 +12,11 @@ from dataset.binary_dataset import (
     save_as_binaps_compatible_input,
 )
 
-from .knn_based_recommenders import KNNOverItemNeighborhood
+from .knn_based_recommenders import KNNOverItemNeighborhoodRecommender
 from . import DEFAULT_LOGGER
 
 
-class BinaPsKNNRecommender(KNNOverItemNeighborhood):
+class BinaPsKNNRecommender(KNNOverItemNeighborhoodRecommender):
     def __init__(
         self,
         epochs: int = 100,
