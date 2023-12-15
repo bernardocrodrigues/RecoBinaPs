@@ -13,7 +13,7 @@ import pandas as pd
 from scipy.spatial import distance
 
 
-def jaccard_distance(A: np.array, B: np.array) -> float:
+def jaccard_distance(a: np.array, b: np.array) -> float:
     """
     Calculate the Jaccard distance between two boolean numpy arrays A and B.
 
@@ -30,7 +30,7 @@ def jaccard_distance(A: np.array, B: np.array) -> float:
         distance = jaccard_distance(A, B)
         # Output: 0.5
     """
-    return distance.jaccard(A, B)
+    return distance.jaccard(a, b)
 
 
 def get_similarity_matrix(dataset, distance_strategy=jaccard_distance):
