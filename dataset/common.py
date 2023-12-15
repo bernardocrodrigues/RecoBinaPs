@@ -42,7 +42,8 @@ def load_dataset_from_trainset(trainset: Trainset) -> np.ndarray:
     """
 
     assert isinstance(trainset, Trainset)
-    dataset = np.zeros((trainset.n_users, trainset.n_items), dtype=np.float64)
+
+    dataset = np.full((trainset.n_users, trainset.n_items), dtype=np.float64, fill_value=np.NAN)
 
     for uid, iid, rating in trainset.all_ratings():
         dataset[uid][iid] = rating
