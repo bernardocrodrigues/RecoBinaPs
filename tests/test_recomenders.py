@@ -7,10 +7,21 @@ from unittest.mock import Mock
 import numpy as np
 import pandas as pd
 from pytest import approx
-from recommenders.common import jaccard_distance, get_similarity_matrix, get_user_pattern_similarity, get_sparse_representation_of_the_bicluster
+from recommenders.common import (
+    jaccard_distance,
+    get_similarity_matrix,
+    get_user_pattern_similarity,
+    get_sparse_representation_of_the_bicluster,
+    cosine_similarity,
+)
 from tests.toy_datasets import zaki_binary_dataset
 
 # pylint: disable=missing-function-docstring
+
+
+import pytest
+
+import scipy
 
 
 def test_jaccard_distance():
@@ -138,64 +149,206 @@ class Test_get_user_pattern_similarity:
 
 
 class Test_get_sparse_representation_of_the_bicluster:
-
     def test_1(self):
-        
-        bicluster = [
-            [0, 1, 0, 2],
-            [0, 0, 3, 0],
-            [4, 0, 0, 5],
-            [0, 6, 0, 0]
-        ]
+        bicluster = [[0, 1, 0, 2], [0, 0, 3, 0], [4, 0, 0, 5], [0, 6, 0, 0]]
         bicluster_column_indexes = [0, 2, 3, 5]
 
         result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
 
-        expected_result = pd.DataFrame({
-            "user": [0, 0, 1, 2, 2, 3],
-            "item": [2, 5, 3, 0, 5, 2],
-            "rating": [1, 2, 3, 4, 5, 6]
-        })
+        expected_result = pd.DataFrame(
+            {"user": [0, 0, 1, 2, 2, 3], "item": [2, 5, 3, 0, 5, 2], "rating": [1, 2, 3, 4, 5, 6]}
+        )
 
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_2(self):
-
-        bicluster = [
-            [1, 0, 0, 0],
-            [0, 2, 0, 0],
-            [0, 0, 3, 0],
-            [0, 0, 0, 4]
-        ]
+        bicluster = [[1, 0, 0, 0], [0, 2, 0, 0], [0, 0, 3, 0], [0, 0, 0, 4]]
         bicluster_column_indexes = [0, 1, 2, 3]
 
         result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
 
-        expected_result = pd.DataFrame({
-            "user": [0, 1, 2, 3],
-            "item": [0, 1, 2, 3],
-            "rating": [1, 2, 3, 4]
-        })
+        expected_result = pd.DataFrame(
+            {"user": [0, 1, 2, 3], "item": [0, 1, 2, 3], "rating": [1, 2, 3, 4]}
+        )
 
         pd.testing.assert_frame_equal(result, expected_result)
 
     def test_3(self):
-
-        bicluster = [
-            [4, 0, 3, 0],
-            [0, 2, 0, 0],
-            [0, 0, 5, 0],
-            [1, 0, 0, 4]
-        ]
+        bicluster = [[4, 0, 3, 0], [0, 2, 0, 0], [0, 0, 5, 0], [1, 0, 0, 4]]
         bicluster_column_indexes = [10, 3, 1, 90]
 
         result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
 
-        expected_result = pd.DataFrame({
-            "user": [0, 0, 1, 2, 3, 3],
-            "item": [10, 1, 3, 1, 10, 90],
-            "rating": [4, 3, 2, 5, 1, 4]
-        })
+        expected_result = pd.DataFrame(
+            {
+                "user": [0, 0, 1, 2, 3, 3],
+                "item": [10, 1, 3, 1, 10, 90],
+                "rating": [4, 3, 2, 5, 1, 4],
+            }
+        )
 
         pd.testing.assert_frame_equal(result, expected_result)
         print(result)
+
+
+class TestCosineSimilarity:
+    def test_invalid_args(self):
+        u = np.array([1, 2, 3, 4], dtype=int)
+        v = np.array([1, 2, 3, 4], dtype=int)
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+        
+        u = np.array([1, 2, 3, 4], dtype=np.float32)
+        v = np.array([1, 2, 3, 4], dtype=int)
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+        u = np.array([1, 2, 3, 4, 5])
+        v = np.array([1, 2, 3, 4])
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+        u = np.array([1, 2, 3, 4])
+        v = np.array([1, 2, 3, 4, 5])
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+        u = np.array([1, 2, 3, 4])
+        v = np.array([True, False, True, False])
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+        u = np.array([True, False, True, False])
+        v = np.array([1, 2, 3, 4])
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+        u = np.array([1, 2, 3, 4])
+        v = "string"
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+        u = "string"
+        v = np.array([1, 2, 3, 4])
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+        u = np.array(([1, 2, 3, 4], [1, 2, 3, 4]))
+        v = np.array([1, 2, 3, 4])
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+        u = np.array([1, 2, 3, 4])
+        v = np.array(([1, 2, 3, 4], [1, 2, 3, 4]))
+        with np.testing.assert_raises(AssertionError):
+            cosine_similarity(u, v)
+
+    def test_full_similarity_no_nan_vaules(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+
+        u = np.array([1], dtype=np.float64)
+        v = np.array([1], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+
+        u = np.array([1, 2], dtype=np.float64)
+        v = np.array([1, 2], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+
+    def test_full_similarity_but_one_vector_has_more_items(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, 3, 4, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, 3, np.nan, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, np.nan, np.nan, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+
+    def test_vector_only_has_nans(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([np.nan, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert math.isnan(similarity)
+
+        u = np.array([np.nan, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
+        v = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert math.isnan(similarity)
+
+    @pytest.mark.parametrize("execution_number", range(1000))
+    def test_partial_similarity_with_nonans(self, execution_number):
+        size = np.random.randint(1, 100)
+
+        u = np.random.rand(1, size)[0] * 5
+        v = np.random.rand(1, size)[0] * 5
+
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(similarity, 1 - scipy.spatial.distance.cosine(u, v), rel_tol=1e-9)
+
+    def test_partial_similarity_with_nans(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, np.nan, np.nan, np.nan], dtype=np.float64)
+
+        u_no_nan = np.array([1, 2], dtype=np.float64)
+        v_no_nan = np.array([1, 2], dtype=np.float64)
+
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
+
+        u_no_nan = np.array([1], dtype=np.float64)
+        v_no_nan = np.array([1], dtype=np.float64)
+
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([np.nan, np.nan, 2, np.nan, np.nan], dtype=np.float64)
+
+        u_no_nan = np.array([3], dtype=np.float64)
+        v_no_nan = np.array([2], dtype=np.float64)
+
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([np.nan, np.nan, np.nan, 1, 1], dtype=np.float64)
+
+        u_no_nan = np.array([4, 5], dtype=np.float64)
+        v_no_nan = np.array([1, 1], dtype=np.float64)
+
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
+
+        u = np.random.rand(1, 100000)[0]
+        v = np.random.rand(1, 100000)[0]
+
+        u[0] = np.nan
+
+        assert scipy.spatial.distance.cosine(u, v) == 0

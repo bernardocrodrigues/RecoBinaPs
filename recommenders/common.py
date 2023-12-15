@@ -246,33 +246,68 @@ def _get_cosine_similarity_matrix(dataset: np.array):
     return similarity_matrix
 
 
+def cosine_similarity(u: np.array, v: np.array) -> float:
+    """
+    Computes the cosine similarity between two vectors u and v. The cosine similarity is defined
+    as follows:
+
+    cosine_similarity(u, v) = (u . v) / (||u|| * ||v||)
+                            = sum(u[i] * v[i]) / (sqrt(sum(u[i] ** 2)) * sqrt(sum(v[i] ** 2))),
+                              for all i in [0, n)
+
+        where u and v are two vectors and ||u|| is the norm of u and n is the size of the vectors.
+
+    Unlike scipy.spatial.distance.cosine, this function handles NaN values in the vectors. If a
+    NaN value is found in the vectors, that coordinate is ignored in the calculation of the
+    similarity. If all coordinates are NaN, the similarity is NaN. In addition, this function
+    returns the similarity instead of the dissimilarity.
+
+    Args:
+        u (np.array): The first vector.
+        v (np.array): The second vector.
+
+    Returns:
+        float: The cosine similarity between u and v.
+
+    Raises:
+        AssertionError: If the vectors are not 1D numpy arrays.
+        AssertionError: If the vectors have different sizes.
+        AssertionError: If the vectors are not of type np.float64.
+    """
+    assert isinstance(u, np.ndarray)
+    assert isinstance(v, np.ndarray)
+    assert u.ndim == 1
+    assert v.ndim == 1
+    assert u.size == v.size
+    assert np.issubdtype(u.dtype, np.float64)
+    assert np.issubdtype(v.dtype, np.float64)
+
+    return _cosine_similarity(u=u, v=v)
+
+
 @nb.njit
-def _compute_targets_neighborhood_cosine_similarity(
-    dataset: np.array, similarity_matrix: np.array, target: int, neighborhood: np.array
-):
-    for neighbor in neighborhood:
-        if not math.isnan(similarity_matrix[target, neighbor]):
-            continue
+def _cosine_similarity(u: np.array, v: np.array) -> float:
+    not_null_u = np.nonzero(~np.isnan(u))[0]
+    not_null_v = np.nonzero(~np.isnan(v))[0]
 
-        if not dataset[:, target].any() or not dataset[:, neighbor].any():
-            similarity_matrix[target, neighbor] = 0
-            similarity_matrix[neighbor, target] = 0
-            continue
+    common_indices_in_uv = np.intersect1d(not_null_u, not_null_v)
 
-        # The snippet below was taken from scipy.spatial.distance.cosine
-        u = dataset[:, target]
-        v = dataset[:, neighbor]
-        uv = np.average(u * v)
-        uu = np.average(np.square(u))
-        vv = np.average(np.square(v))
-        dist = 1.0 - uv / np.sqrt(uu * vv)
-        a = np.abs(dist)
-        dissimilarity = max(0, min(a, 2.0))
-        # end of snippet
+    if common_indices_in_uv.size == 0:
+        return np.NaN
 
-        similarity = 1 - dissimilarity
-        similarity_matrix[target, neighbor] = similarity
-        similarity_matrix[neighbor, target] = similarity
+    common_u = u[common_indices_in_uv]
+    common_v = v[common_indices_in_uv]
+
+    numerator = np.dot(common_u, common_v)
+
+    uu = np.dot(common_u, common_u)
+    vv = np.dot(common_v, common_v)
+
+    denominator = np.sqrt(uu * vv)
+
+    similarity = numerator / denominator
+
+    return similarity
 
 
 def compute_targets_neighborhood_cosine_similarity(
@@ -315,9 +350,21 @@ def compute_targets_neighborhood_cosine_similarity(
     assert np.all(neighborhood >= 0)
     assert np.all(neighborhood < dataset.shape[1])
 
-    _compute_targets_neighborhood_cosine_similarity(
-        dataset, similarity_matrix, target, neighborhood
-    )
+    for neighbor in neighborhood:
+        if not math.isnan(similarity_matrix[target, neighbor]):
+            continue
+
+        if not dataset[:, target].any() or not dataset[:, neighbor].any():
+            similarity_matrix[target, neighbor] = 0
+            similarity_matrix[neighbor, target] = 0
+            continue
+
+        u = dataset[:, target]
+        v = dataset[:, neighbor]
+
+        similarity = cosine_similarity(u=u, v=v)
+        similarity_matrix[target, neighbor] = similarity
+        similarity_matrix[neighbor, target] = similarity
 
 
 def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int) -> np.array:
@@ -351,3 +398,4 @@ def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int)
 # be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
 # of compiling the functions when they are called.
 get_cosine_similarity_matrix(np.array([[1, 1, 0, 0], [1, 0, 1, 0]]))
+cosine_similarity(np.array([1, 1, 0, 0]), np.array([1, 0, 1, 0]))
