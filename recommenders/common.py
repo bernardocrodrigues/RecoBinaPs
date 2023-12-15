@@ -5,12 +5,12 @@ This module contains common functions used by the recommenders.
 """
 
 import math
+from typing import List
 import numpy as np
 import numba as nb
 import pandas as pd
 
 from scipy.spatial import distance
-from typing import List
 
 
 def jaccard_distance(A: np.array, B: np.array) -> float:
