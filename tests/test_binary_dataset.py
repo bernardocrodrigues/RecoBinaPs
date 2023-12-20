@@ -7,7 +7,7 @@ import tempfile
 from pathlib import Path
 import numpy as np
 from surprise import Dataset, Trainset
-from binaps.binaps_wrapper import generate_synthetic_data
+from pattern_mining.binaps.binaps_wrapper import generate_synthetic_data
 from dataset.binary_dataset import (
     load_binary_dataset_from_trainset,
     load_from_binaps_compatible_input,

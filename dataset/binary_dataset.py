@@ -19,7 +19,7 @@ import numpy as np
 import numba as nb
 import typing
 from surprise import Trainset
-from binaps.original.Binaps_code.dataLoader import readDatFile
+from pattern_mining.binaps.original.Binaps_code.dataLoader import readDatFile
 
 
 @nb.njit

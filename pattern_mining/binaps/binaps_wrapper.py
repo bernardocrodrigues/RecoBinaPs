@@ -21,10 +21,10 @@ from torch.nn import init
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
 
-from binaps.original.Binaps_code import dataLoader as mydl
-from binaps.original.Binaps_code import my_loss as mylo
-from binaps.original.Binaps_code.network import initWeights, Net
-from binaps.original.Binaps_code.my_layers import BinarizeTensorThresh
+from pattern_mining.binaps.original.Binaps_code import dataLoader as mydl
+from pattern_mining.binaps.original.Binaps_code import my_loss as mylo
+from pattern_mining.binaps.original.Binaps_code.network import initWeights, Net
+from pattern_mining.binaps.original.Binaps_code.my_layers import BinarizeTensorThresh
 
 
 def generate_synthetic_data(
