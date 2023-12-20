@@ -24,7 +24,7 @@ def apply_bicluster_sparsity_filter(
     """
 
     assert isinstance(ratings_dataset, np.ndarray)
-    assert ratings_dataset.dtype == np.int64
+    assert ratings_dataset.dtype == np.float64
     assert ratings_dataset.ndim == 2
     assert ratings_dataset.shape[0] > 0
     assert ratings_dataset.shape[1] > 0
