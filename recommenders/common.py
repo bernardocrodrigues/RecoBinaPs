@@ -100,7 +100,7 @@ def get_user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
     Calculates the similarity between a user and a pattern based on the number of items they have
     in common. The similarity is defined as follows:
 
-            similarity = |I_u ∩ I_p| / |I_u ∩ I_p| + |I_p \ I_u|
+            similarity = |I_u ∩ I_p| / |I_u ∩ I_p| + |I_p - I_u|
 
         where I_u is the set of relevant items for the user and I_p is the set of relevant items
         for the pattern.
@@ -121,12 +121,12 @@ def get_user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
         float: A value between 0 and 1 representing the similarity between the user and the pattern.
     """
     assert isinstance(user, np.ndarray)
-    assert issubclass(user.dtype.type, np.integer)
+    assert user.dtype == np.int64
     assert user.ndim == 1
 
     assert isinstance(pattern, np.ndarray)
+    assert pattern.dtype == np.int64
     assert pattern.ndim == 1
-    assert issubclass(pattern.dtype.type, np.integer)
 
     number_of_itens_from_pattern_in_user = np.intersect1d(user, pattern).size
     try:
