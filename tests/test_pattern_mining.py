@@ -1,4 +1,5 @@
 from pattern_mining.common import apply_bicluster_sparsity_filter
+from pattern_mining.formal_concept_analysis import create_concept
 import numpy as np
 
 
@@ -16,59 +17,57 @@ class Test_filter_patterns_based_on_bicluster_sparsity:
         )
 
         patterns = [
-            np.array([0, 1]),
-            np.array([0]),
-            np.array([4]),
+            create_concept(
+                np.array([0, 1, 2, 3, 4], dtype=np.int64), np.array([0, 1], dtype=np.int64)
+            ),
+            create_concept(
+                np.array([0, 1, 2, 3, 4], dtype=np.int64), np.array([0], dtype=np.int64)
+            ),
+            create_concept(
+                np.array([0, 1, 2, 3, 4], dtype=np.int64), np.array([4], dtype=np.int64)
+            ),
         ]
 
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.2
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.2)
         assert len(filtered_patterns) == 3
 
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.1
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.1)
         assert len(filtered_patterns) == 3
 
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.3
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.3)
         assert len(filtered_patterns) == 0
 
         patterns = [
-            np.array([2]),
+            create_concept(
+                np.array([0, 1, 2, 3, 4], dtype=np.int64), np.array([2], dtype=np.int64)
+            ),
         ]
 
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.2
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.2)
         assert len(filtered_patterns) == 1
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.6
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.6)
         assert len(filtered_patterns) == 1
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.7
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.7)
         assert len(filtered_patterns) == 0
 
         patterns = [
-            np.array([0, 1]),
-            np.array([0]),
-            np.array([4]),
-            np.array([2]),
+            create_concept(
+                np.array([0, 1, 2, 3, 4], dtype=np.int64), np.array([0, 1], dtype=np.int64)
+            ),
+            create_concept(
+                np.array([0, 1, 2, 3, 4], dtype=np.int64), np.array([0], dtype=np.int64)
+            ),
+            create_concept(
+                np.array([0, 1, 2, 3, 4], dtype=np.int64), np.array([4], dtype=np.int64)
+            ),
+            create_concept(
+                np.array([0, 1, 2, 3, 4], dtype=np.int64), np.array([2], dtype=np.int64)
+            ),
         ]
 
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.2
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.2)
         assert len(filtered_patterns) == 4
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.6
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.6)
         assert len(filtered_patterns) == 1
-        filtered_patterns = apply_bicluster_sparsity_filter(
-            rating_dataset, patterns, 0.7
-        )
+        filtered_patterns = apply_bicluster_sparsity_filter(rating_dataset, patterns, 0.7)
         assert len(filtered_patterns) == 0
