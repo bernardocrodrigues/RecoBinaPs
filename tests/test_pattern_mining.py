@@ -1,4 +1,4 @@
-from pattern_mining.common import filter_patterns_based_on_bicluster_sparsity
+from pattern_mining.common import apply_bicluster_sparsity_filter
 import numpy as np
 
 
@@ -21,17 +21,17 @@ class Test_filter_patterns_based_on_bicluster_sparsity:
             np.array([4]),
         ]
 
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.2
         )
         assert len(filtered_patterns) == 3
 
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.1
         )
         assert len(filtered_patterns) == 3
 
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.3
         )
         assert len(filtered_patterns) == 0
@@ -40,15 +40,15 @@ class Test_filter_patterns_based_on_bicluster_sparsity:
             np.array([2]),
         ]
 
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.2
         )
         assert len(filtered_patterns) == 1
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.6
         )
         assert len(filtered_patterns) == 1
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.7
         )
         assert len(filtered_patterns) == 0
@@ -60,15 +60,15 @@ class Test_filter_patterns_based_on_bicluster_sparsity:
             np.array([2]),
         ]
 
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.2
         )
         assert len(filtered_patterns) == 4
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.6
         )
         assert len(filtered_patterns) == 1
-        filtered_patterns = filter_patterns_based_on_bicluster_sparsity(
+        filtered_patterns = apply_bicluster_sparsity_filter(
             rating_dataset, patterns, 0.7
         )
         assert len(filtered_patterns) == 0
