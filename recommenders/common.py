@@ -132,7 +132,7 @@ def get_user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
     try:
         similarity = number_of_itens_from_pattern_in_user / pattern.size
     except ZeroDivisionError:
-        similarity = 0
+        similarity = 0.0
 
     return similarity
 
