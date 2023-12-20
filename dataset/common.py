@@ -50,6 +50,7 @@ def load_dataset_from_trainset(trainset: Trainset) -> np.ndarray:
 
     return dataset
 
+
 @nb.njit
 def generate_random_dataset(
     number_of_users: int, number_of_items: int, rating_scale: int, sparsity_target: float
