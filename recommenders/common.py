@@ -12,6 +12,8 @@ import pandas as pd
 
 from scipy.spatial import distance
 
+from pattern_mining.formal_concept_analysis import Concept
+
 
 def jaccard_distance(a: np.array, b: np.array) -> float:
     """
@@ -137,43 +139,45 @@ def get_user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
     return similarity
 
 
-def get_top_k_patterns_for_user(
-    patterns: List[np.array], binarized_user: np.array, number_of_top_k_patterns: int
-):
+def get_top_k_biclusters_for_user(
+    biclusters: List[Concept], user_as_tidset: np.array, number_of_top_k_patterns: int
+) -> List[Concept]:
     """
     Gets the top-k patterns for a given user. The top-k patterns are the patterns that
     have the highest similarity with the user.
 
     Args:
-        patterns (List[np.array]): The patterns that will be analyzed. Each pattern must be an
+        patterns (List[Concept]): The patterns that will be analyzed. Each pattern must be an
                                     itemset representation.
-        binarized_user (np.array): The target user. The array must be an itemset representation.
+        user_as_tidset (np.array): The target user. The array must be an tidset representation.
         number_of_top_k_patterns (int): The number of patterns to return.
-    """
-    assert isinstance(patterns, list)
-    assert all(isinstance(pattern, np.ndarray) for pattern in patterns)
-    assert all(pattern.ndim == 1 for pattern in patterns)
-    assert all(issubclass(pattern.dtype.type, np.integer) for pattern in patterns)
 
-    assert isinstance(binarized_user, np.ndarray)
-    assert binarized_user.ndim == 1
-    assert issubclass(binarized_user.dtype.type, np.integer)
+    Returns:
+        List[Concept]: The top-k patterns. The patterns are sorted in ascending order of
+                        similarity.
+    """
+    assert isinstance(biclusters, list)
+    assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
+
+    assert isinstance(user_as_tidset, np.ndarray)
+    assert user_as_tidset.dtype == np.int64
+    assert user_as_tidset.ndim == 1
 
     assert isinstance(number_of_top_k_patterns, int)
     assert number_of_top_k_patterns > 0
 
-    similar_patterns = []
+    similar_biclusters = []
     similarities = []
 
-    for pattern in patterns:
-        similarity = get_user_pattern_similarity(binarized_user, pattern)
+    for bicluster in biclusters:
+        similarity = get_user_pattern_similarity(user_as_tidset, bicluster.intent)
         if similarity > 0:
-            similar_patterns.append(pattern)
+            similar_biclusters.append(bicluster)
             similarities.append(similarity)
 
-    similarities = np.array(similarities)
+    similarities = np.array(similarities, dtype=np.float64)
     sorted_similarities_indexes = np.argsort(similarities)
-    sorted_similar_patterns = [similar_patterns[i] for i in sorted_similarities_indexes]
+    sorted_similar_patterns = [similar_biclusters[i] for i in sorted_similarities_indexes]
     top_k_patterns = sorted_similar_patterns[-number_of_top_k_patterns:]
 
     return top_k_patterns
