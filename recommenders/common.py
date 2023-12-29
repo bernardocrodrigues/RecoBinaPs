@@ -398,4 +398,4 @@ def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int)
 # be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
 # of compiling the functions when they are called.
 get_cosine_similarity_matrix(np.array([[1, 1, 0, 0], [1, 0, 1, 0]]))
-cosine_similarity(np.array([1, 1, 0, 0]), np.array([1, 0, 1, 0]))
+cosine_similarity(np.array([1, 1, 0, 0], dtype=np.float64), np.array([1, 0, 1, 0], dtype=np.float64))
