@@ -47,7 +47,7 @@ services:
       - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
       # Given the way BinaPs importing is done, we need to add the root of the original BinaPs
       # code to the PYTHONPATH so it can find the modules correctly.
-      - PYTHONPATH=$SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR/binaps/original/Binaps_code
+      - PYTHONPATH=$SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR/pattern_mining/binaps/original/Binaps_code
       - SOURCE_ROOT_DIR=$SOURCE_ROOT_DIR
     # Run the container as the current user.
     user: $UID:$GID
