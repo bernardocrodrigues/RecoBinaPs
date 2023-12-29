@@ -59,6 +59,28 @@ def create_concept(extent, intent):
 
     return Concept(processed_extent, processed_intent)
 
+def concepts_are_equal(concept1: Concept, concept2: Concept) -> bool:
+    """
+    Checks if two concepts are equal.
+
+    Args:
+        concept1: A Concept object.
+        concept2: A Concept object.
+
+    Returns:
+        True if the concepts are equal, False otherwise.
+
+    """
+
+    assert isinstance(concept1, Concept)
+    assert isinstance(concept2, Concept)
+
+    if np.array_equal(concept1.extent, concept2.extent) and np.array_equal(
+        concept1.intent, concept2.intent
+    ):
+        return True
+    return False
+
 
 @nb.njit
 def submatrix_intersection_size(
