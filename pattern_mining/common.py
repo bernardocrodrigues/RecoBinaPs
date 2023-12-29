@@ -95,9 +95,12 @@ def apply_bicluster_coverage_filter(
 
     return filtered_biclusters
 
+
+def apply_bicluster_relative_size_filter(
+    ratings_dataset: np.ndarray, biclusters: List[np.ndarray], threshold: float = 0.5
 ) -> List[np.ndarray]:
     """
-    Filters the patterns based on the sparsity of the biclusters they form.
+    Filters out the biclusters based on their relative size.
 
     Args:
         ratings_dataset (np.ndarray): The ratings dataset.
@@ -112,23 +115,26 @@ def apply_bicluster_coverage_filter(
     assert ratings_dataset.ndim == 2
     assert ratings_dataset.shape[0] > 0
     assert ratings_dataset.shape[1] > 0
-    assert np.issubdtype(ratings_dataset.dtype, np.number)
-    assert isinstance(patterns, list)
-    assert all(isinstance(pattern, np.ndarray) for pattern in patterns)
-    assert all(pattern.ndim == 1 for pattern in patterns)
+    assert np.issubdtype(ratings_dataset.dtype, np.float64)
 
-    assert all(all(item <= ratings_dataset.shape[1] for item in pattern) for pattern in patterns)
+    assert isinstance(biclusters, list)
+    assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
+    assert all(
+        all(extent_item < ratings_dataset.shape[0] for extent_item in bicluster.extent)
+        and all(intent_item < ratings_dataset.shape[1] for intent_item in bicluster.intent)
+        for bicluster in biclusters
+    )
 
     assert isinstance(threshold, float)
     assert 0 <= threshold <= 1
 
-    filtered_patterns = []
+    filtered_biclusters = []
 
-    for pattern in patterns:
-        bicluster = ratings_dataset[:, pattern]
-        bicluster_sparsity = (bicluster > 0).sum() / bicluster.size
+    for concept in biclusters:
+        bicluster = ratings_dataset[concept.extent, :][:, concept.intent]
+        bicluster_relative_size = bicluster.size / ratings_dataset.size
 
-        if bicluster_sparsity >= threshold:
-            filtered_patterns.append(pattern)
+        if bicluster_relative_size >= threshold:
+            filtered_biclusters.append(concept)
 
-    return filtered_patterns
+    return filtered_biclusters
