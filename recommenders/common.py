@@ -397,6 +397,34 @@ def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int)
     return k_most_similar
 
 
+def get_indices_above_threshold(subset: np.array, binarization_threshold: float) -> np.array:
+    """
+    Gets the indices of the elements in a subset that are above a given threshold. If this subset
+    is a row or column of a matrix, this function can be used to get the user in a tidset
+    representation or the items in an itemset representation, respectively.
+
+    Args:
+        subset (np.array): A row or column of a matrix.
+        binarization_threshold (float): The threshold. Elements above this threshold will be
+                                        considered relevant and will be present in the returned
+                                        indices.
+
+    Returns:
+        np.array: The indices of the elements in the subset that are above the threshold.
+    """
+
+    assert isinstance(subset, np.ndarray)
+    assert subset.ndim == 1
+    assert subset.size > 0
+    assert subset.dtype == np.float64
+
+    assert isinstance(binarization_threshold, float)
+
+    binarized_subset = subset >= binarization_threshold
+    indices_above_threshold = np.nonzero(binarized_subset)[0]
+    return indices_above_threshold
+
+
 # Numba Compilation
 # Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
 # be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
