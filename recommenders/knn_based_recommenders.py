@@ -6,7 +6,7 @@ This module defines recommendation engines apply some kind of kNN algorithm to e
 """
 
 import logging
-from typing import Callable, List
+from typing import Callable, List, Optional
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -14,12 +14,25 @@ from surprise import AlgoBase, PredictionImpossible, Trainset
 
 from dataset.binary_dataset import load_binary_dataset_from_trainset
 from dataset.common import load_dataset_from_trainset
-from pattern_mining.common import filter_patterns_based_on_bicluster_sparsity
-from pattern_mining.formal_concept_analysis import get_factor_matrices_from_concepts, Concept
+from pattern_mining.common import (
+    apply_bicluster_sparsity_filter,
+    apply_bicluster_coverage_filter,
+    apply_bicluster_relative_size_filter,
+)
+from pattern_mining.formal_concept_analysis import (
+    get_factor_matrices_from_concepts,
+    Concept,
+    create_concept,
+)
 
 from . import DEFAULT_LOGGER
 from .common import (
     get_cosine_similarity_matrix,
+    get_top_k_biclusters_for_user,
+    compute_neighborhood_cosine_similarity,
+    get_indices_above_threshold,
+)
+
 
 def merge_biclusters(
     biclusters: List[Concept],
@@ -211,92 +224,79 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
         return rating, details
 
 
-class KNNOverItemNeighborhoodRecommender(AlgoBase, ABC):
-    """
-    Family of recommendation engines that use the KNN algorithm over the a user-item neighborhood
-    to estimate ratings.
-
-    The user-item neighborhood is the set of items that are relevant to a given user. Therefore,
-    we exploit the locality of the user-item neighborhood to estimate ratings. This filtering
-    is expected to improve the accuracy of the predictions and reduce the time spent on
-    computations.
-
-    This class specifies that a method called generate_user_item_neighborhood() must be implemented
-    by subclasses. This method is responsible for generating the user-item neighborhood for each
-    user in the dataset. The user-item neighborhood is stored in the user_item_neighborhood
-    attribute. This attribute is a dictionary where the keys are the user ids and the values are
-    the user-item neighborhood for each user.
-    """
-
+class BiAKNN(AlgoBase, ABC):
     def __init__(
         self,
-        dataset_binarization_threshold: float = 1.0,
-        minimum_pattern_bicluster_sparsity: float = 0.08,
+        minimum_bicluster_sparsity: Optional[float] = None,
+        minimum_bicluster_coverage: Optional[float] = None,
+        minimum_bicluster_relative_size: Optional[int] = None,
+        knn_type: str = "item",
         user_binarization_threshold: float = 1.0,
-        top_k_patterns: int = 8,
+        number_of_top_k_biclusters: Optional[int] = 8,
         knn_k: int = 5,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
-        """
-        Args:
-            dataset_binarization_threshold (float): The threshold used to binarize the dataset.
-                Ratings greater than or equal to the threshold are considered relevant (True) and
-                ratings less than the threshold are considered irrelevant (False).This binarization
-                affects the patterns that will be extracted from the dataset.
-            minimum_pattern_bicluster_sparsity (float): The minimum sparsity of the biclusters
-                associated with each pattern. Patterns whose biclusters have a sparsity less than
-                this value will be discarded. If this value is 0, no filtering will be performed.
-            user_binarization_threshold (float): The threshold used to binarize the user when
-                generating the user-item neighborhood. This happens after the patterns are extracted
-                from the dataset. Ratings greater than or equal to the threshold are considered
-                relevant (True) and ratings less than the threshold are considered irrelevant
-                (False). This binarization affects the user-item neighborhood.
-            knn_k (int): The number of itens to use to estimate ratings within the user-item
-                neighborhood.
-            logger (logging.Logger): The logger that will be used to log messages.
-        """
         AlgoBase.__init__(self)
 
-        assert isinstance(minimum_pattern_bicluster_sparsity, float)
-        assert 0 <= minimum_pattern_bicluster_sparsity <= 1
+        assert isinstance(minimum_bicluster_sparsity, float) or minimum_bicluster_sparsity is None
+        if minimum_bicluster_sparsity is not None:
+            assert 0 <= minimum_bicluster_sparsity <= 1
+
+        assert isinstance(minimum_bicluster_coverage, float) or minimum_bicluster_coverage is None
+        if minimum_bicluster_coverage is not None:
+            assert 0 <= minimum_bicluster_coverage <= 1
+
+        assert (
+            isinstance(minimum_bicluster_relative_size, float)
+            or minimum_bicluster_relative_size is None
+        )
+        if minimum_bicluster_relative_size is not None:
+            assert 0 <= minimum_bicluster_relative_size <= 1
+
+        assert knn_type in ["user", "item"]
 
         assert isinstance(user_binarization_threshold, float)
         assert user_binarization_threshold >= 0
 
-        assert isinstance(top_k_patterns, int)
-        assert top_k_patterns > 0
+        assert isinstance(number_of_top_k_biclusters, int) or number_of_top_k_biclusters is None
+        if number_of_top_k_biclusters is not None:
+            assert number_of_top_k_biclusters > 0
 
         assert isinstance(knn_k, int)
         assert knn_k > 0
 
-        # Pattern filtering parameters
-        self.dataset_binarization_threshold = dataset_binarization_threshold
-        self.minimum_pattern_bicluster_sparsity = minimum_pattern_bicluster_sparsity
+        # Bicluster filtering parameters
+        self.minimum_bicluster_sparsity = minimum_bicluster_sparsity
+        self.minimum_bicluster_coverage = minimum_bicluster_coverage
+        self.minimum_bicluster_relative_size = minimum_bicluster_relative_size
+
+        # User-item neighborhood parameters
         self.user_binarization_threshold = user_binarization_threshold
-        self.top_k_patterns = top_k_patterns
+        self.number_of_top_k_biclusters = number_of_top_k_biclusters
 
         # KNN parameters
+        self.knn_type = knn_type
         self.knn_k = knn_k
 
+        # Other internal attributes
         self.logger = logger
-
-        self.user_item_neighborhood = None
         self.dataset = None
+        self.neighborhood = {}
         self.similarity_matrix = None
-        self.item_means = None
-        self.patterns = None
+        self.means = None
+        self.biclusters = None
 
     @abstractmethod
-    def compute_patterns_from_trainset(self) -> List[np.ndarray]:
+    def compute_biclusters_from_trainset(self) -> List[np.ndarray]:
         """
-        This method is responsible for computing the patterns that will be used to generate the
+        This method is responsible for computing the biclusters that will be used to generate the
         user-item neighborhood for each user in the dataset. Subclasses must implement this method.
 
         This method will be called after the loading of the trainset. Therefore, the trainset
         attribute will be available and should be used to generate the user-item neighborhood.
 
-        The patterns must be returned as a list of numpy arrays. Each numpy array represents a
-        pattern. The elements of the array are the item ids that are part of the pattern.
+        The biclusters must be returned as a list of Concepts.
+
         """
 
     def fit(self, trainset: Trainset):
@@ -313,66 +313,104 @@ class KNNOverItemNeighborhoodRecommender(AlgoBase, ABC):
         AlgoBase.fit(self, trainset)
 
         self.dataset = load_dataset_from_trainset(trainset)
+        self.compute_biclusters_from_trainset()
+        self.logger.info("Computed biclusters: %d", len(self.biclusters))
 
-        self.compute_patterns_from_trainset()
-
-        self.logger.info("Computed patterns: %d", len(self.patterns))
-
-        if self.minimum_pattern_bicluster_sparsity > 0:
-            self.patterns = filter_patterns_based_on_bicluster_sparsity(
-                self.dataset, self.patterns, self.minimum_pattern_bicluster_sparsity
+        if self.minimum_bicluster_sparsity:
+            self.biclusters = apply_bicluster_sparsity_filter(
+                self.dataset, self.biclusters, self.minimum_bicluster_sparsity
             )
-            self.logger.info("Filtered patterns: %d", len(self.patterns))
 
-        self.user_item_neighborhood = {}
+        if self.minimum_bicluster_coverage:
+            self.biclusters = apply_bicluster_coverage_filter(
+                self.dataset, self.biclusters, self.minimum_bicluster_coverage
+            )
+
+        if self.minimum_bicluster_relative_size:
+            self.biclusters = apply_bicluster_relative_size_filter(
+                self.dataset, self.biclusters, self.minimum_bicluster_relative_size
+            )
+
+        if not self.number_of_top_k_biclusters:
+            self.number_of_top_k_biclusters = len(self.biclusters)
+
+        self.logger.info("Filtered biclusters: %d", len(self.biclusters))
+
         for user_id in range(self.dataset.shape[0]):
-            item_neighborhood = get_item_neighborhood(
-                self.dataset,
-                self.patterns,
-                user_id,
-                self.user_binarization_threshold,
-                self.top_k_patterns,
+            user_as_tidset = get_indices_above_threshold(
+                self.dataset[user_id], self.user_binarization_threshold
             )
-            self.user_item_neighborhood[user_id] = item_neighborhood
 
-        self.item_means = np.zeros(self.trainset.n_items)
-        for x, ratings in self.trainset.ir.items():
-            self.item_means[x] = np.mean([r for (_, r) in ratings])
+            top_k_biclusters = get_top_k_biclusters_for_user(
+                self.biclusters, user_as_tidset, self.number_of_top_k_biclusters
+            )
 
-        self.similarity_matrix = np.full(
-            (self.trainset.n_items, self.trainset.n_items), dtype=float, fill_value=np.NAN
-        )
+            merged_bicluster = merge_biclusters(top_k_biclusters)
+
+            if self.knn_type == "user":
+                neighborhood = merged_bicluster.extent
+            else:
+                itens_rated_by_user_and_in_neighborhood = (
+                    self.dataset[user_id, merged_bicluster.intent] > 0
+                )
+                neighborhood = merged_bicluster.intent[itens_rated_by_user_and_in_neighborhood]
+
+            self.neighborhood[user_id] = neighborhood
+
+        if self.knn_type == "user":
+            n = self.trainset.n_users
+            ratings_map = self.trainset.ur.items()
+        else:
+            n = self.trainset.n_items
+            ratings_map = self.trainset.ir.items()
+
+        self.means = np.zeros(n)
+        for ratings_id, ratings in ratings_map:
+            self.means[ratings_id] = np.mean([r for (_, r) in ratings])
+
+        self.similarity_matrix = np.full((n, n), dtype=float, fill_value=np.NAN)
 
     def estimate(self, user: int, item: int):
         if not (self.trainset.knows_user(user) and self.trainset.knows_item(item)):
             raise PredictionImpossible("User and/or item is unknown.")
 
-        prediction = self.item_means[item]
-        actual_k = 0
-        details = {"actual_k": actual_k}
+        if self.knn_type == "user":
+            x, y = user, item
+            dataset = self.dataset
+        else:
+            x, y = item, user
+            dataset = self.dataset.T
 
-        if self.user_item_neighborhood[user].size == 0:
+        prediction = self.means[x]
+        actual_k = 0
+
+        if self.neighborhood[user].size == 0:
+            details = {"actual_k": actual_k}
             return prediction, details
 
-        compute_targets_neighborhood_cosine_similarity(
-            self.dataset, self.similarity_matrix, item, self.user_item_neighborhood[user]
+        compute_neighborhood_cosine_similarity(
+            dataset, self.similarity_matrix, x, self.neighborhood[user]
         )
 
-        targets_neighborhood_similarity = self.similarity_matrix[
-            item, self.user_item_neighborhood[user]
-        ]
-        targets_item_neighborhood_ratings = self.dataset[user, self.user_item_neighborhood[user]]
-        item_means = self.item_means[self.user_item_neighborhood[user]]
+        targets_neighborhood_similarity = self.similarity_matrix[x, self.neighborhood[user]]
+
+        all_neighborhood_ratings = dataset[self.neighborhood[user], y]
+
+        non_null_mask = all_neighborhood_ratings > 0
+        targets_neighborhood_ratings = all_neighborhood_ratings[non_null_mask]
+        targets_neighborhood_similarity = targets_neighborhood_similarity[non_null_mask]
+
+        means = self.means[self.neighborhood[user]]
 
         k_top_neighbors_indices = np.argsort(targets_neighborhood_similarity)[-self.knn_k :]
 
-        k_top_neighbors_ratings = targets_item_neighborhood_ratings[k_top_neighbors_indices]
+        k_top_neighbors_ratings = targets_neighborhood_ratings[k_top_neighbors_indices]
         k_top_neighbors_similarity = targets_neighborhood_similarity[k_top_neighbors_indices]
-        k_top_item_means = item_means[k_top_neighbors_indices]
+        k_top_means = means[k_top_neighbors_indices]
 
         sum_similarities = sum_ratings = 0
         for rating, similarity, item_mean in zip(
-            k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_item_means
+            k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means
         ):
             if similarity > 0:
                 sum_similarities += similarity
