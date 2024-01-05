@@ -347,16 +347,3 @@ def construct_context_from_binaps_patterns(
         context.append(Concept(tidset, itemset))
 
     return context
-
-
-# Numba Compilation
-# Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
-# be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
-# of compiling the functions when they are called.
-# get_factor_matrices_from_concepts([Concept([0, 1], [0, 1]), Concept([0, 1, 2], [0, 1, 2])], 4, 4)
-# erase_submatrix_values(
-#     [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
-# )
-# submatrix_intersection_size(
-#     [0, 1], [0, 2], np.array([[True, False, True], [False, True, True], [True, True, True]])
-# )

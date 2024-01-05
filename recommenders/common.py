@@ -371,7 +371,6 @@ def compute_neighborhood_cosine_similarity(
         similarity_matrix[neighbor, target] = similarity
 
 
-
 def get_indices_above_threshold(subset: np.array, binarization_threshold: float) -> np.array:
     """
     Gets the indices of the elements in a subset that are above a given threshold. If this subset
@@ -398,11 +397,3 @@ def get_indices_above_threshold(subset: np.array, binarization_threshold: float)
     binarized_subset = subset >= binarization_threshold
     indices_above_threshold = np.nonzero(binarized_subset)[0]
     return indices_above_threshold
-
-
-# Numba Compilation
-# Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
-# be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
-# of compiling the functions when they are called.
-get_cosine_similarity_matrix(np.array([[1, 1, 0, 0], [1, 0, 1, 0]]))
-cosine_similarity(np.array([1, 1, 0, 0], dtype=np.float64), np.array([1, 0, 1, 0], dtype=np.float64))
