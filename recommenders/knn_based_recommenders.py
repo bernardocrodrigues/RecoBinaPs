@@ -20,67 +20,29 @@ from pattern_mining.formal_concept_analysis import get_factor_matrices_from_conc
 from . import DEFAULT_LOGGER
 from .common import (
     get_cosine_similarity_matrix,
-    get_top_k_patterns_for_user,
-    compute_targets_neighborhood_cosine_similarity,
-)
 
-
-def get_item_neighborhood(
-    dataset: np.ndarray,
-    patterns: List[np.ndarray],
-    user_id: int,
-    user_binarization_threshold: float,
-    top_k_patterns: int,
-):
+def merge_biclusters(
+    biclusters: List[Concept],
+) -> Concept:
     """
-    Get the item neighborhood for a given user.
-
-    The item neighborhood is the set of items are the most relevant to a given user according to
-    the patterns extracted from the dataset.
-
-    The item neighborhood is the union of the top-k patterns for the user. See
-    get_top_k_patterns_for_user() for more details on how the top-k patterns are computed.
+    Merges a list of biclusters into a single bicluster. This means that the extent of the new
+    bicluster will be the union of the extents of the given biclusters and the intent of the new
+    bicluster will be the union of the intents of the given biclusters.
 
     Args:
-        dataset (np.ndarray): The dataset.
-        patterns (List[np.ndarray]): The patterns extracted from the dataset.
-        user_id (int): The target user's id.
-        user_binarization_threshold (float): The threshold used to binarize the user and covert it
-                                             to an itemset.
-        top_k_patterns (int): The number of top patterns to use to generate the item neighborhood.
+        biclusters (List[Concept]): A list of biclusters.
 
+    Returns:
+        Concept: A new bicluster that is the result of merging the given biclusters.
     """
-    assert dataset.ndim == 2
-    assert dataset.shape[0] > 0
-    assert dataset.shape[1] > 0
+    new_bicluster_extent = np.array([], dtype=np.int64)
+    new_bicluster_intent = np.array([], dtype=np.int64)
 
-    assert user_id >= 0
-    assert user_id < dataset.shape[0]
+    for bicluster in biclusters:
+        new_bicluster_extent = np.union1d(new_bicluster_extent, bicluster.extent)
+        new_bicluster_intent = np.union1d(new_bicluster_intent, bicluster.intent)
 
-    assert user_binarization_threshold >= 0
-
-    assert top_k_patterns > 0
-
-    user = dataset[user_id]
-    binarized_user = user >= user_binarization_threshold
-    binarized_user_as_itemset = np.nonzero(binarized_user)[0]
-
-    top_k_patterns_for_user = get_top_k_patterns_for_user(
-        patterns, binarized_user_as_itemset, top_k_patterns
-    )
-
-    merged_top_k_patterns = np.array([], dtype=int)
-
-    for pattern in top_k_patterns_for_user:
-        merged_top_k_patterns = np.union1d(merged_top_k_patterns, pattern)
-
-    itens_rated_by_user_and_in_merged_pattern = dataset[user_id, merged_top_k_patterns] > 0
-
-    rated_itens_from_merged_pattern = merged_top_k_patterns[
-        itens_rated_by_user_and_in_merged_pattern
-    ]
-
-    return rated_itens_from_merged_pattern
+    return create_concept(new_bicluster_extent, new_bicluster_intent)
 
 
 # pylint: disable=C0103
