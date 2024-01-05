@@ -371,8 +371,8 @@ class TestConstructContextFromBinapsPatterns:
         with pytest.raises(AssertionError):
             construct_context_from_binaps_patterns(dataset, patterns)
 
-    @patch("fca.formal_concept_analysis.t")
-    @patch("fca.formal_concept_analysis.i")
+    @patch("pattern_mining.formal_concept_analysis.t")
+    @patch("pattern_mining.formal_concept_analysis.i")
     def test_success_without_closed_itemset(self, i_mock, t_mock):
         t_mock.side_effect = [
             np.array([4], dtype=np.int64),
@@ -408,8 +408,8 @@ class TestConstructContextFromBinapsPatterns:
             create_concept(extent=np.array([6], dtype=np.int64), intent=patterns[2]),
         ]
 
-    @patch("fca.formal_concept_analysis.t")
-    @patch("fca.formal_concept_analysis.i")
+    @patch("pattern_mining.formal_concept_analysis.t")
+    @patch("pattern_mining.formal_concept_analysis.i")
     def test_success_with_closed_itemset(self, i_mock, t_mock):
         t_mock.side_effect = [
             np.array([4], dtype=np.int64),
