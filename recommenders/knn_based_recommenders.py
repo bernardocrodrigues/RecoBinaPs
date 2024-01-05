@@ -561,10 +561,7 @@ class BiAKNN(AlgoBase, ABC):
             if self.knn_type == "user":
                 neighborhood = merged_bicluster.extent
             else:
-                itens_rated_by_user_and_in_neighborhood = (
-                    self.dataset[user_id, merged_bicluster.intent] > 0
-                )
-                neighborhood = merged_bicluster.intent[itens_rated_by_user_and_in_neighborhood]
+                neighborhood = merged_bicluster.intent
 
             self.neighborhood[user_id] = neighborhood
 
