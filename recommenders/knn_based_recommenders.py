@@ -58,6 +58,71 @@ def merge_biclusters(
     return create_concept(new_bicluster_extent, new_bicluster_intent)
 
 
+def calculate_weighted_rating(
+    target_mean: float,
+    neighbors_ratings: np.ndarray,
+    neighbors_similarities: np.ndarray,
+    neighbors_means: np.ndarray,
+) -> float:
+    """
+    Calculates the weighted rating of a target item based on the ratings of its neighbors.
+
+    Args:
+        target_mean (float): The mean rating of the target item.
+        neighbors_ratings (np.ndarray): An array containing the ratings of the neighbors.
+        neighbors_similarities (np.ndarray): An array containing the similarities between the
+            target item and its neighbors.
+        neighbors_means (np.ndarray): An array containing the mean ratings of the neighbors.
+
+    Note:
+        All arrays must be ordered in the same way. That is, the rating, similarity and mean of
+        the same neighbor must be at the same position in their respective arrays.
+
+    Returns:
+        float: The weighted rating of the target item.
+
+    Raises:
+        AssertionError: If any of the following conditions is not met:
+            - target_mean is a float.
+            - neighbors_ratings is a numpy array of floats.
+            - neighbors_similarities is a numpy array of floats.
+            - neighbors_means is a numpy array of floats.
+            - neighbors_ratings, neighbors_similarities and neighbors_means have the same size.
+            - neighbors_ratings, neighbors_similarities and neighbors_means have size greater than
+                zero.
+            - All similarities are greater than zero and less than or equal to one.
+
+    """
+    assert isinstance(target_mean, float)
+
+    assert isinstance(neighbors_ratings, np.ndarray)
+    assert neighbors_ratings.dtype == np.float64
+
+    assert isinstance(neighbors_similarities, np.ndarray)
+    assert neighbors_similarities.dtype == np.float64
+    assert all(0 < similarity <= 1 for similarity in neighbors_similarities)
+
+    assert isinstance(neighbors_means, np.ndarray)
+    assert neighbors_means.dtype == np.float64
+
+    assert neighbors_ratings.size == neighbors_similarities.size == neighbors_means.size
+    assert neighbors_ratings.size > 0
+
+    prediction = target_mean
+    sum_similarities: float = 0.0
+    sum_ratings: float = 0.0
+
+    for rating, similarity, item_mean in zip(
+        neighbors_ratings, neighbors_similarities, neighbors_means
+    ):
+        sum_similarities += similarity
+        sum_ratings += similarity * (rating - item_mean)
+
+    prediction += sum_ratings / sum_similarities
+
+    return prediction
+
+
 # pylint: disable=C0103
 class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
     """
