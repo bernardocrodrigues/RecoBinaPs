@@ -589,46 +589,32 @@ class BiAKNN(AlgoBase, ABC):
             x, y = item, user
             dataset = self.dataset.T
 
-        prediction = self.means[x]
-        actual_k = 0
-
-        if self.neighborhood[user].size == 0:
-            details = {"actual_k": actual_k}
-            return prediction, details
+        user_neighborhood = self.neighborhood[user]
+        if user_neighborhood.size == 0:
+            return self.means[x], {"actual_k": 0}
 
         compute_neighborhood_cosine_similarity(
-            dataset, self.similarity_matrix, x, self.neighborhood[user]
+            dataset, self.similarity_matrix, x, user_neighborhood
         )
 
-        targets_neighborhood_similarity = self.similarity_matrix[x, self.neighborhood[user]]
+        k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means = get_k_top_neighbors(
+            x,
+            y,
+            dataset,
+            user_neighborhood,
+            self.similarity_matrix,
+            self.means,
+            self.knn_k,
+        )
 
-        all_neighborhood_ratings = dataset[self.neighborhood[user], y]
+        if k_top_neighbors_ratings.size == 0:
+            return self.means[x], {"actual_k": 0}
 
-        non_null_mask = all_neighborhood_ratings > 0
-        targets_neighborhood_ratings = all_neighborhood_ratings[non_null_mask]
-        targets_neighborhood_similarity = targets_neighborhood_similarity[non_null_mask]
+        prediction, actual_k = calculate_weighted_rating(
+            self.means[x],
+            k_top_neighbors_ratings,
+            k_top_neighbors_similarity,
+            k_top_means,
+        )
 
-        means = self.means[self.neighborhood[user]]
-
-        k_top_neighbors_indices = np.argsort(targets_neighborhood_similarity)[-self.knn_k :]
-
-        k_top_neighbors_ratings = targets_neighborhood_ratings[k_top_neighbors_indices]
-        k_top_neighbors_similarity = targets_neighborhood_similarity[k_top_neighbors_indices]
-        k_top_means = means[k_top_neighbors_indices]
-
-        sum_similarities = sum_ratings = 0
-        for rating, similarity, item_mean in zip(
-            k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means
-        ):
-            if similarity > 0:
-                sum_similarities += similarity
-                sum_ratings += similarity * (rating - item_mean)
-                actual_k += 1
-
-        try:
-            prediction += sum_ratings / sum_similarities
-        except ZeroDivisionError:
-            pass
-
-        details = {"actual_k": actual_k}
-        return prediction, details
+        return prediction, {"actual_k": actual_k}
