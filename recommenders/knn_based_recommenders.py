@@ -572,11 +572,11 @@ class BiAKNN(AlgoBase, ABC):
             n = self.trainset.n_items
             ratings_map = self.trainset.ir.items()
 
-        self.means = np.zeros(n)
+        self.means = np.full((n), dtype=np.float64, fill_value=np.NAN)
         for ratings_id, ratings in ratings_map:
             self.means[ratings_id] = np.mean([r for (_, r) in ratings])
 
-        self.similarity_matrix = np.full((n, n), dtype=float, fill_value=np.NAN)
+        self.similarity_matrix = np.full((n, n), dtype=np.float64, fill_value=np.NAN)
 
     def estimate(self, user: int, item: int):
         if not (self.trainset.knows_user(user) and self.trainset.knows_item(item)):
