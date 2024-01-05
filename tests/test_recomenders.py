@@ -13,6 +13,7 @@ from recommenders.common import (
     get_user_pattern_similarity,
     get_sparse_representation_of_the_bicluster,
     cosine_similarity,
+    _cosine_similarity,
     get_top_k_biclusters_for_user,
     get_indices_above_threshold,
 )
