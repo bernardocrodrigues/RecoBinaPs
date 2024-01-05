@@ -871,3 +871,47 @@ class TestCalculateWeightedRating:
         )
         assert np.isclose(result, expected_result)
 
+
+class TestGetKTopNeighbors:
+    def test_invalid_args(self):
+        dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.float64)
+        users_neighborhood = np.array([0, 1], dtype=np.int64)
+        similarity_matrix = np.array(
+            [[1, 0.9, 0.8], [0.9, 1, 0.7], [0.8, 0.7, 1]], dtype=np.float64
+        )
+        means = np.array([2, 5, 8], dtype=np.float64)
+        knn_k = 2
+
+        with pytest.raises(AssertionError):
+            get_k_top_neighbors(
+                "0", 1, dataset, users_neighborhood, similarity_matrix, means, knn_k
+            )
+
+        with pytest.raises(AssertionError):
+            get_k_top_neighbors(
+                0, "1", dataset, users_neighborhood, similarity_matrix, means, knn_k
+            )
+
+        with pytest.raises(AssertionError):
+            get_k_top_neighbors(
+                0, 1, dataset.tolist(), users_neighborhood, similarity_matrix, means, knn_k
+            )
+
+        with pytest.raises(AssertionError):
+            get_k_top_neighbors(
+                0, 1, dataset, users_neighborhood.tolist(), similarity_matrix, means, knn_k
+            )
+
+        with pytest.raises(AssertionError):
+            get_k_top_neighbors(
+                0, 1, dataset, users_neighborhood, similarity_matrix.tolist(), means, knn_k
+            )
+
+        with pytest.raises(AssertionError):
+            get_k_top_neighbors(
+                0, 1, dataset, users_neighborhood, similarity_matrix, means.tolist(), knn_k
+            )
+
+        with pytest.raises(AssertionError):
+            get_k_top_neighbors(0, 1, dataset, users_neighborhood, similarity_matrix, means, "2")
+
