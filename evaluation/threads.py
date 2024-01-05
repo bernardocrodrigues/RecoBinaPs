@@ -24,8 +24,6 @@ from evaluation import (
     count_impossible_predictions,
 )
 
-from recommenders import grecond_recommender
-
 
 BenchmarkResult = namedtuple("BenchmarkResult", "fold_index variation metrics")
 """
@@ -63,10 +61,13 @@ GENERIC_METRIC_NAMES = [
     "impossible_predictions",
 ]
 
-GRECOND_METRIC_NAMES = [
-    "mean_pattern_size",
-    "actual_coverage",
+BIAKNN_METRIC_NAMES = GENERIC_METRIC_NAMES + [
+    "mean_bicluster_size",
+    "mean_bicluster_intent",
+    "mean_bicluster_extent",
 ]
+
+GRECOND_BIAKNN_METIC_NAMES = BIAKNN_METRIC_NAMES + ["actual_coverage"]
 
 
 def generic_benchmark_thread(
@@ -159,21 +160,21 @@ def generic_benchmark_thread(
     return BenchmarkResult(fold_index, variation, metrics)
 
 
-def grecond_knn_2_recommender_benchmark_thread(
+def biaknn_benchmark_thread(
     fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
-    recommender: RecommenderVariation,
+    recommender_variation: RecommenderVariation,
     threshold: float = 5.0,
     number_of_top_recommendations: int = 20,
 ):
     """
-    Benchmarks a GreConDKNNRecommender2 recommender system and returns the raw results. It builds
+    Benchmarks a BiAKNN recommender system and returns the raw results. It builds
     upon the generic_benchmark_thread function. It collects additional metrics that are specific
-    to the GreConDKNNRecommender2 recommender.
+    to the BiAKNN recommender.
 
     Args:
         fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be processed.
             It is a tuple of the fold index and the trainset and testset to be used.
-        recommender (Tuple[str, grecond_recommender.GreConDKNNRecommender2]): The recommender to be
+        recommender (Tuple[str, grecond_recommender.BiAKNN]): The recommender to be
             evaluated. It is a tuple of the recommender name and the recommender object.
         threshold (float): The threshold that determines whether a rating is relevant or not. This
             is used for calculating metrics that assume a binary prediction (e.g. recall).
@@ -185,20 +186,74 @@ def grecond_knn_2_recommender_benchmark_thread(
             recommender name and the raw results.
     """
 
-    _, recommender_object = recommender
+    _, recommender_object = recommender_variation
 
-    assert isinstance(recommender_object, grecond_recommender.GreConDKNNRecommender2)
 
     fold_index, recommender_name, output = generic_benchmark_thread(
         fold=fold,
-        recommender_variation=recommender,
+        recommender_variation=recommender_variation,
         threshold=threshold,
         number_of_top_recommendations=number_of_top_recommendations,
     )
 
-    mean_pattern_size = statistics.mean([pattern.size for pattern in recommender_object.patterns])
+    mean_bicluster_size = statistics.mean(
+        [
+            len(bicluster.extent) * len(bicluster.intent)
+            for bicluster in recommender_object.biclusters
+        ]
+    )
 
-    output["mean_pattern_size"] = mean_pattern_size
+    mean_bicluster_intent = statistics.mean(
+        [len(bicluster.intent) for bicluster in recommender_object.biclusters]
+    )
+
+    mean_bicluster_extent = statistics.mean(
+        [len(bicluster.extent) for bicluster in recommender_object.biclusters]
+    )
+
+    output["mean_bicluster_size"] = mean_bicluster_size
+    output["mean_bicluster_intent"] = mean_bicluster_intent
+    output["mean_bicluster_extent"] = mean_bicluster_extent
+
+    return fold_index, recommender_name, output
+
+
+def grecond_biaknn_benchmark_thread(
+    fold: Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]],
+    recommender_variation: RecommenderVariation,
+    threshold: float = 5.0,
+    number_of_top_recommendations: int = 20,
+):
+    """
+    Benchmarks a GreConDBiAKNNRecommender recommender system and returns the raw results. It builds
+    upon the generic_benchmark_thread function. It collects additional metrics that are specific
+    to the GreConDBiAKNNRecommender recommender.
+
+    Args:
+        fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be processed.
+            It is a tuple of the fold index and the trainset and testset to be used.
+        recommender (Tuple[str, grecond_recommender.GreConDBiAKNNRecommender]): The recommender to be
+            evaluated. It is a tuple of the recommender name and the recommender object.
+        threshold (float): The threshold that determines whether a rating is relevant or not. This
+            is used for calculating metrics that assume a binary prediction (e.g. recall).
+        number_of_top_recommendations (int): The number of top recommendations to be considered
+            when calculating metrics that assume a top-k list of recommendations (e.g. precision@k).
+
+    Returns:
+        Tuple[int, str, dict]: The results of the benchmark. It is a tuple of the fold index, the
+            recommender name and the raw results.
+    """
+
+    _, recommender_object = recommender_variation
+
+
+    fold_index, recommender_name, output = biaknn_benchmark_thread(
+        fold=fold,
+        recommender_variation=recommender_variation,
+        threshold=threshold,
+        number_of_top_recommendations=number_of_top_recommendations,
+    )
+
     output["actual_coverage"] = recommender_object.actual_coverage
 
     return fold_index, recommender_name, output
