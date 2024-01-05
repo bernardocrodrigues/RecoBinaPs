@@ -6,7 +6,7 @@ This module defines recommendation engines apply some kind of kNN algorithm to e
 """
 
 import logging
-from typing import Callable, List, Optional
+from typing import Callable, List, Optional, Tuple
 from abc import ABC, abstractmethod
 
 import numpy as np
