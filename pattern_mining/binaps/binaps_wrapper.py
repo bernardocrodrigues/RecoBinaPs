@@ -68,7 +68,7 @@ def generate_synthetic_data(
     os.chdir(output_path)
 
     cmd = (
-        f"Rscript {source_root_dir}/binaps/original/Data/Synthetic_data/generate_toy.R AND "
+        f"Rscript {source_root_dir}/pattern_mining/binaps/original/Data/Synthetic_data/generate_toy.R AND "
         f"{column_quantity} {row_quantity} {max_pattern_size} {file_prefix} {noise} {density}"
     )
 
