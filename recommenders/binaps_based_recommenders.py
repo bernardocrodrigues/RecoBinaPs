@@ -12,11 +12,11 @@ from dataset.binary_dataset import (
     save_as_binaps_compatible_input,
 )
 
-from .knn_based_recommenders import KNNOverItemNeighborhoodRecommender
+from .knn_based_recommenders import BiAKNN
 from . import DEFAULT_LOGGER
 
 
-class BinaPsKNNRecommender(KNNOverItemNeighborhoodRecommender):
+class BinaPsKNNRecommender(BiAKNN):
     def __init__(
         self,
         epochs: int = 100,
@@ -33,7 +33,7 @@ class BinaPsKNNRecommender(KNNOverItemNeighborhoodRecommender):
             dataset_binarization_threshold=dataset_binarization_threshold,
             minimum_pattern_bicluster_sparsity=minimum_pattern_bicluster_sparsity,
             user_binarization_threshold=user_binarization_threshold,
-            top_k_patterns=top_k_patterns,
+            number_of_top_k_biclusters=top_k_patterns,
             knn_k=knn_k,
             logger=logger,
         )
@@ -43,7 +43,7 @@ class BinaPsKNNRecommender(KNNOverItemNeighborhoodRecommender):
         self.weights_binarization_threshold = weights_binarization_threshold
         self.dataset_binarization_threshold = dataset_binarization_threshold
 
-    def compute_patterns_from_trainset(self):
+    def compute_biclusters_from_trainset(self):
         binary_dataset = load_binary_dataset_from_trainset(
             self.trainset, threshold=self.dataset_binarization_threshold
         )

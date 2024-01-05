@@ -144,30 +144,3 @@ class GreConDBiAKNNRecommender(BiAKNN):
         self.biclusters = formal_context
         self.actual_coverage = actual_coverage
 
-
-# from dataset.movie_lens import load_ml_100k_folds
-
-# folds = load_ml_100k_folds(True)
-
-# from surprise.accuracy import mae, rmse
-
-# from recommenders import grecond_recommender
-
-# recommender = grecond_recommender.GreConDBiAKNNRecommender(
-#     grecond_coverage=0.1,
-#     dataset_binarization_threshold=1.0,
-#     minimum_bicluster_sparsity=0.008,
-#     minimum_bicluster_coverage=0.0005,
-#     minimum_bicluster_relative_size=0.00003,
-#     knn_type="item",
-#     user_binarization_threshold=1.0,
-#     top_k_patterns=8,
-#     knn_k=20,
-# )
-
-# for _, (trainset, testset) in folds:
-#     recommender.fit(trainset)
-#     predictions = recommender.test(testset)
-#     mae(predictions=predictions, verbose=True)
-#     exit()
-    
