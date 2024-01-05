@@ -24,7 +24,7 @@ from tests.toy_datasets import (
     belohlavek_dataset_raw_rating,
     nenova_dataset_dataset,
 )
-from dataset.binary_dataset import i, t
+from dataset.binary_dataset import i, t, _it
 
 CONVERT_DATASET_SHUFFLE_TIMES = 10
 
@@ -78,12 +78,21 @@ def assert_i_success(dataset: np.ndarray, itemset: np.ndarray, expected_result):
     assert isinstance(closure, np.ndarray)
     assert np.array_equal(closure, expected_result)
 
+    transposed_binary_dataset = dataset.T
+    closure = _it.py_func(transposed_binary_dataset, itemset)
+    assert isinstance(closure, np.ndarray)
+    assert np.array_equal(closure, expected_result)
+
 
 def assert_t_success(dataset: np.ndarray, itemset: np.ndarray, expected_result):
     """
     This method asserts that the t(dataset, itemset) is equal to the expected_result
     """
     closure = t(dataset, itemset)
+    assert isinstance(closure, np.ndarray)
+    assert np.array_equal(closure, expected_result)
+
+    closure = _it.py_func(dataset, itemset)
     assert isinstance(closure, np.ndarray)
     assert np.array_equal(closure, expected_result)
 
