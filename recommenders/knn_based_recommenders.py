@@ -129,6 +129,146 @@ def calculate_weighted_rating(
     return prediction
 
 
+def get_k_top_neighbors(
+    x: int,
+    y: int,
+    dataset: np.ndarray,
+    users_neighborhood: np.ndarray,
+    similarity_matrix: np.ndarray,
+    means: np.ndarray,
+    knn_k: int,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """
+    Gets the k nearest neighbors on precomputed user's neighborhood.
+
+    Since this operation is symmetric, x and y can represent either users or items and the dataset
+    can be either the original dataset or its transpose. Therefore, the user's neighborhood can be
+    either the extent or the intent of a bicluster.
+
+    If x represents a user, then the user's neighborhood is the extent of a bicluster and the
+    similarity matrix is the similarity matrix between users and we are looking for the k nearest
+    users to the user x.
+
+    If x represents an item, then the user's neighborhood is the intent of a bicluster and the
+    similarity matrix is the similarity matrix between items and we are looking for the k nearest
+    items to the item x.
+
+    Args:
+        x (int): The index of the target user or item.
+        y (int): The index of the target item or user.
+        dataset (np.ndarray): The original dataset or its transpose.
+        users_neighborhood (np.ndarray): The extent or intent of a bicluster.
+        similarity_matrix (np.ndarray): The precomputed similarity matrix between users or items.
+        means (np.ndarray): The mean ratings of users or items.
+        knn_k (int): The number of nearest neighbors to return.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray, np.ndarray]: A tuple containing the ratings, similarities
+            and means of the k nearest neighbors. Neighbors are ordered by similarity in descending
+            order. If there are no neighbors, then the arrays will be empty.
+
+    Raises:
+        AssertionError: If any of the following conditions is not met:
+            - x is not an int.
+            - x is negative.
+            - y is not an int.
+            - y is negative.
+            - dataset is not a numpy array.
+            - dataset has the wrong dtype.
+            - dataset has the wrong number of dimensions.
+            - users_neighborhood is not a numpy array.
+            - users_neighborhood has the wrong dtype.
+            - users_neighborhood has the wrong number of dimensions.
+            - users_neighborhood is empty.
+            - similarity_matrix is not a numpy array.
+            - similarity_matrix has the wrong dtype.
+            - similarity_matrix has the wrong number of dimensions.
+            - similarity_matrix is not square.
+            - similarity_matrix has the wrong number of rows.
+            - means is not a numpy array.
+            - means has the wrong dtype.
+            - means has the wrong number of dimensions.
+            - means has the wrong number of rows.
+            - knn_k is not an int.
+            - knn_k is not positive.
+    """
+
+    def validate_inputs(
+        x: int,
+        y: int,
+        dataset: np.ndarray,
+        users_neighborhood: np.ndarray,
+        similarity_matrix: np.ndarray,
+        means: np.ndarray,
+        knn_k: int,
+    ):
+        assert isinstance(x, int), f"x is not an int: {x}"
+        assert x >= 0, f"x is negative: {x}"
+
+        assert isinstance(y, int), f"y is not an int: {y}"
+        assert y >= 0, f"y is negative: {y}"
+
+        assert isinstance(dataset, np.ndarray)
+        assert dataset.dtype == np.float64, f"dataset has wrong dtype: {dataset.dtype}"
+        assert dataset.ndim == 2, f"dataset has wrong number of dimensions: {dataset.ndim}"
+
+        assert isinstance(users_neighborhood, np.ndarray)
+        assert (
+            users_neighborhood.dtype == np.int64
+        ), f"user_neighborhood has wrong dtype: {users_neighborhood.dtype}"
+        assert (
+            users_neighborhood.ndim == 1
+        ), f"user_neighborhood has wrong number of dimensions: {users_neighborhood.ndim}"
+        assert users_neighborhood.size > 0, f"user_neighborhood is empty: {users_neighborhood.size}"
+
+        assert isinstance(similarity_matrix, np.ndarray)
+        assert (
+            similarity_matrix.dtype == np.float64
+        ), f"similarity_matrix has wrong dtype: {similarity_matrix.dtype}"
+        assert (
+            similarity_matrix.ndim == 2
+        ), f"similarity_matrix has wrong number of dimensions: {similarity_matrix.ndim}"
+        assert (
+            similarity_matrix.shape[0] == similarity_matrix.shape[1]
+        ), f"similarity_matrix is not square: {similarity_matrix.shape}"
+        assert (
+            similarity_matrix.shape[0] == dataset.shape[0]
+        ), f"similarity_matrix has wrong number of rows: {similarity_matrix.shape[0]}"
+
+        assert isinstance(means, np.ndarray), f"means is not a numpy array: {means}"
+        assert means.dtype == np.float64, f"means has wrong dtype: {means.dtype}"
+        assert means.ndim == 1, f"means has wrong number of dimensions: {means.ndim}"
+        assert means.size == dataset.shape[0], f"means has wrong number of rows: {means.size}"
+
+        assert isinstance(knn_k, int), f"knn_k is not an int: {knn_k}"
+        assert knn_k > 0, f"knn_k is not positive: {knn_k}"
+
+    validate_inputs(x, y, dataset, users_neighborhood, similarity_matrix, means, knn_k)
+
+    neighborhood_similarity = similarity_matrix[x, users_neighborhood]
+    neighborhood_ratings = dataset[users_neighborhood, y]
+    neighborhood_means = means[users_neighborhood]
+
+    valid_mask = (~np.isnan(neighborhood_ratings)) & (neighborhood_similarity != 0)
+
+    if not np.any(valid_mask):
+        return np.array([]), np.array([]), np.array([])
+
+    valid_neighborhood_similarity = neighborhood_similarity[valid_mask]
+    valid_neighborhood_ratings = neighborhood_ratings[valid_mask]
+    valid_neighborhood_means = neighborhood_means[valid_mask]
+
+    k_top_neighbors_indices = np.argsort(valid_neighborhood_similarity)[
+        -min(knn_k, len(valid_neighborhood_similarity)) :
+    ]
+
+    k_top_neighbors_ratings = valid_neighborhood_ratings[k_top_neighbors_indices]
+    k_top_neighbors_similarity = valid_neighborhood_similarity[k_top_neighbors_indices]
+    k_top_means = valid_neighborhood_means[k_top_neighbors_indices]
+
+    return k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means
+
+
 # pylint: disable=C0103
 class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
     """
