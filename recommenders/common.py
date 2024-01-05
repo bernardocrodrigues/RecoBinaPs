@@ -371,31 +371,6 @@ def compute_neighborhood_cosine_similarity(
         similarity_matrix[neighbor, target] = similarity
 
 
-def get_k_nearest_neighbors(similarity_matrix: np.array, reference: int, k: int) -> np.array:
-    """
-    Given a similarity matrix, a reference index and a number k, returns the k most similar
-    indices to the reference index.
-
-    Args:
-        similarity_matrix (np.array): The similarity matrix.
-        reference (int): The reference index.
-        k (int): The number of nearest neighbors to return.
-
-    """
-    similarity_scores = similarity_matrix[reference]
-
-    # Prune NaN values
-    similarity_scores_nans = np.isnan(similarity_scores)
-    similarity_scores = similarity_scores[~similarity_scores_nans]
-
-    # Order indices in descending order according to its similarity score to the reference
-    nearest_neighbors = np.argsort(similarity_scores)[::-1]
-
-    # Get the k most similar cells (excluding the cell i itself)
-    k_most_similar = nearest_neighbors[1 : k + 1]
-
-    return k_most_similar
-
 
 def get_indices_above_threshold(subset: np.array, binarization_threshold: float) -> np.array:
     """
