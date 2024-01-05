@@ -314,7 +314,7 @@ def _cosine_similarity(u: np.array, v: np.array) -> float:
     return similarity
 
 
-def compute_targets_neighborhood_cosine_similarity(
+def compute_neighborhood_cosine_similarity(
     dataset: np.array, similarity_matrix: np.array, target: int, neighborhood: np.array
 ):
     """
@@ -340,31 +340,31 @@ def compute_targets_neighborhood_cosine_similarity(
 
     assert isinstance(similarity_matrix, np.ndarray)
     assert similarity_matrix.ndim == 2
-    assert similarity_matrix.shape[0] == dataset.shape[1]
+    assert similarity_matrix.shape[0] == dataset.shape[0]
     assert similarity_matrix.shape[1] == similarity_matrix.shape[0]
     assert np.issubdtype(similarity_matrix.dtype, np.number)
 
     assert isinstance(target, int)
-    assert 0 <= target < dataset.shape[1]
+    assert 0 <= target < dataset.shape[0]
 
     assert isinstance(neighborhood, np.ndarray)
     assert neighborhood.ndim == 1
     assert neighborhood.size > 0
     assert np.issubdtype(neighborhood.dtype, np.integer)
     assert np.all(neighborhood >= 0)
-    assert np.all(neighborhood < dataset.shape[1])
+    assert np.all(neighborhood < dataset.shape[0])
 
     for neighbor in neighborhood:
         if not math.isnan(similarity_matrix[target, neighbor]):
             continue
 
-        if not dataset[:, target].any() or not dataset[:, neighbor].any():
+        if not dataset[target, :].any() or not dataset[neighbor, :].any():
             similarity_matrix[target, neighbor] = 0
             similarity_matrix[neighbor, target] = 0
             continue
 
-        u = dataset[:, target]
-        v = dataset[:, neighbor]
+        u = dataset[target, :]
+        v = dataset[neighbor, :]
 
         similarity = cosine_similarity(u=u, v=v)
         similarity_matrix[target, neighbor] = similarity
