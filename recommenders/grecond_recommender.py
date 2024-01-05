@@ -6,6 +6,7 @@ This module defines recommendation engines that that are somehow powered by the 
 """
 
 import logging
+from typing import Optional
 from dataset.binary_dataset import (
     load_binary_dataset_from_trainset,
 )
@@ -16,7 +17,7 @@ from . import DEFAULT_LOGGER
 from .common import jaccard_distance
 
 from .knn_based_recommenders import (
-    KNNOverItemNeighborhoodRecommender,
+    BiAKNN,
     KNNOverLatentSpaceRecommender,
 )
 
@@ -67,7 +68,7 @@ class GreConDKNNRecommender(KNNOverLatentSpaceRecommender):
         self.logger.info("Generating Formal Context OK")
 
 
-class GreConDKNNRecommender2(KNNOverItemNeighborhoodRecommender):
+class GreConDBiAKNNRecommender(BiAKNN):
     """
     Recommender class that uses the GreConD algorithm to generate the patterns that are used
     to generate a user-item neighborhood that is, then, used for generating recommendations.
@@ -77,9 +78,12 @@ class GreConDKNNRecommender2(KNNOverItemNeighborhoodRecommender):
         self,
         grecond_coverage: float = 1.0,
         dataset_binarization_threshold: float = 1.0,
-        minimum_pattern_bicluster_sparsity: float = 0.08,
+        minimum_bicluster_sparsity: Optional[float] = None,
+        minimum_bicluster_coverage: Optional[float] = None,
+        minimum_bicluster_relative_size: Optional[int] = None,
+        knn_type: str = "item",
         user_binarization_threshold: float = 1.0,
-        top_k_patterns: int = 8,
+        number_of_top_k_biclusters: Optional[int] = None,
         knn_k: int = 5,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
@@ -105,19 +109,22 @@ class GreConDKNNRecommender2(KNNOverItemNeighborhoodRecommender):
         logger (logging.Logger): The logger that will be used to log messages.
         """
         super().__init__(
-            dataset_binarization_threshold=dataset_binarization_threshold,
-            minimum_pattern_bicluster_sparsity=minimum_pattern_bicluster_sparsity,
+            minimum_bicluster_sparsity=minimum_bicluster_sparsity,
+            minimum_bicluster_coverage=minimum_bicluster_coverage,
+            minimum_bicluster_relative_size=minimum_bicluster_relative_size,
+            knn_type=knn_type,
             user_binarization_threshold=user_binarization_threshold,
-            top_k_patterns=top_k_patterns,
+            number_of_top_k_biclusters=number_of_top_k_biclusters,
             knn_k=knn_k,
             logger=logger,
         )
         self.grecond_coverage = grecond_coverage
+        self.dataset_binarization_threshold = dataset_binarization_threshold
 
         self.actual_coverage = None
 
     # pylint: disable=C0103
-    def compute_patterns_from_trainset(self):
+    def compute_biclusters_from_trainset(self):
         """
         Generates the user-item neighborhood based on the given trainset.
 
@@ -134,8 +141,33 @@ class GreConDKNNRecommender2(KNNOverItemNeighborhoodRecommender):
 
         formal_context, actual_coverage = grecond(binary_dataset, coverage=self.grecond_coverage)
 
+        self.biclusters = formal_context
         self.actual_coverage = actual_coverage
 
-        self.patterns = []
-        for _, D in formal_context:
-            self.patterns.append(D)
+
+# from dataset.movie_lens import load_ml_100k_folds
+
+# folds = load_ml_100k_folds(True)
+
+# from surprise.accuracy import mae, rmse
+
+# from recommenders import grecond_recommender
+
+# recommender = grecond_recommender.GreConDBiAKNNRecommender(
+#     grecond_coverage=0.1,
+#     dataset_binarization_threshold=1.0,
+#     minimum_bicluster_sparsity=0.008,
+#     minimum_bicluster_coverage=0.0005,
+#     minimum_bicluster_relative_size=0.00003,
+#     knn_type="item",
+#     user_binarization_threshold=1.0,
+#     top_k_patterns=8,
+#     knn_k=20,
+# )
+
+# for _, (trainset, testset) in folds:
+#     recommender.fit(trainset)
+#     predictions = recommender.test(testset)
+#     mae(predictions=predictions, verbose=True)
+#     exit()
+    
