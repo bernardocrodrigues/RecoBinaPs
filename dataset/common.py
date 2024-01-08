@@ -86,7 +86,6 @@ def generate_random_dataset(
     return dataset
 
 
-@nb.njit
 def convert_to_raw_ratings(dataset: np.ndarray) -> List[Tuple[int, int, float, None]]:
     """
     Converts a dataset into a list of raw ratings as expected by surprise's Trainset class.
@@ -97,11 +96,13 @@ def convert_to_raw_ratings(dataset: np.ndarray) -> List[Tuple[int, int, float, N
     Returns:
         List[Tuple[int, int, float, None]]: The list of raw ratings.
     """
+    assert isinstance(dataset, np.ndarray)
+
     raw_ratings = []
 
     for i in range(dataset.shape[0]):
         for j in range(dataset.shape[1]):
-            if dataset[i][j] != 0:
+            if not np.isnan(dataset[i][j]):
                 raw_ratings.append((i, j, float(dataset[i][j]), None))
 
     return raw_ratings
