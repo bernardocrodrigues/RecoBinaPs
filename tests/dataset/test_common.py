@@ -5,7 +5,11 @@ import pytest
 from surprise import Dataset
 from surprise import Reader
 from surprise import Trainset
-from dataset.common import convert_trainset_to_matrix, generate_random_dataset
+from dataset.common import (
+    convert_trainset_to_matrix,
+    generate_random_dataset,
+    convert_to_raw_ratings,
+)
 
 
 class TestConvertTrainsetToMatrix:
@@ -190,3 +194,67 @@ class TestGenerateRandomDataset:
         assert np.nanmin(dataset) >= 0
         assert np.nanmax(dataset) <= rating_scale
         assert np.isclose(sparsity, sparsity_target, atol=0.01)
+
+
+class TestConvertToRawRatings:
+    def test_invalid_input(self):
+        with pytest.raises(AssertionError):
+            convert_to_raw_ratings(None)
+
+        with pytest.raises(AssertionError):
+            convert_to_raw_ratings(1)
+
+        with pytest.raises(AssertionError):
+            convert_to_raw_ratings("abc")
+
+        with pytest.raises(AssertionError):
+            convert_to_raw_ratings(1.0)
+
+        with pytest.raises(AssertionError):
+            convert_to_raw_ratings([1, 2, 3])
+
+        with pytest.raises(AssertionError):
+            convert_to_raw_ratings((1, 2, 3))
+
+    def test_convert_to_raw_ratings_all_nan(self):
+        dataset = np.array([[np.nan, np.nan], [np.nan, np.nan]])
+
+        expected_raw_ratings = []
+
+        raw_ratings = convert_to_raw_ratings(dataset)
+
+        assert raw_ratings == expected_raw_ratings
+
+    def test_convert_to_raw_ratings_empty_dataset(self):
+        dataset = np.empty((0, 0))
+
+        expected_raw_ratings = []
+
+        raw_ratings = convert_to_raw_ratings(dataset)
+
+        assert raw_ratings == expected_raw_ratings
+
+    def test_convert_to_raw_ratings_single_value(self):
+        dataset = np.array([[3]])
+
+        expected_raw_ratings = [(0, 0, 3.0, None)]
+
+        raw_ratings = convert_to_raw_ratings(dataset)
+
+        assert raw_ratings == expected_raw_ratings
+
+    def test_convert_to_raw_ratings(self):
+        dataset = np.array([[1, np.nan, 3], [4, 5, np.nan], [np.nan, 2, 6]])
+
+        expected_raw_ratings = [
+            (0, 0, 1.0, None),
+            (0, 2, 3.0, None),
+            (1, 0, 4.0, None),
+            (1, 1, 5.0, None),
+            (2, 1, 2.0, None),
+            (2, 2, 6.0, None),
+        ]
+
+        raw_ratings = convert_to_raw_ratings(dataset)
+
+        assert raw_ratings == expected_raw_ratings
