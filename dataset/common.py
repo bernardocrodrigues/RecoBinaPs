@@ -12,8 +12,8 @@ from surprise import Trainset
 
 def convert_trainset_to_matrix(trainset: Trainset) -> np.ndarray:
     """
-    Converts a surprise Trainset object into a numpy array. 
-    
+    Converts a surprise Trainset object into a numpy array.
+
     The indices of the array will be the inner ids of the trainset.The array will have shape
     (n_users, n_items) and will contain the ratings of the trainset. The ratings will be in the
     range [0, rating_scale]. If a rating is missing, the corresponding entry in the array will be
@@ -86,11 +86,3 @@ def convert_to_raw_ratings(dataset: np.ndarray) -> List[Tuple[int, int, float, N
                 raw_ratings.append((i, j, float(dataset[i][j]), None))
 
     return raw_ratings
-
-
-# Numba Compilation
-# Numba uses a Just-In-Time compiler to speed up the execution of the code. The functions need to
-# be ran once to be compiled. Therefore, we run the functions at import time to avoid the overhead
-# of compiling the functions when they are called.
-aux = generate_random_dataset(1, 1, 1, 1)
-aux_2 = convert_to_raw_ratings(aux)
