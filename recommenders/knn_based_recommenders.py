@@ -13,7 +13,7 @@ import numpy as np
 from surprise import AlgoBase, PredictionImpossible, Trainset
 
 from dataset.binary_dataset import load_binary_dataset_from_trainset
-from dataset.common import load_dataset_from_trainset
+from dataset.common import convert_trainset_to_matrix
 from pattern_mining.common import (
     apply_bicluster_sparsity_filter,
     apply_bicluster_coverage_filter,
@@ -523,7 +523,7 @@ class BiAKNN(AlgoBase, ABC):
 
         AlgoBase.fit(self, trainset)
 
-        self.dataset = load_dataset_from_trainset(trainset)
+        self.dataset = convert_trainset_to_matrix(trainset)
         self.compute_biclusters_from_trainset()
         self.logger.info("Computed biclusters: %d", len(self.biclusters))
 

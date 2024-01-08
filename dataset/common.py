@@ -10,15 +10,23 @@ import numba as nb
 from surprise import Trainset
 
 
-def load_dataset_from_trainset(trainset: Trainset) -> np.ndarray:
+def convert_trainset_to_matrix(trainset: Trainset) -> np.ndarray:
     """
-    Loads a numpy array from a surprise Trainset object.
+    Converts a surprise Trainset object into a numpy array. 
+    
+    The indices of the array will be the inner ids of the trainset.The array will have shape
+    (n_users, n_items) and will contain the ratings of the trainset. The ratings will be in the
+    range [0, rating_scale]. If a rating is missing, the corresponding entry in the array will be
+    NaN.
 
     Args:
         trainset (Trainset): The Trainset object.
 
     Returns:
-        np.ndarray: The loaded dataset.
+        np.ndarray: The converted dataset.
+
+    Raises:
+        AssertionError: If trainset is not an instance of surprise.Trainset.
     """
 
     assert isinstance(trainset, Trainset)
