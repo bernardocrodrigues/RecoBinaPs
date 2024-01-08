@@ -39,9 +39,12 @@ def convert_trainset_to_matrix(trainset: Trainset) -> np.ndarray:
     return dataset
 
 
-@nb.njit
 def generate_random_dataset(
-    number_of_users: int, number_of_items: int, rating_scale: int, sparsity_target: float
+    number_of_users: int,
+    number_of_items: int,
+    rating_scale: int,
+    sparsity_target: float,
+    seed: int = 42,
 ) -> np.ndarray:
     """
     Generates a random dataset.
@@ -53,16 +56,32 @@ def generate_random_dataset(
         sparsity_target (float): The sparsity target. The probability of any rating being generated
             is equal to sparsity_target. Therefore, the sparsity of the dataset will be close to
             sparsity_target.
+        seed (int, optional): The seed for the random number generator. Defaults to 42.
 
     Returns:
         np.ndarray: The generated dataset.
     """
-    dataset = np.zeros((number_of_users, number_of_items), dtype=np.float32)
+
+    assert isinstance(number_of_users, int)
+    assert number_of_users > 0
+
+    assert isinstance(number_of_items, int)
+    assert number_of_items > 0
+
+    assert isinstance(rating_scale, int)
+    assert rating_scale > 0
+
+    assert isinstance(sparsity_target, float)
+    assert 0 < sparsity_target <= 1
+
+    dataset = np.full((number_of_users, number_of_items), dtype=np.float64, fill_value=np.NAN)
+
+    random_generator = np.random.Generator(np.random.PCG64(seed=seed))
 
     for i in range(number_of_users):
         for j in range(number_of_items):
-            if np.random.uniform() < sparsity_target:
-                dataset[i][j] = np.random.uniform() * rating_scale
+            if random_generator.uniform() < sparsity_target:
+                dataset[i][j] = random_generator.uniform() * rating_scale
 
     return dataset
 
