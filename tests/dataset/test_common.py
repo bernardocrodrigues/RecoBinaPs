@@ -5,7 +5,7 @@ import pytest
 from surprise import Dataset
 from surprise import Reader
 from surprise import Trainset
-from dataset.common import convert_trainset_to_matrix
+from dataset.common import convert_trainset_to_matrix, generate_random_dataset
 
 
 class TestConvertTrainsetToMatrix:
@@ -154,3 +154,39 @@ class TestConvertTrainsetToMatrix:
         result = convert_trainset_to_matrix(trainset)
 
         assert self.df_matches_matrix(raw_dataset_as_pandas_df, result, trainset)
+
+
+class TestGenerateRandomDataset:
+    def test_invalid_input(self):
+        with pytest.raises(AssertionError):
+            generate_random_dataset(0, 5, 5, 0.5)
+
+        with pytest.raises(AssertionError):
+            generate_random_dataset(10, 0, 5, 0.5)
+
+        with pytest.raises(AssertionError):
+            generate_random_dataset(10, 5, 0, 0.5)
+
+        with pytest.raises(AssertionError):
+            generate_random_dataset(10, 5, 5, 0)
+
+        with pytest.raises(AssertionError):
+            generate_random_dataset(10, 5, 5, 1.5)
+
+    def test_valid_input(self):
+        number_of_users = 1000
+        number_of_items = 5000
+        rating_scale = 5
+        sparsity_target = 0.3
+
+        dataset = generate_random_dataset(
+            number_of_users, number_of_items, rating_scale, sparsity_target
+        )
+
+        sparsity = 1 - (np.isnan(dataset).sum() / dataset.size)
+
+        assert isinstance(dataset, np.ndarray)
+        assert dataset.shape == (number_of_users, number_of_items)
+        assert np.nanmin(dataset) >= 0
+        assert np.nanmax(dataset) <= rating_scale
+        assert np.isclose(sparsity, sparsity_target, atol=0.01)
