@@ -113,6 +113,11 @@ class TestIT:
         with np.testing.assert_raises(AssertionError):
             i(my_toy_binary_dataset, [1, 2, 3])
 
+    def test_i_on_empty_array(self):
+        assert_i_success(
+            dataset=my_toy_binary_dataset, itemset=np.array([], dtype=int), expected_result=[]
+        )
+
     def test_i_on_my_toy_binary_dataset(self):
         assert_i_success(
             dataset=my_toy_binary_dataset, itemset=np.array([0]), expected_result=[0, 1, 3]
