@@ -597,6 +597,8 @@ class BiAKNN(AlgoBase, ABC):
             dataset = self.dataset.T
 
         user_neighborhood = self.neighborhood[user]
+        user_neighborhood = np.setdiff1d(user_neighborhood, x)
+
         if user_neighborhood.size == 0:
             return self.means[x], {"actual_k": 0}
 
