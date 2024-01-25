@@ -619,11 +619,11 @@ class BiAKNN(AlgoBase, ABC):
         if k_top_neighbors_ratings.size == 0:
             return self.means[x], {"actual_k": 0}
 
-        prediction, actual_k = calculate_weighted_rating(
+        prediction = calculate_weighted_rating(
             self.means[x],
             k_top_neighbors_ratings,
             k_top_neighbors_similarity,
             k_top_means,
         )
 
-        return prediction, {"actual_k": actual_k}
+        return prediction, {"actual_k": k_top_neighbors_ratings.size)}
