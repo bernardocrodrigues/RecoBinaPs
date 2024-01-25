@@ -251,7 +251,11 @@ def get_k_top_neighbors(
     neighborhood_ratings = dataset[users_neighborhood, y]
     neighborhood_means = means[users_neighborhood]
 
-    valid_mask = (~np.isnan(neighborhood_ratings)) & (neighborhood_similarity != 0)
+    valid_mask = (
+        (~np.isnan(neighborhood_ratings))
+        & (~np.isnan(neighborhood_similarity))
+        & (neighborhood_similarity != 0)
+    )
 
     if not np.any(valid_mask):
         return np.array([]), np.array([]), np.array([])
