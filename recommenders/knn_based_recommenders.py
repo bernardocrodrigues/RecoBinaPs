@@ -243,6 +243,8 @@ def get_k_top_neighbors(
         assert isinstance(knn_k, int), f"knn_k is not an int: {knn_k}"
         assert knn_k > 0, f"knn_k is not positive: {knn_k}"
 
+        assert x not in users_neighborhood, f"x can't be on the neighborhood: {x}"
+
     validate_inputs(x, y, dataset, users_neighborhood, similarity_matrix, means, knn_k)
 
     neighborhood_similarity = similarity_matrix[x, users_neighborhood]
