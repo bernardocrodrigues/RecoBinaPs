@@ -258,13 +258,14 @@ def get_k_top_neighbors(
     valid_neighborhood_ratings = neighborhood_ratings[valid_mask]
     valid_neighborhood_means = neighborhood_means[valid_mask]
 
-    k_top_neighbors_indices = np.argsort(valid_neighborhood_similarity)[
+    k_top_neighbors_indices_asc = np.argsort(valid_neighborhood_similarity)[
         -min(knn_k, len(valid_neighborhood_similarity)) :
     ]
+    k_top_neighbors_indices_desc = k_top_neighbors_indices_asc[::-1]
 
-    k_top_neighbors_ratings = valid_neighborhood_ratings[k_top_neighbors_indices]
-    k_top_neighbors_similarity = valid_neighborhood_similarity[k_top_neighbors_indices]
-    k_top_means = valid_neighborhood_means[k_top_neighbors_indices]
+    k_top_neighbors_ratings = valid_neighborhood_ratings[k_top_neighbors_indices_desc]
+    k_top_neighbors_similarity = valid_neighborhood_similarity[k_top_neighbors_indices_desc]
+    k_top_means = valid_neighborhood_means[k_top_neighbors_indices_desc]
 
     return k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means
 
