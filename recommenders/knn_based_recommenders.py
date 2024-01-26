@@ -626,4 +626,4 @@ class BiAKNN(AlgoBase, ABC):
             k_top_means,
         )
 
-        return prediction, {"actual_k": k_top_neighbors_ratings.size)}
+        return prediction, {"actual_k": k_top_neighbors_ratings.size}
