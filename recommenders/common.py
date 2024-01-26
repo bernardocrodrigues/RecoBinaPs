@@ -329,30 +329,34 @@ def compute_neighborhood_cosine_similarity(
         dataset (np.array): The dataset.
         similarity_matrix (np.array): The similarity matrix.
         target (int): The index of the target item.
-        neighborhood (np.array): The indices of the items in the neighborhood of the target.
+        neighborhood (np.array): The indices of the items in the neighborhood of the target. The
+                                 target item must not be in the neighborhood.
     """
+    def validate_inputs(dataset, similarity_matrix, target, neighborhood):
+        assert isinstance(dataset, np.ndarray)
+        assert dataset.ndim == 2
+        assert dataset.shape[0] > 0
+        assert dataset.shape[1] > 0
+        assert np.issubdtype(dataset.dtype, np.number)
 
-    assert isinstance(dataset, np.ndarray)
-    assert dataset.ndim == 2
-    assert dataset.shape[0] > 0
-    assert dataset.shape[1] > 0
-    assert np.issubdtype(dataset.dtype, np.number)
+        assert isinstance(similarity_matrix, np.ndarray)
+        assert similarity_matrix.ndim == 2
+        assert similarity_matrix.shape[0] == dataset.shape[0]
+        assert similarity_matrix.shape[1] == similarity_matrix.shape[0]
+        assert np.issubdtype(similarity_matrix.dtype, np.number)
 
-    assert isinstance(similarity_matrix, np.ndarray)
-    assert similarity_matrix.ndim == 2
-    assert similarity_matrix.shape[0] == dataset.shape[0]
-    assert similarity_matrix.shape[1] == similarity_matrix.shape[0]
-    assert np.issubdtype(similarity_matrix.dtype, np.number)
+        assert isinstance(target, int)
+        assert 0 <= target < dataset.shape[0]
+        assert target not in neighborhood
 
-    assert isinstance(target, int)
-    assert 0 <= target < dataset.shape[0]
+        assert isinstance(neighborhood, np.ndarray)
+        assert neighborhood.ndim == 1
+        assert neighborhood.size > 0
+        assert np.issubdtype(neighborhood.dtype, np.integer)
+        assert np.all(neighborhood >= 0)
+        assert np.all(neighborhood < dataset.shape[0])
 
-    assert isinstance(neighborhood, np.ndarray)
-    assert neighborhood.ndim == 1
-    assert neighborhood.size > 0
-    assert np.issubdtype(neighborhood.dtype, np.integer)
-    assert np.all(neighborhood >= 0)
-    assert np.all(neighborhood < dataset.shape[0])
+    validate_inputs(dataset, similarity_matrix, target, neighborhood)
 
     for neighbor in neighborhood:
         if not math.isnan(similarity_matrix[target, neighbor]):
