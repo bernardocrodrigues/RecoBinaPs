@@ -3,7 +3,7 @@ Tests for the common implementations of the recommenders module.
 """
 
 import math
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, call
 import numpy as np
 import pandas as pd
 import scipy
@@ -17,8 +17,8 @@ from recommenders.common import (
     _cosine_similarity,
     get_top_k_biclusters_for_user,
     get_indices_above_threshold,
+    compute_neighborhood_cosine_similarity,
 )
-
 
 from tests.toy_datasets import zaki_binary_dataset
 from pattern_mining.formal_concept_analysis import Concept, concepts_are_equal
@@ -860,3 +860,715 @@ class TestCalculateWeightedRating:
         assert np.isclose(result, expected_result)
 
 
+class TestComputeNeighborhoodCosineSimilarity:
+    class TestInvalidArgs:
+        def test_1(self):
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    "not a numpy array", np.array([1, 2, 3]), 0, np.array([1, 2, 3])
+                )
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    np.array([1, 2, 3]), "not a numpy array", 0, np.array([1, 2, 3])
+                )
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    np.array([1, 2, 3]), np.array([1, 2, 3]), "not an integer", np.array([1, 2, 3])
+                )
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    np.array([1, 2, 3]), np.array([1, 2, 3]), 0, "not a numpy array"
+                )
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    np.array([1, 2, 3]), np.array([1, 2, 3]), 0, np.array([1, 2, 3])
+                )
+
+        def test_2(self):
+            dataset = np.array([])
+            similarity_matrix = np.array([[1.0, 0.5], [0.5, 1.0]])
+            target = 0
+            neighborhood = np.array([1])
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    dataset, similarity_matrix, target, neighborhood
+                )
+
+        def test_3(self):
+            dataset = np.array([[1, 2], [3, 4]])
+            similarity_matrix = np.array([[1.0, 0.5, 0.2], [0.5, 1.0, 0.8]])
+            target = 0
+            neighborhood = np.array([1])
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    dataset, similarity_matrix, target, neighborhood
+                )
+
+        def test_4(self):
+            dataset = np.array([[1, 2], [3, 4]])
+            similarity_matrix = np.array([[1.0, 0.5], [0.5, 1.0]])
+            target = 2
+            neighborhood = np.array([1])
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    dataset, similarity_matrix, target, neighborhood
+                )
+
+        def test_5(self):
+            dataset = np.array([[1, 2], [3, 4]])
+            similarity_matrix = np.array([[1.0, 0.5], [0.5, 1.0]])
+            target = 0
+            neighborhood = np.array([0, 1])
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    dataset, similarity_matrix, target, neighborhood
+                )
+
+        def test_6(self):
+            dataset = np.array([[1, 2], [3, 4]])
+            similarity_matrix = np.array([[1.0, 0.5], [0.5, 1.0]])
+            target = 0
+            neighborhood = np.array([])
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    dataset, similarity_matrix, target, neighborhood
+                )
+
+        def test_7(self):
+            dataset = np.array([[1, 2], [3, 4]])
+            similarity_matrix = np.array([[1.0, 0.5], [0.5, 1.0]])
+            target = 0
+            neighborhood = np.array([2])
+
+            with pytest.raises(AssertionError):
+                compute_neighborhood_cosine_similarity(
+                    dataset, similarity_matrix, target, neighborhood
+                )
+
+    class TestUserScenario:
+        @patch("recommenders.common.cosine_similarity")
+        def test_1(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1, 2, 3],
+                                [4, 5, 6],
+                                [7, 8, 9]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 0
+            neighborhood = np.array([1, 2])
+
+            compute_neighborhood_cosine_similarity(dataset, similarity_matrix, target, neighborhood)
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 2
+            assert (calls[0].kwargs["u"] == np.array([1, 2, 3])).all()
+            assert (calls[0].kwargs["v"] == np.array([4, 5, 6])).all()
+            assert (calls[1].kwargs["u"] == np.array([1, 2, 3])).all()
+            assert (calls[1].kwargs["v"] == np.array([7, 8, 9])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert np.isclose(similarity_matrix[0][2], 0.2)
+            assert np.isclose(similarity_matrix[2][0], 0.2)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_2(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1, 2, 3],
+                                [4, 5, 6],
+                                [7, 8, 9]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 1
+            neighborhood = np.array([0, 2])
+
+            compute_neighborhood_cosine_similarity(dataset, similarity_matrix, target, neighborhood)
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 2
+            assert (calls[0].kwargs["u"] == np.array([4, 5, 6])).all()
+            assert (calls[0].kwargs["v"] == np.array([1, 2, 3])).all()
+            assert (calls[1].kwargs["u"] == np.array([4, 5, 6])).all()
+            assert (calls[1].kwargs["v"] == np.array([7, 8, 9])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert np.isclose(similarity_matrix[1][2], 0.2)
+            assert np.isclose(similarity_matrix[2][1], 0.2)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][2])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[2][0])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_3(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1, 2, 3],
+                                [4, 5, 6],
+                                [7, 8, 9]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.23, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 2
+            neighborhood = np.array([1])
+
+            compute_neighborhood_cosine_similarity(dataset, similarity_matrix, target, neighborhood)
+
+            calls = cosine_similarity_mock.call_args_list
+
+            assert len(calls) == 1
+            assert (calls[0].kwargs["u"] == np.array([7, 8, 9])).all()
+            assert (calls[0].kwargs["v"] == np.array([4, 5, 6])).all()
+
+            assert np.isclose(similarity_matrix[1][2], 0.23)
+            assert np.isclose(similarity_matrix[2][1], 0.23)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][1])
+            assert math.isnan(similarity_matrix[0][2])
+            assert math.isnan(similarity_matrix[1][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[2][0])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_4(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,  2,  3,  4],
+                                [5,  6,  7,  8],
+                                [9, 10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 0
+            neighborhood = np.array([1, 2])
+
+            compute_neighborhood_cosine_similarity(dataset, similarity_matrix, target, neighborhood)
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 2
+
+            assert (calls[0].kwargs["u"] == np.array([1, 2, 3, 4])).all()
+            assert (calls[0].kwargs["v"] == np.array([5, 6, 7, 8])).all()
+
+            assert (calls[1].kwargs["u"] == np.array([1, 2, 3, 4])).all()
+            assert (calls[1].kwargs["v"] == np.array([9, 10, 11, 12])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert np.isclose(similarity_matrix[0][2], 0.2)
+            assert np.isclose(similarity_matrix[2][0], 0.2)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_5(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,   2,  3],
+                                [4,   5,  6],
+                                [7,   8,  9],
+                                [10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((4, 4), np.nan)
+
+            target = 0
+
+            neighborhood = np.array([1, 3])
+            compute_neighborhood_cosine_similarity(dataset, similarity_matrix, target, neighborhood)
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 2
+
+            assert (calls[0].kwargs["u"] == np.array([1, 2, 3])).all()
+            assert (calls[0].kwargs["v"] == np.array([4, 5, 6])).all()
+
+            assert (calls[1].kwargs["u"] == np.array([1, 2, 3])).all()
+            assert (calls[1].kwargs["v"] == np.array([10, 11, 12])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert np.isclose(similarity_matrix[0][3], 0.2)
+            assert np.isclose(similarity_matrix[3][0], 0.2)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[1][3])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+            assert math.isnan(similarity_matrix[2][3])
+            assert math.isnan(similarity_matrix[3][1])
+            assert math.isnan(similarity_matrix[3][2])
+            assert math.isnan(similarity_matrix[3][3])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_6(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,   2,  3],
+                                [4,   5,  6],
+                                [7,   8,  9],
+                                [10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((4, 4), np.nan)
+
+            target = 3
+
+            neighborhood = np.array([2])
+            compute_neighborhood_cosine_similarity(dataset, similarity_matrix, target, neighborhood)
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 1
+
+            assert (calls[0].kwargs["u"] == np.array([10, 11, 12])).all()
+            assert (calls[0].kwargs["v"] == np.array([7, 8, 9])).all()
+
+            assert np.isclose(similarity_matrix[2][3], 0.1)
+            assert np.isclose(similarity_matrix[3][2], 0.1)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][1])
+            assert math.isnan(similarity_matrix[0][2])
+            assert math.isnan(similarity_matrix[0][3])
+            assert math.isnan(similarity_matrix[1][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[1][3])
+            assert math.isnan(similarity_matrix[2][0])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[3][0])
+            assert math.isnan(similarity_matrix[3][1])
+            assert math.isnan(similarity_matrix[3][3])
+
+    class TestItemScenario:
+        @patch("recommenders.common.cosine_similarity")
+        def test_1(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1, 2, 3],
+                                [4, 5, 6],
+                                [7, 8, 9]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 0
+            neighborhood = np.array([1, 2])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 2
+            assert (calls[0].kwargs["u"] == np.array([1, 4, 7])).all()
+            assert (calls[0].kwargs["v"] == np.array([2, 5, 8])).all()
+            assert (calls[1].kwargs["u"] == np.array([1, 4, 7])).all()
+            assert (calls[1].kwargs["v"] == np.array([3, 6, 9])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert np.isclose(similarity_matrix[0][2], 0.2)
+            assert np.isclose(similarity_matrix[2][0], 0.2)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_2(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1, 2, 3],
+                                [4, 5, 6],
+                                [7, 8, 9]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 0
+            neighborhood = np.array([1])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 1
+            assert (calls[0].kwargs["u"] == np.array([1, 4, 7])).all()
+            assert (calls[0].kwargs["v"] == np.array([2, 5, 8])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][2])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[2][0])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_3(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1, 2, 3],
+                                [4, 5, 6],
+                                [7, 8, 9]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 2
+            neighborhood = np.array([1])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+
+            assert len(calls) == 1
+            assert (calls[0].kwargs["u"] == np.array([3, 6, 9])).all()
+            assert (calls[0].kwargs["v"] == np.array([2, 5, 8])).all()
+
+            assert np.isclose(similarity_matrix[1][2], 0.1)
+            assert np.isclose(similarity_matrix[2][1], 0.1)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][1])
+            assert math.isnan(similarity_matrix[0][2])
+            assert math.isnan(similarity_matrix[1][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[2][0])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_4(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1, 2, 3],
+                                [4, 5, 6],
+                                [7, 8, 9]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 2
+            neighborhood = np.array([0])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+
+            assert len(calls) == 1
+            assert (calls[0].kwargs["u"] == np.array([3, 6, 9])).all()
+            assert (calls[0].kwargs["v"] == np.array([1, 4, 7])).all()
+
+            assert np.isclose(similarity_matrix[0][2], 0.1)
+            assert np.isclose(similarity_matrix[2][0], 0.1)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[1][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_5(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,   2,  3,  4],
+                                [5,   6,  7,  8],
+                                [9,  10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((4, 4), np.nan)
+            target = 0
+            neighborhood = np.array([1, 2, 3])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 3
+
+            assert (calls[0].kwargs["u"] == np.array([1, 5, 9])).all()
+            assert (calls[0].kwargs["v"] == np.array([2, 6, 10])).all()
+
+            assert (calls[1].kwargs["u"] == np.array([1, 5, 9])).all()
+            assert (calls[1].kwargs["v"] == np.array([3, 7, 11])).all()
+
+            assert (calls[2].kwargs["u"] == np.array([1, 5, 9])).all()
+            assert (calls[2].kwargs["v"] == np.array([4, 8, 12])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert np.isclose(similarity_matrix[0][2], 0.2)
+            assert np.isclose(similarity_matrix[2][0], 0.2)
+
+            assert np.isclose(similarity_matrix[0][3], 0.3)
+            assert np.isclose(similarity_matrix[3][0], 0.3)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[1][3])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+            assert math.isnan(similarity_matrix[2][3])
+            assert math.isnan(similarity_matrix[3][1])
+            assert math.isnan(similarity_matrix[3][2])
+            assert math.isnan(similarity_matrix[3][3])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_6(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,   2,  3,  4],
+                                [5,   6,  7,  8],
+                                [9,  10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6]
+
+            similarity_matrix = np.full((4, 4), np.nan)
+            target = 0
+            neighborhood = np.array([2])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 1
+
+            assert (calls[0].kwargs["u"] == np.array([1, 5, 9])).all()
+            assert (calls[0].kwargs["v"] == np.array([3, 7, 11])).all()
+
+            assert np.isclose(similarity_matrix[0][2], 0.1)
+            assert np.isclose(similarity_matrix[2][0], 0.1)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[1][3])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+            assert math.isnan(similarity_matrix[2][3])
+            assert math.isnan(similarity_matrix[3][1])
+            assert math.isnan(similarity_matrix[3][2])
+            assert math.isnan(similarity_matrix[3][3])
+            assert math.isnan(similarity_matrix[0][1])
+            assert math.isnan(similarity_matrix[0][3])
+            assert math.isnan(similarity_matrix[1][0])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_7(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,   2,  3,  4],
+                                [5,   6,  7,  8],
+                                [9,  10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2, 0.3, 0.4]
+
+            similarity_matrix = np.full((4, 4), np.nan)
+            target = 0
+            neighborhood = np.array([3])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 1
+
+            assert (calls[0].kwargs["u"] == np.array([1, 5, 9])).all()
+            assert (calls[0].kwargs["v"] == np.array([4, 8, 12])).all()
+
+            assert np.isclose(similarity_matrix[0][3], 0.1)
+            assert np.isclose(similarity_matrix[3][0], 0.1)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[1][3])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+            assert math.isnan(similarity_matrix[2][3])
+            assert math.isnan(similarity_matrix[3][1])
+            assert math.isnan(similarity_matrix[3][2])
+            assert math.isnan(similarity_matrix[3][3])
+            assert math.isnan(similarity_matrix[0][1])
+            assert math.isnan(similarity_matrix[0][2])
+            assert math.isnan(similarity_matrix[1][0])
+            assert math.isnan(similarity_matrix[2][0])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_8(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,   2,  3,  4],
+                                [5,   6,  7,  8],
+                                [9,  10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2]
+
+            similarity_matrix = np.full((4, 4), np.nan)
+            target = 0
+            neighborhood = np.array([1])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 1
+
+            assert (calls[0].kwargs["u"] == np.array([1, 5, 9])).all()
+            assert (calls[0].kwargs["v"] == np.array([2, 6, 10])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][2])
+            assert math.isnan(similarity_matrix[0][3])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[1][3])
+            assert math.isnan(similarity_matrix[2][0])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+            assert math.isnan(similarity_matrix[2][3])
+            assert math.isnan(similarity_matrix[3][0])
+            assert math.isnan(similarity_matrix[3][1])
+            assert math.isnan(similarity_matrix[3][2])
+            assert math.isnan(similarity_matrix[3][3])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_9(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,   2,  3],
+                                [4,   5,  6],
+                                [7,   8,  9],
+                                [10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 0
+            neighborhood = np.array([1])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 1
+
+            assert (calls[0].kwargs["u"] == np.array([1, 4, 7, 10])).all()
+            assert (calls[0].kwargs["v"] == np.array([2, 5, 8, 11])).all()
+
+            assert np.isclose(similarity_matrix[0][1], 0.1)
+            assert np.isclose(similarity_matrix[1][0], 0.1)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][2])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[1][2])
+            assert math.isnan(similarity_matrix[2][0])
+            assert math.isnan(similarity_matrix[2][1])
+            assert math.isnan(similarity_matrix[2][2])
+
+        @patch("recommenders.common.cosine_similarity")
+        def test_10(self, cosine_similarity_mock):
+            # fmt: off
+            dataset = np.array([[1,   2,  3],
+                                [4,   5,  6],
+                                [7,   8,  9],
+                                [10, 11, 12]])
+            # fmt: on
+
+            cosine_similarity_mock.side_effect = [0.1, 0.2]
+
+            similarity_matrix = np.full((3, 3), np.nan)
+            target = 2
+            neighborhood = np.array([0, 1])
+
+            compute_neighborhood_cosine_similarity(
+                dataset.T, similarity_matrix, target, neighborhood
+            )
+
+            calls = cosine_similarity_mock.call_args_list
+            assert len(calls) == 2
+
+            assert (calls[0].kwargs["u"] == np.array([3, 6, 9, 12])).all()
+            assert (calls[0].kwargs["v"] == np.array([1, 4, 7, 10])).all()
+
+            assert (calls[1].kwargs["u"] == np.array([3, 6, 9, 12])).all()
+            assert (calls[1].kwargs["v"] == np.array([2, 5, 8, 11])).all()
+
+            assert np.isclose(similarity_matrix[0][2], 0.1)
+            assert np.isclose(similarity_matrix[2][0], 0.1)
+
+            assert np.isclose(similarity_matrix[1][2], 0.2)
+            assert np.isclose(similarity_matrix[2][1], 0.2)
+
+            assert math.isnan(similarity_matrix[0][0])
+            assert math.isnan(similarity_matrix[0][1])
+            assert math.isnan(similarity_matrix[1][0])
+            assert math.isnan(similarity_matrix[1][1])
+            assert math.isnan(similarity_matrix[2][2])
