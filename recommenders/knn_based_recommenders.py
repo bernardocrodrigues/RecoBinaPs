@@ -461,7 +461,7 @@ class BiAKNN(AlgoBase, ABC):
         minimum_bicluster_relative_size: Optional[int] = None,
         knn_type: str = "item",
         user_binarization_threshold: float = 1.0,
-        number_of_top_k_biclusters: Optional[int] = 8,
+        number_of_top_k_biclusters: Optional[int] = None,
         knn_k: int = 5,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
@@ -514,6 +514,7 @@ class BiAKNN(AlgoBase, ABC):
         self.similarity_matrix = None
         self.means = None
         self.biclusters = None
+        self.n = None
 
     @abstractmethod
     def compute_biclusters_from_trainset(self) -> List[np.ndarray]:
@@ -543,8 +544,24 @@ class BiAKNN(AlgoBase, ABC):
 
         self.dataset = convert_trainset_to_matrix(trainset)
         self.compute_biclusters_from_trainset()
-        self.logger.info("Computed biclusters: %d", len(self.biclusters))
 
+        self._apply_filters()
+        self._generate_neighborhood()
+        self._calculate_means()
+        self._instantiate_similarity_matrix()
+
+    def _apply_filters(self) -> None:
+        """
+        Apply filters to the biclusters based on the specified criteria.
+
+        This method applies filters to the biclusters based on the following criteria:
+        - minimum bicluster sparsity
+        - minimum bicluster coverage
+        - minimum bicluster relative size
+
+        If the number of top k biclusters is not specified, it is set to the total number of
+        biclusters.
+        """
         if self.minimum_bicluster_sparsity:
             self.biclusters = apply_bicluster_sparsity_filter(
                 self.dataset, self.biclusters, self.minimum_bicluster_sparsity
@@ -563,8 +580,14 @@ class BiAKNN(AlgoBase, ABC):
         if not self.number_of_top_k_biclusters:
             self.number_of_top_k_biclusters = len(self.biclusters)
 
-        self.logger.info("Filtered biclusters: %d", len(self.biclusters))
+    def _generate_neighborhood(self) -> None:
+        """
+        Generates the neighborhood for each user based on the dataset and biclusters.
 
+        The neighborhood is determined by selecting the top-k biclusters that are most relevant to
+        the user, merging them into a single bicluster, and extracting either the extent or intent
+        depending on the knn_type.
+        """
         for user_id in range(self.dataset.shape[0]):
             user_as_tidset = get_indices_above_threshold(
                 self.dataset[user_id], self.user_binarization_threshold
@@ -583,18 +606,33 @@ class BiAKNN(AlgoBase, ABC):
 
             self.neighborhood[user_id] = neighborhood
 
+    def _calculate_means(self):
+        """
+        Calculate the mean ratings for each user or item.
+
+        If knn_type is "user", calculate the mean ratings for each user.
+        If knn_type is "item", calculate the mean ratings for each item.
+        """
         if self.knn_type == "user":
-            n = self.trainset.n_users
+            self.n = self.trainset.n_users
             ratings_map = self.trainset.ur.items()
         else:
-            n = self.trainset.n_items
+            self.n = self.trainset.n_items
             ratings_map = self.trainset.ir.items()
 
-        self.means = np.full((n), dtype=np.float64, fill_value=np.NAN)
+        self.means = np.full((self.n), dtype=np.float64, fill_value=np.NAN)
         for ratings_id, ratings in ratings_map:
             self.means[ratings_id] = np.mean([r for (_, r) in ratings])
 
-        self.similarity_matrix = np.full((n, n), dtype=np.float64, fill_value=np.NAN)
+    def _instantiate_similarity_matrix(self):
+        """
+        Instantiate the similarity matrix with NaN values.
+
+        This method initializes the similarity matrix with NaN values. The similarity matrix is a
+        square matrix of size n x n, where n is the number of items in the dataset. Each element of
+        the matrix represents the similarity between two items.
+        """
+        self.similarity_matrix = np.full((self.n, self.n), dtype=np.float64, fill_value=np.NAN)
 
     def estimate(self, user: int, item: int):
         if not (self.trainset.knows_user(user) and self.trainset.knows_item(item)):
