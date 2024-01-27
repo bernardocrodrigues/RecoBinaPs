@@ -639,25 +639,25 @@ class BiAKNN(AlgoBase, ABC):
             raise PredictionImpossible("User and/or item is unknown.")
 
         if self.knn_type == "user":
-            x, y = user, item
+            main_index, secondary_index = user, item
             dataset = self.dataset
         else:
-            x, y = item, user
+            main_index, secondary_index = item, user
             dataset = self.dataset.T
 
         user_neighborhood = self.neighborhood[user]
-        user_neighborhood = np.setdiff1d(user_neighborhood, x)
+        user_neighborhood = np.setdiff1d(user_neighborhood, main_index)
 
         if user_neighborhood.size == 0:
-            return self.means[x], {"actual_k": 0}
+            return self.means[main_index], {"actual_k": 0}
 
         compute_neighborhood_cosine_similarity(
-            dataset, self.similarity_matrix, x, user_neighborhood
+            dataset, self.similarity_matrix, main_index, user_neighborhood
         )
 
         k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means = get_k_top_neighbors(
-            x,
-            y,
+            main_index,
+            secondary_index,
             dataset,
             user_neighborhood,
             self.similarity_matrix,
@@ -666,10 +666,10 @@ class BiAKNN(AlgoBase, ABC):
         )
 
         if k_top_neighbors_ratings.size == 0:
-            return self.means[x], {"actual_k": 0}
+            return self.means[main_index], {"actual_k": 0}
 
         prediction = calculate_weighted_rating(
-            self.means[x],
+            self.means[main_index],
             k_top_neighbors_ratings,
             k_top_neighbors_similarity,
             k_top_means,
