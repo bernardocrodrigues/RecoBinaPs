@@ -3106,3 +3106,13 @@ class TestBiAKNN:
 
         assert biaknn.n == 4
         assert (biaknn.means == [25, 30, 35, 40]).all()
+        
+    def test_instantiate_similarity_matrix(self):
+        biaknn = self.ConcreteBiAKNN()
+        biaknn.n = 10
+
+        biaknn._instantiate_similarity_matrix()
+
+        assert np.isnan(biaknn.similarity_matrix).all()
+        assert biaknn.similarity_matrix.shape == (10, 10)
+        assert biaknn.similarity_matrix.dtype == np.float64
