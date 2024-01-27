@@ -443,6 +443,17 @@ class KNNOverLatentSpaceRecommender(AlgoBase, ABC):
 
 
 class BiAKNN(AlgoBase, ABC):
+    """
+    Bicluster aware kNN (BiAKNN) is an abstract class for recommendation engines based on the kNN
+    algorithm. However, instead of using the original dataset, these recommendation engines use
+    restricts the neighborhood of each item to a union of biclusters. It extends the functionality
+    of the AlgoBase class from the Surprise library and provides methods for generating
+    recommendations.
+
+    The method compute_biclusters_from_trainset() must be implemented by subclasses. This method
+    is responsible for computing the biclusters from the dataset.
+    """
+
     def __init__(
         self,
         minimum_bicluster_sparsity: Optional[float] = None,
