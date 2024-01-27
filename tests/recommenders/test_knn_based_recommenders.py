@@ -2472,7 +2472,7 @@ class TestGetKTopNeighbors:
                 users_neighborhood = np.array([2, 3])
                 knn_k = 1
 
-                expected_ratings = np.array([8.])
+                expected_ratings = np.array([8.0])
                 expected_similarity = np.array([0.1])
                 expected_means = np.array([4.0])
 
@@ -2642,3 +2642,195 @@ class TestBiAKNN:
 
         with pytest.raises(AssertionError):
             self.ConcreteBiAKNN(knn_k=0)
+
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_sparsity_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_coverage_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_relative_size_filter")
+    def test_apply_filters_1(
+        self,
+        apply_bicluster_relative_size_filter_mock,
+        apply_bicluster_coverage_filter_mock,
+        apply_bicluster_sparsity_filter_mock,
+    ):
+        biaknn = self.ConcreteBiAKNN(minimum_bicluster_sparsity=0.2)
+
+        biaknn.dataset = "dataset"
+        biaknn.biclusters = "biclusters"
+        apply_bicluster_sparsity_filter_mock.return_value = "filtered_biclusters"
+
+        biaknn._apply_filters()
+
+        apply_bicluster_sparsity_filter_mock.assert_called_once_with("dataset", "biclusters", 0.2)
+        apply_bicluster_coverage_filter_mock.assert_not_called()
+        apply_bicluster_relative_size_filter_mock.assert_not_called()
+
+        assert biaknn.dataset == "dataset"
+        assert biaknn.biclusters == "filtered_biclusters"
+        assert biaknn.number_of_top_k_biclusters == len("filtered_biclusters")
+
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_sparsity_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_coverage_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_relative_size_filter")
+    def test_apply_filters_2(
+        self,
+        apply_bicluster_relative_size_filter_mock,
+        apply_bicluster_coverage_filter_mock,
+        apply_bicluster_sparsity_filter_mock,
+    ):
+        biaknn = self.ConcreteBiAKNN(minimum_bicluster_sparsity=0.2, number_of_top_k_biclusters=10)
+
+        biaknn.dataset = "dataset"
+        biaknn.biclusters = "biclusters"
+        apply_bicluster_sparsity_filter_mock.return_value = "filtered_biclusters"
+
+        biaknn._apply_filters()
+
+        apply_bicluster_sparsity_filter_mock.assert_called_once_with("dataset", "biclusters", 0.2)
+        apply_bicluster_coverage_filter_mock.assert_not_called()
+        apply_bicluster_relative_size_filter_mock.assert_not_called()
+
+        assert biaknn.dataset == "dataset"
+        assert biaknn.biclusters == "filtered_biclusters"
+        assert biaknn.number_of_top_k_biclusters == 10
+
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_sparsity_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_coverage_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_relative_size_filter")
+    def test_apply_filters_3(
+        self,
+        apply_bicluster_relative_size_filter_mock,
+        apply_bicluster_coverage_filter_mock,
+        apply_bicluster_sparsity_filter_mock,
+    ):
+        biaknn = self.ConcreteBiAKNN(number_of_top_k_biclusters=10)
+
+        biaknn.dataset = "dataset"
+        biaknn.biclusters = "biclusters"
+
+        biaknn._apply_filters()
+
+        apply_bicluster_sparsity_filter_mock.assert_not_called()
+        apply_bicluster_coverage_filter_mock.assert_not_called()
+        apply_bicluster_relative_size_filter_mock.assert_not_called()
+
+        assert biaknn.dataset == "dataset"
+        assert biaknn.biclusters == "biclusters"
+        assert biaknn.number_of_top_k_biclusters == 10
+
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_sparsity_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_coverage_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_relative_size_filter")
+    def test_apply_filters_4(
+        self,
+        apply_bicluster_relative_size_filter_mock,
+        apply_bicluster_coverage_filter_mock,
+        apply_bicluster_sparsity_filter_mock,
+    ):
+        biaknn = self.ConcreteBiAKNN()
+
+        biaknn.dataset = "dataset"
+        biaknn.biclusters = "biclusters"
+
+        biaknn._apply_filters()
+
+        apply_bicluster_sparsity_filter_mock.assert_not_called()
+        apply_bicluster_coverage_filter_mock.assert_not_called()
+        apply_bicluster_relative_size_filter_mock.assert_not_called()
+
+        assert biaknn.dataset == "dataset"
+        assert biaknn.biclusters == "biclusters"
+        assert biaknn.number_of_top_k_biclusters == len("biclusters")
+
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_sparsity_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_coverage_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_relative_size_filter")
+    def test_apply_filters_5(
+        self,
+        apply_bicluster_relative_size_filter_mock,
+        apply_bicluster_coverage_filter_mock,
+        apply_bicluster_sparsity_filter_mock,
+    ):
+        biaknn = self.ConcreteBiAKNN(
+            minimum_bicluster_coverage=0.5,
+        )
+
+        biaknn.dataset = "dataset"
+        biaknn.biclusters = "biclusters"
+
+        apply_bicluster_coverage_filter_mock.return_value = "filtered_biclusters"
+
+        biaknn._apply_filters()
+
+        apply_bicluster_sparsity_filter_mock.assert_not_called()
+        apply_bicluster_coverage_filter_mock.assert_called_once_with("dataset", "biclusters", 0.5)
+        apply_bicluster_relative_size_filter_mock.assert_not_called()
+
+        assert biaknn.dataset == "dataset"
+        assert biaknn.biclusters == "filtered_biclusters"
+        assert biaknn.number_of_top_k_biclusters == len("filtered_biclusters")
+
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_sparsity_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_coverage_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_relative_size_filter")
+    def test_apply_filters_6(
+        self,
+        apply_bicluster_relative_size_filter_mock,
+        apply_bicluster_coverage_filter_mock,
+        apply_bicluster_sparsity_filter_mock,
+    ):
+        biaknn = self.ConcreteBiAKNN(
+            minimum_bicluster_relative_size=0.6,
+        )
+
+        biaknn.dataset = "dataset"
+        biaknn.biclusters = "biclusters"
+
+        apply_bicluster_relative_size_filter_mock.return_value = "filtered_biclusters"
+
+        biaknn._apply_filters()
+
+        apply_bicluster_sparsity_filter_mock.assert_not_called()
+        apply_bicluster_coverage_filter_mock.assert_not_called()
+        apply_bicluster_relative_size_filter_mock.assert_called_once_with(
+            "dataset", "biclusters", 0.6
+        )
+
+        assert biaknn.dataset == "dataset"
+        assert biaknn.biclusters == "filtered_biclusters"
+        assert biaknn.number_of_top_k_biclusters == len("filtered_biclusters")
+
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_sparsity_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_coverage_filter")
+    @patch("recommenders.knn_based_recommenders.apply_bicluster_relative_size_filter")
+    def test_apply_filters_7(
+        self,
+        apply_bicluster_relative_size_filter_mock,
+        apply_bicluster_coverage_filter_mock,
+        apply_bicluster_sparsity_filter_mock,
+    ):
+        biaknn = self.ConcreteBiAKNN(
+            minimum_bicluster_relative_size=0.6,
+            minimum_bicluster_coverage=0.5,
+            minimum_bicluster_sparsity=0.2,
+        )
+
+        biaknn.dataset = "dataset"
+        biaknn.biclusters = "biclusters"
+
+        apply_bicluster_sparsity_filter_mock.return_value = "filtered_biclusters_1"
+        apply_bicluster_coverage_filter_mock.return_value = "filtered_biclusters_2"
+        apply_bicluster_relative_size_filter_mock.return_value = "filtered_biclusters_3"
+
+        biaknn._apply_filters()
+
+        apply_bicluster_sparsity_filter_mock.assert_called_once_with("dataset", "biclusters", 0.2)
+        apply_bicluster_coverage_filter_mock.assert_called_once_with(
+            "dataset", "filtered_biclusters_1", 0.5
+        )
+        apply_bicluster_relative_size_filter_mock.assert_called_once_with(
+            "dataset", "filtered_biclusters_2", 0.6
+        )
+
+        assert biaknn.dataset == "dataset"
+        assert biaknn.biclusters == "filtered_biclusters_3"
+        assert biaknn.number_of_top_k_biclusters == len("filtered_biclusters_3")
