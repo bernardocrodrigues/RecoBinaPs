@@ -2834,3 +2834,139 @@ class TestBiAKNN:
         assert biaknn.dataset == "dataset"
         assert biaknn.biclusters == "filtered_biclusters_3"
         assert biaknn.number_of_top_k_biclusters == len("filtered_biclusters_3")
+
+    @patch("recommenders.knn_based_recommenders.get_indices_above_threshold")
+    @patch("recommenders.knn_based_recommenders.get_top_k_biclusters_for_user")
+    @patch("recommenders.knn_based_recommenders.merge_biclusters")
+    def test_generate_neighborhood_1(
+        self,
+        mock_merge_biclusters,
+        mock_get_top_k_biclusters_for_user,
+        mock_get_indices_above_threshold,
+    ):
+        mock_get_indices_above_threshold.side_effect = [1, 2, 3]
+        mock_get_top_k_biclusters_for_user.side_effect = [10, 11, 12]
+        mock_merge_biclusters.side_effect = [Concept(1, 2), Concept(3, 4), Concept(5, 6)]
+
+        biaknn = self.ConcreteBiAKNN()
+        biaknn.dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+        biaknn.biclusters = "biclusters"
+        biaknn.number_of_top_k_biclusters = 123
+
+        biaknn._generate_neighborhood()
+
+        calls = mock_get_indices_above_threshold.call_args_list
+
+        assert len(calls) == 3
+
+        assert (calls[0].args[0] == biaknn.dataset[0]).all()
+        assert np.isclose(calls[0].args[1], 1.0)
+        assert (calls[1].args[0] == biaknn.dataset[1]).all()
+        assert np.isclose(calls[1].args[1], 1.0)
+        assert (calls[2].args[0] == biaknn.dataset[2]).all()
+        assert np.isclose(calls[2].args[1], 1.0)
+
+        calls = mock_get_top_k_biclusters_for_user.call_args_list
+
+        assert len(calls) == 3
+
+        assert calls[0].args[0] == "biclusters"
+        assert calls[0].args[1] == 1
+        assert calls[0].args[2] == 123
+
+        assert calls[1].args[0] == "biclusters"
+        assert calls[1].args[1] == 2
+        assert calls[1].args[2] == 123
+
+        assert calls[2].args[0] == "biclusters"
+        assert calls[2].args[1] == 3
+        assert calls[2].args[2] == 123
+
+        calls = mock_merge_biclusters.call_args_list
+
+        assert len(calls) == 3
+
+        assert calls[0].args[0] == 10
+        assert calls[1].args[0] == 11
+        assert calls[2].args[0] == 12
+
+        assert len(calls) == 3
+        assert biaknn.neighborhood[0] == Concept(1, 2).intent
+        assert biaknn.neighborhood[1] == Concept(3, 4).intent
+        assert biaknn.neighborhood[2] == Concept(5, 6).intent
+
+    @patch("recommenders.knn_based_recommenders.get_indices_above_threshold")
+    @patch("recommenders.knn_based_recommenders.get_top_k_biclusters_for_user")
+    @patch("recommenders.knn_based_recommenders.merge_biclusters")
+    def test_generate_neighborhood_2(
+        self,
+        mock_merge_biclusters,
+        mock_get_top_k_biclusters_for_user,
+        mock_get_indices_above_threshold,
+    ):
+        mock_get_indices_above_threshold.side_effect = [1, 2, 3, 4]
+        mock_get_top_k_biclusters_for_user.side_effect = [10, 11, 12, 13]
+        mock_merge_biclusters.side_effect = [
+            Concept(1, 2),
+            Concept(3, 4),
+            Concept(5, 6),
+            Concept(7, 8),
+        ]
+
+        biaknn = self.ConcreteBiAKNN()
+        # fmt: off
+        biaknn.dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9], [10, 11, 12]])
+        # fmt: on
+        biaknn.biclusters = "biclusters"
+        biaknn.number_of_top_k_biclusters = 77
+        biaknn.knn_type = "user"
+
+        biaknn._generate_neighborhood()
+
+        calls = mock_get_indices_above_threshold.call_args_list
+
+        assert len(calls) == 4
+
+        assert (calls[0].args[0] == biaknn.dataset[0]).all()
+        assert np.isclose(calls[0].args[1], 1.0)
+        assert (calls[1].args[0] == biaknn.dataset[1]).all()
+        assert np.isclose(calls[1].args[1], 1.0)
+        assert (calls[2].args[0] == biaknn.dataset[2]).all()
+        assert np.isclose(calls[2].args[1], 1.0)
+        assert (calls[3].args[0] == biaknn.dataset[3]).all()
+        assert np.isclose(calls[3].args[1], 1.0)
+
+        calls = mock_get_top_k_biclusters_for_user.call_args_list
+
+        assert len(calls) == 4
+
+        assert calls[0].args[0] == "biclusters"
+        assert calls[0].args[1] == 1
+        assert calls[0].args[2] == 77
+
+        assert calls[1].args[0] == "biclusters"
+        assert calls[1].args[1] == 2
+        assert calls[1].args[2] == 77
+
+        assert calls[2].args[0] == "biclusters"
+        assert calls[2].args[1] == 3
+        assert calls[2].args[2] == 77
+
+        assert calls[3].args[0] == "biclusters"
+        assert calls[3].args[1] == 4
+        assert calls[3].args[2] == 77
+
+        calls = mock_merge_biclusters.call_args_list
+
+        assert len(calls) == 4
+
+        assert calls[0].args[0] == 10
+        assert calls[1].args[0] == 11
+        assert calls[2].args[0] == 12
+        assert calls[3].args[0] == 13
+
+        assert len(calls) == 4
+        assert biaknn.neighborhood[0] == Concept(1, 2).extent
+        assert biaknn.neighborhood[1] == Concept(3, 4).extent
+        assert biaknn.neighborhood[2] == Concept(5, 6).extent
+        assert biaknn.neighborhood[3] == Concept(7, 8).extent
