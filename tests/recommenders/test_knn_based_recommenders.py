@@ -5,10 +5,13 @@ Tests for knn based recommenders from recommenders module.
 import numpy as np
 import pytest
 
+from unittest.mock import patch
+
 from recommenders.knn_based_recommenders import (
     merge_biclusters,
     calculate_weighted_rating,
     get_k_top_neighbors,
+    BiAKNN,
 )
 from pattern_mining.formal_concept_analysis import Concept, create_concept
 
@@ -2541,7 +2544,7 @@ class TestGetKTopNeighbors:
                 users_neighborhood = np.array([0, 1, 2])
                 knn_k = 3
 
-                expected_ratings = np.array([10.])
+                expected_ratings = np.array([10.0])
                 expected_similarity = np.array([0.3])
                 expected_means = np.array([2.0])
 
@@ -2581,3 +2584,61 @@ class TestGetKTopNeighbors:
                     expected_similarity=expected_similarity,
                     expected_means=expected_means,
                 )
+
+
+class TestBiAKNN:
+    class ConcreteBiAKNN(BiAKNN):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+        def compute_biclusters_from_trainset(self):
+            pass
+
+    def test_init_invalid_args(self):
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_sparsity="0.5")
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_sparsity=-0.5)
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_sparsity=1.5)
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_coverage="0.8")
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_coverage=-0.8)
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_coverage=1.8)
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_relative_size="0.2")
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_relative_size=-0.2)
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(minimum_bicluster_relative_size=1.2)
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(knn_type="invalid_type")
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(user_binarization_threshold="0.5")
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(user_binarization_threshold=-0.5)
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(number_of_top_k_biclusters="10")
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(number_of_top_k_biclusters=0)
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(knn_k="3")
+
+        with pytest.raises(AssertionError):
+            self.ConcreteBiAKNN(knn_k=0)
