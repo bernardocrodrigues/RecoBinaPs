@@ -2594,6 +2594,14 @@ class TestBiAKNN:
         def compute_biclusters_from_trainset(self):
             pass
 
+    class MockTrainset:
+        def __init__(self, ur, ir):
+            self.ur = ur
+            self.ir = ir
+
+            self.n_users = len(ur)
+            self.n_items = len(ir)
+
     def test_init_invalid_args(self):
         with pytest.raises(AssertionError):
             self.ConcreteBiAKNN(minimum_bicluster_sparsity="0.5")
@@ -2970,3 +2978,131 @@ class TestBiAKNN:
         assert biaknn.neighborhood[1] == Concept(3, 4).extent
         assert biaknn.neighborhood[2] == Concept(5, 6).extent
         assert biaknn.neighborhood[3] == Concept(7, 8).extent
+
+    def test_calculate_means_item_1(self):
+        biaknn = self.ConcreteBiAKNN()
+        biaknn.trainset = self.MockTrainset(
+            ur={
+                0: [(0, 1), (1, 2)],
+                1: [(0, 3), (1, 4), (2, 5)],
+                2: [(0, 6)],
+            },
+            ir={
+                0: [(0, 1), (1, 2)],
+                1: [(0, 2), (1, 3), (2, 4)],
+                2: [(0, 3), (1, 4), (2, 5)],
+            },
+        )
+
+        biaknn._calculate_means()
+
+        assert biaknn.n == 3
+        assert (biaknn.means == [1.5, 3, 4]).all()
+
+    def test_calculate_means_item_2(self):
+        biaknn = self.ConcreteBiAKNN()
+        biaknn.trainset = self.MockTrainset(
+            ur={
+                0: [(0, 1), (1, 2)],
+                1: [(0, 3), (1, 4), (2, 5)],
+                2: [(0, 6)],
+            },
+            ir={
+                0: [(0, 1), (1, 2)],
+                1: [(0, 2), (1, 3), (2, 4)],
+                2: [(0, 3), (1, 4), (2, 5)],
+            },
+        )
+
+        biaknn._calculate_means()
+
+        assert biaknn.n == 3
+        assert (biaknn.means == [1.5, 3, 4]).all()
+
+    def test_calculate_means_item_3(self):
+        biaknn = self.ConcreteBiAKNN()
+        biaknn.trainset = self.MockTrainset(
+            ur={
+                0: [(0, 2), (1, 3)],
+                1: [(0, 4), (1, 5), (2, 6)],
+                2: [(0, 7)],
+            },
+            ir={
+                0: [(0, 2), (1, 3)],
+                1: [(0, 3), (1, 4), (2, 5)],
+                2: [(0, 4), (1, 5), (2, 6)],
+            },
+        )
+
+        biaknn._calculate_means()
+
+        assert biaknn.n == 3
+        assert (biaknn.means == [2.5, 4, 5]).all()
+        
+    def test_calculate_means_item_4(self):
+        biaknn = self.ConcreteBiAKNN()
+        biaknn.trainset = self.MockTrainset(
+            ur={
+                0: [(0, 1), (1, 3), (2, 5), (3, 7)],
+                1: [(0, 2), (1, 4), (2, 6), (3, 8)],
+                2: [(0, 3), (1, 5), (2, 7), (3, 9)],
+                3: [(0, 4), (1, 6), (2, 8), (3, 10)],
+            },
+            ir={
+                0: [(0, 2), (1, 4), (2, 6), (3, 8)],
+                1: [(0, 3), (1, 5), (2, 7), (3, 9)],
+                2: [(0, 4), (1, 6), (2, 8), (3, 10)],
+                3: [(0, 5), (1, 7), (2, 9), (3, 11)],
+            },
+        )
+
+        biaknn._calculate_means()
+
+        assert biaknn.n == 4
+        assert (biaknn.means == [5, 6, 7, 8]).all()
+
+    def test_calculate_means_user_1(self):
+        biaknn = self.ConcreteBiAKNN()
+        biaknn.trainset = self.MockTrainset(
+            ur={
+                0: [(0, 1), (1, 3), (2, 5), (3, 7)],
+                1: [(0, 2), (1, 4), (2, 6), (3, 8)],
+                2: [(0, 3), (1, 5), (2, 7), (3, 9)],
+                3: [(0, 4), (1, 6), (2, 8), (3, 10)],
+            },
+            ir={
+                0: [(0, 2), (1, 4), (2, 6), (3, 8)],
+                1: [(0, 3), (1, 5), (2, 7), (3, 9)],
+                2: [(0, 4), (1, 6), (2, 8), (3, 10)],
+                3: [(0, 5), (1, 7), (2, 9), (3, 11)],
+            },
+        )
+        biaknn.knn_type = 'user'
+
+        biaknn._calculate_means()
+
+        assert biaknn.n == 4
+        assert (biaknn.means == [4, 5, 6, 7]).all()
+
+    def test_calculate_means_user_2(self):
+        biaknn = self.ConcreteBiAKNN()
+        biaknn.trainset = self.MockTrainset(
+            ur={
+                0: [(0, 10), (1, 20), (2, 30), (3, 40)],
+                1: [(0, 15), (1, 25), (2, 35), (3, 45)],
+                2: [(0, 20), (1, 30), (2, 40), (3, 50)],
+                3: [(0, 25), (1, 35), (2, 45), (3, 55)],
+            },
+            ir={
+                0: [(0, 15), (1, 25), (2, 35), (3, 45)],
+                1: [(0, 20), (1, 30), (2, 40), (3, 50)],
+                2: [(0, 25), (1, 35), (2, 45), (3, 55)],
+                3: [(0, 30), (1, 40), (2, 50), (3, 60)],
+            },
+        )
+        biaknn.knn_type = 'user'
+
+        biaknn._calculate_means()
+
+        assert biaknn.n == 4
+        assert (biaknn.means == [25, 30, 35, 40]).all()
