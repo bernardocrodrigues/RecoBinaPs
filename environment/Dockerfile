@@ -12,7 +12,6 @@ RUN pip install numpy \
                 torch \
                 torchvision \
                 torchaudio
-# --extra-index-url https://download.pytorch.org/whl/cu116
 
 # Install Jupyter and IPython support
 RUN pip install jupyterlab \
