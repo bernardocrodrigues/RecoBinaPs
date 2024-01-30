@@ -1,4 +1,9 @@
 # Improving Recommender Systems
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=recommender-systems&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=recommender-systems)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=recommender-systems&metric=bugs)](https://sonarcloud.io/summary/new_code?id=recommender-systems)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=recommender-systems&metric=code_smells)](https://sonarcloud.io/summary/new_code?id=recommender-systems)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=recommender-systems&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=recommender-systems)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=recommender-systems&metric=coverage)](https://sonarcloud.io/summary/new_code?id=recommender-systems)
 
 Supporting code of my ongoing Master's thesis, titled "Improving Recommender Systems through 
 Pattern Mining".
