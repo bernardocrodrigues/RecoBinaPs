@@ -8,6 +8,27 @@ import numpy as np
 from .formal_concept_analysis import Concept
 
 
+def _validade_args(
+    ratings_dataset: np.ndarray, biclusters: List[np.ndarray], threshold: float
+) -> None:
+    assert isinstance(ratings_dataset, np.ndarray)
+    assert ratings_dataset.ndim == 2
+    assert ratings_dataset.shape[0] > 0
+    assert ratings_dataset.shape[1] > 0
+    assert np.issubdtype(ratings_dataset.dtype, np.float64)
+
+    assert isinstance(biclusters, list)
+    assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
+    assert all(
+        all(extent_item < ratings_dataset.shape[0] for extent_item in bicluster.extent)
+        and all(intent_item < ratings_dataset.shape[1] for intent_item in bicluster.intent)
+        for bicluster in biclusters
+    )
+
+    assert isinstance(threshold, float)
+    assert 0 <= threshold <= 1
+
+
 def apply_bicluster_sparsity_filter(
     ratings_dataset: np.ndarray, biclusters: List[np.ndarray], threshold: float = 0.5
 ) -> List[np.ndarray]:
@@ -23,22 +44,7 @@ def apply_bicluster_sparsity_filter(
         List[np.ndarray]: The filtered patterns.
     """
 
-    assert isinstance(ratings_dataset, np.ndarray)
-    assert ratings_dataset.dtype == np.float64
-    assert ratings_dataset.ndim == 2
-    assert ratings_dataset.shape[0] > 0
-    assert ratings_dataset.shape[1] > 0
-
-    assert isinstance(biclusters, list)
-    assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
-    assert all(
-        all(extent_item < ratings_dataset.shape[0] for extent_item in bicluster.extent)
-        and all(intent_item < ratings_dataset.shape[1] for intent_item in bicluster.intent)
-        for bicluster in biclusters
-    )
-
-    assert isinstance(threshold, float)
-    assert 0 <= threshold <= 1
+    _validade_args(ratings_dataset, biclusters, threshold)
 
     filtered_biclusters = []
 
@@ -67,22 +73,7 @@ def apply_bicluster_coverage_filter(
         List[np.ndarray]: The filtered patterns.
     """
 
-    assert isinstance(ratings_dataset, np.ndarray)
-    assert ratings_dataset.ndim == 2
-    assert ratings_dataset.shape[0] > 0
-    assert ratings_dataset.shape[1] > 0
-    assert np.issubdtype(ratings_dataset.dtype, np.float64)
-
-    assert isinstance(biclusters, list)
-    assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
-    assert all(
-        all(extent_item < ratings_dataset.shape[0] for extent_item in bicluster.extent)
-        and all(intent_item < ratings_dataset.shape[1] for intent_item in bicluster.intent)
-        for bicluster in biclusters
-    )
-
-    assert isinstance(threshold, float)
-    assert 0 <= threshold <= 1
+    _validade_args(ratings_dataset, biclusters, threshold)
 
     filtered_biclusters = []
 
@@ -110,23 +101,7 @@ def apply_bicluster_relative_size_filter(
     Returns:
         List[np.ndarray]: The filtered patterns.
     """
-
-    assert isinstance(ratings_dataset, np.ndarray)
-    assert ratings_dataset.ndim == 2
-    assert ratings_dataset.shape[0] > 0
-    assert ratings_dataset.shape[1] > 0
-    assert np.issubdtype(ratings_dataset.dtype, np.float64)
-
-    assert isinstance(biclusters, list)
-    assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
-    assert all(
-        all(extent_item < ratings_dataset.shape[0] for extent_item in bicluster.extent)
-        and all(intent_item < ratings_dataset.shape[1] for intent_item in bicluster.intent)
-        for bicluster in biclusters
-    )
-
-    assert isinstance(threshold, float)
-    assert 0 <= threshold <= 1
+    _validade_args(ratings_dataset, biclusters, threshold)
 
     filtered_biclusters = []
 
