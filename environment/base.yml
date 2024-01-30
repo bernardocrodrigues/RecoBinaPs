@@ -23,6 +23,7 @@ services:
       - /home/$USER/.local
       - /home/$USER/.config
       - /home/$USER/.vscode-server
+      - /home/$USER/.sonar
     environment:
       # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
       - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
@@ -30,6 +31,7 @@ services:
       # code to the PYTHONPATH so it can find the modules correctly.
       - PYTHONPATH=$SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR/pattern_mining/binaps/original/Binaps_code
       - SOURCE_ROOT_DIR=$SOURCE_ROOT_DIR
+      - SONAR_TOKEN=$SONAR_TOKEN
     # Run the container as the current user.
     user: $UID:$GID
     working_dir: $SOURCE_ROOT_DIR

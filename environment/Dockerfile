@@ -45,3 +45,11 @@ RUN pip install coverage
 
 # Install Pedro's implementation dependencies
 RUN pip install scikit-learn
+
+# Install SonarScanner
+RUN apt install unzip
+RUN wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip?_gl=1*13xosil*_gcl_au*NDg4MTYxNTg4LjE3MDY2NDYyMTQ.*_ga*ODk2ODA3NDk4LjE3MDY2NDYyMTQ.*_ga_9JZ0GZ5TC6*MTcwNjY0NjIxNC4xLjEuMTcwNjY1MzQyOC4zNS4wLjA. -O sonar-scanner-cli-5.0.1.3006-linux.zip
+RUN unzip sonar-scanner-cli-5.0.1.3006-linux.zip
+RUN mv sonar-scanner-5.0.1.3006-linux /opt/sonar-scanner
+RUN ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
+RUN rm sonar-scanner-cli-5.0.1.3006-linux.zip
