@@ -1,0 +1,15 @@
+#!/bin/sh
+
+# This script generates an environment file (.env) with the following information:
+# - UID: the user ID of the current user
+# - GID: the group ID of the current user
+# - SOURCE_ROOT_DIR: the absolute path of the parent directory of the script
+
+THIS_SCRIPT_PATH="$(dirname "$(readlink -f "$0")")"
+SOURCE_ROOT_DIR="$(realpath "$THIS_SCRIPT_PATH/..")"
+USER_ID=$(id -u)
+GROUP_ID=$(id -g)
+
+echo "UID=$USER_ID" > "$THIS_SCRIPT_PATH/.env"
+echo "GID=$GROUP_ID" >> "$THIS_SCRIPT_PATH/.env"
+echo "SOURCE_ROOT_DIR=$SOURCE_ROOT_DIR/" >> "$THIS_SCRIPT_PATH/.env"
