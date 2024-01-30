@@ -8,6 +8,67 @@ from pattern_mining.common import (
 from pattern_mining.formal_concept_analysis import create_concept
 import numpy as np
 
+
+class TestValidadeArgs:
+    ratings_dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.float64)
+    biclusters = [
+        create_concept(np.array([0, 1, 2], dtype=np.int64), np.array([0, 1], dtype=np.int64)),
+        create_concept(np.array([0, 1], dtype=np.int64), np.array([0], dtype=np.int64)),
+        create_concept(np.array([0], dtype=np.int64), np.array([1], dtype=np.int64)),
+        create_concept(np.array([0, 1], dtype=np.int64), np.array([2], dtype=np.int64)),
+    ]
+
+    def test_success(self):
+        _validade_args(self.ratings_dataset, self.biclusters, 0.5)
+
+    def test_failure_1(self):
+        with pytest.raises(AssertionError):
+            _validade_args("not an array", self.biclusters, 0.5)
+
+    def test_failure_2(self):
+        with pytest.raises(AssertionError):
+            _validade_args(np.array([]), self.biclusters, 0.5)
+
+    def test_failure_3(self):
+        with pytest.raises(AssertionError):
+            _validade_args(np.array([[]]), self.biclusters, 0.5)
+
+    def test_failure_4(self):
+        with pytest.raises(AssertionError):
+            _validade_args(self.ratings_dataset.astype(np.int64), self.biclusters, 0.5)
+
+    def test_failure_5(self):
+        with pytest.raises(AssertionError):
+            _validade_args(self.ratings_dataset, "not a list", 0.5)
+
+    def test_failure_6(self):
+        with pytest.raises(AssertionError):
+            _validade_args(self.ratings_dataset, [1, 2, 3], 0.5)
+
+    def test_failure_7(self):
+        with pytest.raises(AssertionError):
+            _validade_args(
+                self.ratings_dataset,
+                [
+                    create_concept(
+                        np.array([0, 1, 20], dtype=np.int64), np.array([0, 10], dtype=np.int64)
+                    )
+                ],
+                0.5,
+            )
+
+    def test_failure_8(self):
+        with pytest.raises(AssertionError):
+            _validade_args(self.ratings_dataset, self.biclusters, "0.5")
+
+    def test_failure_9(self):
+        with pytest.raises(AssertionError):
+            _validade_args(self.ratings_dataset, self.biclusters, -0.5)
+
+        with pytest.raises(AssertionError):
+            _validade_args(self.ratings_dataset, self.biclusters, 1.5)
+
+
 class TestApplyBiclusterSparsityFilter:
     rating_dataset = np.array(
         [
