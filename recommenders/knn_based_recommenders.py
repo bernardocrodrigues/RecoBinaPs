@@ -516,6 +516,8 @@ class BiAKNN(AlgoBase, ABC):
         self.biclusters = None
         self.n = None
 
+        self.trainset = None
+
     @abstractmethod
     def compute_biclusters_from_trainset(self) -> List[np.ndarray]:
         """
