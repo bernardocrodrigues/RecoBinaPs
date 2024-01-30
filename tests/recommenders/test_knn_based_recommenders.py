@@ -5,7 +5,7 @@ Tests for knn based recommenders from recommenders module.
 import numpy as np
 import pytest
 
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from recommenders.knn_based_recommenders import (
     merge_biclusters,
@@ -14,6 +14,8 @@ from recommenders.knn_based_recommenders import (
     BiAKNN,
 )
 from pattern_mining.formal_concept_analysis import Concept, create_concept
+
+from surprise import PredictionImpossible
 
 # pylint: disable=missing-function-docstring,missing-class-docstring
 
@@ -3038,7 +3040,7 @@ class TestBiAKNN:
 
         assert biaknn.n == 3
         assert (biaknn.means == [2.5, 4, 5]).all()
-        
+
     def test_calculate_means_item_4(self):
         biaknn = self.ConcreteBiAKNN()
         biaknn.trainset = self.MockTrainset(
@@ -3077,7 +3079,7 @@ class TestBiAKNN:
                 3: [(0, 5), (1, 7), (2, 9), (3, 11)],
             },
         )
-        biaknn.knn_type = 'user'
+        biaknn.knn_type = "user"
 
         biaknn._calculate_means()
 
@@ -3100,13 +3102,13 @@ class TestBiAKNN:
                 3: [(0, 30), (1, 40), (2, 50), (3, 60)],
             },
         )
-        biaknn.knn_type = 'user'
+        biaknn.knn_type = "user"
 
         biaknn._calculate_means()
 
         assert biaknn.n == 4
         assert (biaknn.means == [25, 30, 35, 40]).all()
-        
+
     def test_instantiate_similarity_matrix(self):
         biaknn = self.ConcreteBiAKNN()
         biaknn.n = 10
@@ -3116,3 +3118,286 @@ class TestBiAKNN:
         assert np.isnan(biaknn.similarity_matrix).all()
         assert biaknn.similarity_matrix.shape == (10, 10)
         assert biaknn.similarity_matrix.dtype == np.float64
+
+    class TestEstimate:
+        def test_unknown_user(self):
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = False
+            mock_trainset.knows_item.return_value = True
+
+            biaknn.trainset = mock_trainset
+
+            with pytest.raises(PredictionImpossible):
+                biaknn.estimate(1, 1)
+
+        def test_unknown_item(self):
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = True
+            mock_trainset.knows_item.return_value = False
+
+            biaknn.trainset = mock_trainset
+
+            with pytest.raises(PredictionImpossible):
+                biaknn.estimate(1, 1)
+
+        def test_empty_user_neighborhood_1(self):
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+            biaknn.dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = True
+            mock_trainset.knows_item.return_value = True
+
+            biaknn.trainset = mock_trainset
+
+            biaknn.neighborhood = {1: np.array([])}
+            biaknn.means = np.array([3.5, 4.0, 4.5])
+
+            prediction, info = biaknn.estimate(1, 1)
+
+            assert np.isclose(prediction, 4.0)
+            assert info["actual_k"] == 0
+
+        def test_empty_user_neighborhood_2(self):
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+            biaknn.dataset = None
+            biaknn.knn_type = "user"
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = True
+            mock_trainset.knows_item.return_value = True
+
+            biaknn.trainset = mock_trainset
+
+            biaknn.neighborhood = {1: np.array([])}
+            biaknn.means = np.array([3.5, 4.0, 4.5])
+
+            prediction, info = biaknn.estimate(1, 1)
+
+            assert np.isclose(prediction, 4.0)
+            assert info["actual_k"] == 0
+
+        def test_empty_user_neighborhood_3(self):
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+            biaknn.dataset = None
+            biaknn.knn_type = "user"
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = True
+            mock_trainset.knows_item.return_value = True
+
+            biaknn.trainset = mock_trainset
+
+            biaknn.neighborhood = {1: np.array([1])}
+            biaknn.means = np.array([3.5, 4.0, 4.5])
+
+            prediction, info = biaknn.estimate(1, 1)
+
+            assert np.isclose(prediction, 4.0)
+            assert info["actual_k"] == 0
+
+        @patch("recommenders.knn_based_recommenders.get_k_top_neighbors")
+        @patch("recommenders.knn_based_recommenders.compute_neighborhood_cosine_similarity")
+        def test_no_k_top_neighbors_1(
+            self,
+            mock_compute_neighborhood_cosine_similarity,
+            mock_get_k_top_neighbors,
+        ):
+            mock_get_k_top_neighbors.return_value = (np.array([]), np.array([]), np.array([]))
+
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = True
+            mock_trainset.knows_item.return_value = True
+
+            biaknn.trainset = mock_trainset
+            biaknn.dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+            biaknn.neighborhood = {1: np.array([1, 2, 3, 4, 5])}
+            biaknn.means = np.array([3.5, 4.0, 4.5])
+            biaknn.knn_type = "user"
+
+            prediction, info = biaknn.estimate(1, 2)
+
+            calls = mock_compute_neighborhood_cosine_similarity.call_args_list
+            assert len(calls) == 1
+            assert (calls[0].args[0] == biaknn.dataset).all()
+            assert calls[0].args[1] == biaknn.similarity_matrix
+            assert calls[0].args[2] == 1
+            assert (calls[0].args[3] == np.array([2, 3, 4, 5])).all()
+
+            calls = mock_get_k_top_neighbors.call_args_list
+            assert len(calls) == 1
+            assert calls[0].args[0] == 1
+            assert calls[0].args[1] == 2
+            assert (calls[0].args[2] == biaknn.dataset).all()
+            assert (calls[0].args[3] == np.array([2, 3, 4, 5])).all()
+            assert calls[0].args[4] == biaknn.similarity_matrix
+            assert (calls[0].args[5] == biaknn.means).all()
+            assert calls[0].args[6] == biaknn.knn_k
+
+            assert np.isclose(prediction, 4.0)
+            assert info["actual_k"] == 0
+
+        @patch("recommenders.knn_based_recommenders.get_k_top_neighbors")
+        @patch("recommenders.knn_based_recommenders.compute_neighborhood_cosine_similarity")
+        def test_no_k_top_neighbors_2(
+            self,
+            mock_compute_neighborhood_cosine_similarity,
+            mock_get_k_top_neighbors,
+        ):
+            mock_get_k_top_neighbors.return_value = (np.array([]), np.array([]), np.array([]))
+
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = True
+            mock_trainset.knows_item.return_value = True
+
+            biaknn.trainset = mock_trainset
+            biaknn.dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+            biaknn.neighborhood = {1: np.array([1, 2, 3, 4, 5])}
+            biaknn.means = np.array([3.5, 4.0, 4.5])
+            biaknn.knn_type = "item"
+
+            prediction, info = biaknn.estimate(1, 2)
+
+            calls = mock_compute_neighborhood_cosine_similarity.call_args_list
+            assert len(calls) == 1
+            assert (calls[0].args[0] == biaknn.dataset.T).all()
+            assert calls[0].args[1] == biaknn.similarity_matrix
+            assert calls[0].args[2] == 2
+            assert (calls[0].args[3] == np.array([1, 3, 4, 5])).all()
+
+            calls = mock_get_k_top_neighbors.call_args_list
+            assert len(calls) == 1
+            assert calls[0].args[0] == 2
+            assert calls[0].args[1] == 1
+            assert (calls[0].args[2] == biaknn.dataset.T).all()
+            assert (calls[0].args[3] == np.array([1, 3, 4, 5])).all()
+            assert calls[0].args[4] == biaknn.similarity_matrix
+            assert (calls[0].args[5] == biaknn.means).all()
+            assert calls[0].args[6] == biaknn.knn_k
+
+            assert np.isclose(prediction, 4.5)
+            assert info["actual_k"] == 0
+
+        @patch("recommenders.knn_based_recommenders.get_k_top_neighbors")
+        @patch("recommenders.knn_based_recommenders.compute_neighborhood_cosine_similarity")
+        @patch("recommenders.knn_based_recommenders.calculate_weighted_rating")
+        def test_success_1(
+            self,
+            mock_calculate_weighted_rating,
+            mock_compute_neighborhood_cosine_similarity,
+            mock_get_k_top_neighbors,
+        ):
+            mock_get_k_top_neighbors.return_value = (
+                np.array([1, 2, 3], dtype=np.float64),
+                np.array([0.1, 0.2, 0.3], dtype=np.float64),
+                np.array([4.0, 4.1, 4.2], dtype=np.float64),
+            )
+
+            mock_calculate_weighted_rating.return_value = 4.1
+
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = True
+            mock_trainset.knows_item.return_value = True
+
+            biaknn.trainset = mock_trainset
+            biaknn.dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+            biaknn.neighborhood = {1: np.array([1, 2, 3, 4, 5])}
+            biaknn.means = np.array([3.5, 4.0, 4.5])
+            biaknn.knn_type = "user"
+
+            prediction, info = biaknn.estimate(1, 2)
+
+            calls = mock_compute_neighborhood_cosine_similarity.call_args_list
+            assert len(calls) == 1
+            assert (calls[0].args[0] == biaknn.dataset).all()
+            assert calls[0].args[1] == biaknn.similarity_matrix
+            assert calls[0].args[2] == 1
+            assert (calls[0].args[3] == np.array([2, 3, 4, 5])).all()
+
+            calls = mock_get_k_top_neighbors.call_args_list
+            assert len(calls) == 1
+            assert calls[0].args[0] == 1
+            assert calls[0].args[1] == 2
+            assert (calls[0].args[2] == biaknn.dataset).all()
+            assert (calls[0].args[3] == np.array([2, 3, 4, 5])).all()
+            assert calls[0].args[4] == biaknn.similarity_matrix
+            assert (calls[0].args[5] == biaknn.means).all()
+            assert calls[0].args[6] == biaknn.knn_k
+
+            calls = mock_calculate_weighted_rating.call_args_list
+            assert len(calls) == 1
+            assert calls[0].args[0] == 4
+            assert (calls[0].args[1] == np.array([1, 2, 3])).all()
+            assert (calls[0].args[2] == np.array([0.1, 0.2, 0.3])).all()
+            assert (calls[0].args[3] == np.array([4.0, 4.1, 4.2])).all()
+
+            assert np.isclose(prediction, 4.1)
+            assert info["actual_k"] == 3
+
+        @patch("recommenders.knn_based_recommenders.get_k_top_neighbors")
+        @patch("recommenders.knn_based_recommenders.compute_neighborhood_cosine_similarity")
+        @patch("recommenders.knn_based_recommenders.calculate_weighted_rating")
+        def test_success_2(
+            self,
+            mock_calculate_weighted_rating,
+            mock_compute_neighborhood_cosine_similarity,
+            mock_get_k_top_neighbors,
+        ):
+            mock_get_k_top_neighbors.return_value = (
+                np.array([1, 2, 3], dtype=np.float64),
+                np.array([0.1, 0.2, 0.3], dtype=np.float64),
+                np.array([4.0, 4.1, 4.2], dtype=np.float64),
+            )
+
+            mock_calculate_weighted_rating.return_value = 4.1
+
+            biaknn = TestBiAKNN.ConcreteBiAKNN()
+
+            mock_trainset = Mock()
+            mock_trainset.knows_user.return_value = True
+            mock_trainset.knows_item.return_value = True
+
+            biaknn.trainset = mock_trainset
+            biaknn.dataset = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+            biaknn.neighborhood = {1: np.array([1, 2, 3, 4])}
+            biaknn.means = np.array([3.5, 4.0, 4.5])
+            biaknn.knn_type = "item"
+
+            prediction, info = biaknn.estimate(1, 2)
+
+            calls = mock_compute_neighborhood_cosine_similarity.call_args_list
+            assert len(calls) == 1
+            assert (calls[0].args[0] == biaknn.dataset.T).all()
+            assert calls[0].args[1] == biaknn.similarity_matrix
+            assert calls[0].args[2] == 2
+            assert (calls[0].args[3] == np.array([1, 3, 4])).all()
+
+            calls = mock_get_k_top_neighbors.call_args_list
+            assert len(calls) == 1
+            assert calls[0].args[0] == 2
+            assert calls[0].args[1] == 1
+            assert (calls[0].args[2] == biaknn.dataset.T).all()
+            assert (calls[0].args[3] == np.array([1, 3, 4])).all()
+            assert calls[0].args[4] == biaknn.similarity_matrix
+            assert (calls[0].args[5] == biaknn.means).all()
+            assert calls[0].args[6] == biaknn.knn_k
+
+            calls = mock_calculate_weighted_rating.call_args_list
+            assert len(calls) == 1
+            assert calls[0].args[0] == 4.5
+            assert (calls[0].args[1] == np.array([1, 2, 3])).all()
+            assert (calls[0].args[2] == np.array([0.1, 0.2, 0.3])).all()
+            assert (calls[0].args[3] == np.array([4.0, 4.1, 4.2])).all()
+
+            assert np.isclose(prediction, 4.1)
+            assert info["actual_k"] == 3
