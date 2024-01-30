@@ -1,0 +1,16 @@
+services:
+  # This service extends the base and runs a Jupiter Lab server.
+  notebook:
+    extends:
+      service: base
+      file: base.yml
+    entrypoint: jupyter-lab
+    command: --no-browser --allow-root --notebook-dir=$SOURCE_ROOT_DIR --NotebookApp.allow_origin='*' --NotebookApp.ip='0.0.0.0' --NotebookApp.token='something_secret'
+
+  # This service extends the base-cuda and runs a Jupiter Lab server.
+  notebook-cuda:
+    extends:
+      service: base-cuda
+      file: base-cuda.yml
+    entrypoint: jupyter-lab
+    command: --no-browser --allow-root --notebook-dir=$SOURCE_ROOT_DIR --NotebookApp.allow_origin='*' --NotebookApp.ip='0.0.0.0' --NotebookApp.token='something_secret'

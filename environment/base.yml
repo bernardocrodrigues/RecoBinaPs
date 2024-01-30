@@ -1,0 +1,36 @@
+services:
+  # This service defines the base environment for running the code. Every other service will
+  # extend this service.
+  base:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Keep the container running indefinitely.
+    # command: /bin/sh -c "while sleep 1000; do :; done"
+    entrypoint: python3
+    volumes:
+      # Make the host users available in the container.
+      - /etc/passwd:/etc/passwd:ro
+      - /etc/group:/etc/group:ro
+      # Make the project folder available in the container.
+      - $SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR
+      # By sharing the tmp folder with the host, we'll only donwload surprise's builtin datasets
+      # once per session
+      - /tmp:/tmp
+    tmpfs:
+      # Some services (e.g notebook and VSCode Devcontainers) will write to these folders, so
+      # mounting them in memory will speed up the code.
+      - /home/$USER/.local
+      - /home/$USER/.config
+      - /home/$USER/.vscode-server
+    environment:
+      # Surprise's builtin datasets will be downloaded to SURPRISE_DATA_FOLDER
+      - SURPRISE_DATA_FOLDER=/tmp/.surprise_data
+      # Given the way BinaPs importing is done, we need to add the root of the original BinaPs
+      # code to the PYTHONPATH so it can find the modules correctly.
+      - PYTHONPATH=$SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR/pattern_mining/binaps/original/Binaps_code
+      - SOURCE_ROOT_DIR=$SOURCE_ROOT_DIR
+    # Run the container as the current user.
+    user: $UID:$GID
+    working_dir: $SOURCE_ROOT_DIR
+    network_mode: host

@@ -87,23 +87,23 @@ if $COVERAGE; then
         notebook_args="--ignore=tmp --nbmake"
     fi
 
-    docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage run --source=. -m pytest --durations=0 -vs $notebook_args
+    docker compose -f base-cuda.yml run --rm base-cuda -m coverage run --source=. -m pytest --durations=0 -vs $notebook_args
 
     if $HTML; then
-        docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage html --omit=$omits
+        docker compose -f base-cuda.yml run --rm base-cuda -m coverage html --omit=$omits
     else
-        docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage report --omit=$omits -m
+        docker compose -f base-cuda.yml run --rm base-cuda -m coverage report --omit=$omits -m
     fi
 
     if $XML; then
-        docker compose run --rm --entrypoint="python3" notebook-cuda -m coverage xml --omit=$omits
+        docker compose -f base-cuda.yml run --rm base-cuda -m coverage xml --omit=$omits
     fi
     exit 0
 fi
 
 if $RUN_TESTS; then
     # Run tests if -t flag is set
-    docker compose run --rm --entrypoint="python3" notebook-cuda -m pytest --durations=0 -vs
+    docker compose -f base-cuda.yml run --rm base-cuda -m pytest --durations=0 -vs
     exit 0
 fi
 
@@ -111,13 +111,12 @@ if [ -n "$SPECIFIC_TESTS" ]; then
     # Run specific tests if -s flag is set
     if $PROFILE; then
         # Run specific tests while profiling if -p flag is set
-        docker compose run --rm --entrypoint="python3" notebook-cuda -m cProfile -o profile -m pytest --durations=0 -vs -k "$SPECIFIC_TESTS"
+        docker compose -f base-cuda.yml run --rm base-cuda -m cProfile -o profile -m pytest --durations=0 -vs -k "$SPECIFIC_TESTS"
         # Use snakeviz to visualize the profiling results
     else
-        docker compose run --rm --entrypoint="python3" notebook-cuda -m pytest --durations=0 -vs -k "$SPECIFIC_TESTS"
+        docker compose -f base-cuda.yml run --rm base-cuda -m pytest --durations=0 -vs -k "$SPECIFIC_TESTS"
     fi
     exit 0
 fi
-
 
 cd -

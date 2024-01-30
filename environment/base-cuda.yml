@@ -1,0 +1,13 @@
+services:
+  # This service extends the base service and adds CUDA support.
+  base-cuda:
+    extends:
+      service: base
+      file: base.yml
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["0"]
+              capabilities: [gpu]
