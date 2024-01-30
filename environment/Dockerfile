@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.0.3-base-ubuntu20.04
+FROM nvidia/cuda:12.0.0-base-ubuntu22.04
 
 ## Install Python
 RUN apt update
@@ -11,8 +11,8 @@ RUN pip install numpy \
                 pandas \
                 torch \
                 torchvision \
-                torchaudio \
-                --extra-index-url https://download.pytorch.org/whl/cu116
+                torchaudio
+# --extra-index-url https://download.pytorch.org/whl/cu116
 
 # Install Jupyter and IPython support
 RUN pip install jupyterlab \
