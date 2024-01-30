@@ -105,7 +105,7 @@ def run_binaps_cli(
     source_root_dir = os.environ.get("SOURCE_ROOT_DIR")
 
     cmd = (
-        f"python3 {source_root_dir}binaps/original/Binaps_code/main.py -i={data_path} "
+        f"python3 {source_root_dir}pattern_mining/binaps/original/Binaps_code/main.py -i={data_path} "
         f"--train_set_size={train_set_size} "
         f"--batch_size={batch_size} "
         f"--test_batch_size={test_batch_size} "
