@@ -18,6 +18,11 @@ from . import DEFAULT_LOGGER
 
 
 class BinaPsKNNRecommender(BiAKNN):
+    """
+    Recommender class that uses the BinaPs algorithm to generate the patterns that are used
+    to generate a user-item neighborhood that is, then, used for generating recommendations.
+    """
+
     def __init__(
         self,
         epochs: int = 100,
