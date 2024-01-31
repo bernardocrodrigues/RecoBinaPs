@@ -25,6 +25,7 @@ from evaluation import (
 
 RANDOM_NUMBER_GENERATOR = np.random.default_rng(seed=42)
 
+
 def generate_predictions_list(
     num_predictions: int, num_users: int, num_items: int
 ) -> List[Prediction]:
@@ -163,7 +164,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 3, False Positives = 0
         # Precision = 3 / (3 + 0) = 1.0
-        assert get_micro_averaged_precision(predictions) == 1.0
+        assert np.isclose(get_micro_averaged_precision(predictions), 1.0)
 
     def test_micro_averaged_precision_all_predictions_are_relevant_2(self):
         predictions = [
@@ -175,7 +176,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 2, False Positives = 0
         # Precision = 2 / (2 + 0) = 0.5
-        assert get_micro_averaged_precision(predictions) == 0.5
+        assert get_micro_averaged_precision(predictions), 0.5
 
     def test_micro_averaged_precision_all_predictions_are_relevant_3(self):
         predictions = [
@@ -188,7 +189,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 2, False Positives = 3
         # Precision = 2 / (2 + 3) = 0.4
-        assert get_micro_averaged_precision(predictions, threshold=2) == 0.4
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=2), 0.4)
 
     def test_micro_averaged_precision_all_predictions_are_relevant_4(self):
         predictions = [
@@ -201,7 +202,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 3, False Positives = 2
         # Precision = 3 / (3 + 2) = 0.6
-        assert get_micro_averaged_precision(predictions, threshold=3) == 0.6
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=3), 0.6)
 
     def test_micro_averaged_precision_no_predictions_are_relevant_1(self):
         predictions = [
@@ -212,7 +213,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 0, False Positives = 0
         # Precision = 0 / (0 + 0) = 0.0
-        assert get_micro_averaged_precision(predictions) == 0.0
+        assert np.isclose(get_micro_averaged_precision(predictions), 0.0)
 
     def test_micro_averaged_precision_no_predictions_are_relevant_2(self):
         predictions = [
@@ -224,7 +225,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 0, False Positives = 0
         # Precision = 0 / (0 + 0) = 0.0
-        assert get_micro_averaged_precision(predictions, threshold=2) == 0.0
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=2), 0.0)
 
     def test_micro_averaged_precision_no_predictions_are_relevant_3(self):
         predictions = [
@@ -237,7 +238,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 0, False Positives = 0
         # Precision = 0 / (0 + 0) = 0.0
-        assert get_micro_averaged_precision(predictions, threshold=2) == 0.0
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=2), 0.0)
 
     def test_micro_averaged_precision_no_predictions_are_relevant_4(self):
         predictions = [
@@ -250,7 +251,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 0, False Positives = 0
         # Precision = 0 / (0 + 0) = 0.0
-        assert get_micro_averaged_precision(predictions, threshold=3) == 0.0
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=3), 0.0)
 
     def test_micro_averaged_precision_some_predictions_are_relevant_no_false_positives_1(self):
         predictions = [
@@ -263,7 +264,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 3, False Positives = 0
         # Precision = 3 / (3 + 0) = 1.0
-        assert get_micro_averaged_precision(predictions, threshold=1) == 1.0
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=1), 1.0)
 
     def test_micro_averaged_precision_some_predictions_are_relevant_no_false_positives_2(self):
         predictions = [
@@ -276,7 +277,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 2, False Positives = 0
         # Precision = 2 / (2 + 0) = 1.0
-        assert get_micro_averaged_precision(predictions, threshold=3) == 1.0
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=3), 1.0)
 
     def test_micro_averaged_precision_some_predictions_are_relevant_no_false_positives_3(self):
         predictions = [
@@ -289,7 +290,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 3, False Positives = 0
         # Precision = 3 / (3 + 0) = 1.0
-        assert get_micro_averaged_precision(predictions) == 1.0
+        assert np.isclose(get_micro_averaged_precision(predictions), 1.0)
 
     def test_micro_averaged_precision_some_predictions_are_relevant_no_false_positives_4(self):
         predictions = [
@@ -302,7 +303,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 2, False Positives = 0
         # Precision = 2 / (2 + 0) = 1.0
-        assert get_micro_averaged_precision(predictions) == 1.0
+        assert np.isclose(get_micro_averaged_precision(predictions), 1.0)
 
     def test_micro_averaged_precision_all_predictions_are_relevant_and_some_false_positives_1(self):
         predictions = [
@@ -315,7 +316,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 3, False Positives = 2
         # Precision = 3 / (3 + 2) = 0.6
-        assert get_micro_averaged_precision(predictions) == 0.6
+        assert np.isclose(get_micro_averaged_precision(predictions), 0.6)
 
     def test_micro_averaged_precision_all_predictions_are_relevant_and_some_false_positives_2(self):
         predictions = [
@@ -328,7 +329,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 3, False Positives = 2
         # Precision = 3 / (3 + 2) = 0.6
-        assert get_micro_averaged_precision(predictions, threshold=3) == 0.6
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=3), 0.6)
 
     def test_micro_averaged_precision_some_predictions_are_relevant_and_some_false_positives_1(
         self,
@@ -343,7 +344,7 @@ class TestMicroAveragedPrecision:
 
         # True Positives = 2, False Positives = 2
         # Precision = 2 / (2 + 2) = 0.6
-        assert get_micro_averaged_precision(predictions) == 0.5
+        assert np.isclose(get_micro_averaged_precision(predictions), 0.5)
 
     @pytest.mark.parametrize("execution_number", range(100))
     def test_micro_averaged_precision_fuzzy(self, execution_number):
@@ -357,7 +358,7 @@ class TestMicroAveragedPrecision:
 
         precision = len(intersection) / len(selected_items)
 
-        assert get_micro_averaged_precision(predictions, threshold=threshold) == precision
+        assert np.isclose(get_micro_averaged_precision(predictions, threshold=threshold), precision)
 
 
 class TestMacroAveragedPrecision:
@@ -438,7 +439,7 @@ class TestMacroAveragedPrecision:
     def test_macro_averaged_precision_all_predictions_are_relevant(
         self, predictions, threshold, expected
     ):
-        assert get_macro_averaged_precision(predictions, threshold=threshold) == expected
+        assert np.isclose(get_macro_averaged_precision(predictions, threshold=threshold), expected)
 
     @pytest.mark.parametrize("execution_number", range(100))
     def test_macro_averaged_precision_fuzzy(self, execution_number):
@@ -461,8 +462,9 @@ class TestMacroAveragedPrecision:
 
             precisions.append(precision)
 
-        assert get_macro_averaged_precision(predictions, threshold=threshold) == statistics.mean(
-            precisions
+        assert np.isclose(
+            get_macro_averaged_precision(predictions, threshold=threshold),
+            statistics.mean(precisions),
         )
 
     def test_macro_averaged_precision_no_predictions(self):
@@ -470,7 +472,7 @@ class TestMacroAveragedPrecision:
 
         precision = get_macro_averaged_precision(predictions, threshold=1)
 
-        assert precision == 0
+        assert np.isclose(precision, 0)
 
 
 class TestPrecisionAtK:
@@ -511,13 +513,13 @@ class TestPrecisionAtK:
         except statistics.StatisticsError:
             precision_at_k = 0
 
-        assert (
+        assert np.isclose(
             get_precision_at_k(
                 predictions,
                 threshold=threshold,
                 k=k,
-            )
-            == precision_at_k
+            ),
+            precision_at_k,
         )
 
 
@@ -534,14 +536,14 @@ class TestMicroAveragedRecall:
 
         recall = len(intersection) / len(relevant_items)
 
-        assert get_micro_averaged_recall(predictions, threshold=threshold) == recall
+        assert np.isclose(get_micro_averaged_recall(predictions, threshold=threshold), recall)
 
     def test_get_micro_averaged_recall_zero_division(self):
         predictions = []
 
         recall = get_micro_averaged_recall(predictions)
 
-        assert recall == 0
+        assert np.isclose(recall, 0)
 
 
 class TestMacroAveragedRecall:
@@ -681,11 +683,11 @@ class TestRecallAtK:
         except statistics.StatisticsError:
             recall_at_k = 0
 
-        assert (
+        assert np.isclose(
             get_recall_at_k(
                 predictions,
                 threshold=threshold,
                 k=k,
-            )
-            == recall_at_k
+            ),
+            recall_at_k,
         )
