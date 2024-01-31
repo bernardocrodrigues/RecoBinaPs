@@ -122,7 +122,7 @@ class GreConDBiAKNNRecommender(BiAKNN):
         assert isinstance(grecond_coverage, float)
         assert 0 < grecond_coverage <= 1.0
         assert isinstance(dataset_binarization_threshold, float)
-        assert  0 < dataset_binarization_threshold
+        assert 0 < dataset_binarization_threshold
 
         self.grecond_coverage = grecond_coverage
         self.dataset_binarization_threshold = dataset_binarization_threshold
@@ -149,4 +149,3 @@ class GreConDBiAKNNRecommender(BiAKNN):
 
         self.biclusters = formal_context
         self.actual_coverage = actual_coverage
-
