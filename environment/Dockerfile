@@ -53,3 +53,6 @@ RUN unzip sonar-scanner-cli-5.0.1.3006-linux.zip
 RUN mv sonar-scanner-5.0.1.3006-linux /opt/sonar-scanner
 RUN ln -s /opt/sonar-scanner/bin/sonar-scanner /usr/local/bin/sonar-scanner
 RUN rm sonar-scanner-cli-5.0.1.3006-linux.zip
+
+# Install Arrow to fix Pandas requirements warning
+RUN pip install pyarrow
