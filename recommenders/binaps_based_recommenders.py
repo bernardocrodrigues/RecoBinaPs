@@ -38,6 +38,19 @@ class BinaPsKNNRecommender(BiAKNN):
         knn_k: int = 5,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
+        assert isinstance(epochs, int) and epochs > 0
+        assert hidden_dimension_neurons_number is None or (
+            isinstance(hidden_dimension_neurons_number, int) and hidden_dimension_neurons_number > 0
+        )
+        assert (
+            isinstance(weights_binarization_threshold, float)
+            and 0 < weights_binarization_threshold <= 1
+        )
+        assert (
+            isinstance(dataset_binarization_threshold, float)
+            and 0 < dataset_binarization_threshold <= 1
+        )
+
         super().__init__(
             minimum_bicluster_sparsity=minimum_bicluster_sparsity,
             minimum_bicluster_coverage=minimum_bicluster_coverage,
