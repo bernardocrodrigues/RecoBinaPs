@@ -59,3 +59,10 @@ Code in this repository is composed of Python modules, notebooks, scripts and ot
     ```
 3. Either open the link printed in the terminal or connect to the server using the VSCode Jupyter     extension. Check the [Environment Setup](environment/README.md#environment-setup) section for more details.
 4. Run the notebooks in the `demos` and `experiments` directories.
+
+## Licensing and authorship
+
+For BinaPs information, please check the [BinaPs Code Authorship Disclaimer](DISCLAIMER) located at DISCLAIMER.
+
+All code elsewhere is written by Bernardo C. Rodrigues and licensed under GPL-3.0-or-later. Please check COPYING for the
+complete license.
