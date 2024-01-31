@@ -86,11 +86,11 @@ def get_relevant_items(predictions: List[Prediction], threshold: float):
 
     Relevant items are those whose true rating is greater than or equal to the threshold. In other
     words, relevant items are those that is known that the user has rated positively.
-    
+
     Args:
         predictions (List[Prediction]): List of predictions.
         threshold (float): Threshold for relevance.
-        
+
     Returns:
         List[Prediction]: List of relevant items.
     """
@@ -130,11 +130,11 @@ def get_selected_items(predictions: List[Prediction], threshold: float):
 def get_intersection(relevant_items: List[Prediction], selected_items: List[Prediction]):
     """
     Get the intersection of two lists of predictions.
-    
+
     Args:
         relevant_items (List[Prediction]): List of relevant items.
         selected_items (List[Prediction]): List of selected items.
-        
+
     Returns:
         List[Prediction]: List of predictions that are both relevant and selected.
 
@@ -149,6 +149,7 @@ def get_intersection(relevant_items: List[Prediction], selected_items: List[Pred
 
 
 # pylint: disable=missing-class-docstring missing-function-docstring unused-argument
+
 
 class TestMicroAveragedPrecision:
     def test_micro_averaged_precision_all_predictions_are_relevant_1(self):
