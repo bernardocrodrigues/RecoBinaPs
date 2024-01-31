@@ -534,6 +534,13 @@ class TestMicroAveragedRecall:
 
         assert get_micro_averaged_recall(predictions, threshold=threshold) == recall
 
+    def test_get_micro_averaged_recall_zero_division(self):
+        predictions = []
+
+        recall = get_micro_averaged_recall(predictions)
+
+        assert recall == 0
+
 
 class TestRecallAtK:
     @pytest.mark.parametrize("execution_number", range(100))
