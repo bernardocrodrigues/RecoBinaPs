@@ -19,6 +19,7 @@ from evaluation import (
     get_macro_averaged_precision,
     get_precision_at_k,
     get_micro_averaged_recall,
+    get_macro_averaged_recall,
     get_recall_at_k,
 )
 
