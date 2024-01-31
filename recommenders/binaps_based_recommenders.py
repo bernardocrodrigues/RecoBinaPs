@@ -4,9 +4,10 @@ This module contains all recommenders based on the BinaPS algorithm.
 """
 
 import logging
+from typing import Optional
 from tempfile import TemporaryDirectory
 
-from binaps.binaps_wrapper import run_binaps, get_patterns_from_weights
+from pattern_mining.binaps.binaps_wrapper import run_binaps, get_patterns_from_weights
 from dataset.binary_dataset import (
     load_binary_dataset_from_trainset,
     save_as_binaps_compatible_input,
@@ -20,20 +21,25 @@ class BinaPsKNNRecommender(BiAKNN):
     def __init__(
         self,
         epochs: int = 100,
-        hidden_dimension_neurons_number: int = -1,
+        hidden_dimension_neurons_number: Optional[int] = None,
         weights_binarization_threshold: float = 0.2,
         dataset_binarization_threshold: float = 1.0,
-        minimum_pattern_bicluster_sparsity: float = 0.08,
+        minimum_bicluster_sparsity: Optional[float] = None,
+        minimum_bicluster_coverage: Optional[float] = None,
+        minimum_bicluster_relative_size: Optional[int] = None,
+        knn_type: str = "item",
         user_binarization_threshold: float = 1.0,
-        top_k_patterns: int = 8,
+        number_of_top_k_biclusters: Optional[int] = None,
         knn_k: int = 5,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
         super().__init__(
-            dataset_binarization_threshold=dataset_binarization_threshold,
-            minimum_pattern_bicluster_sparsity=minimum_pattern_bicluster_sparsity,
+            minimum_bicluster_sparsity=minimum_bicluster_sparsity,
+            minimum_bicluster_coverage=minimum_bicluster_coverage,
+            minimum_bicluster_relative_size=minimum_bicluster_relative_size,
+            knn_type=knn_type,
             user_binarization_threshold=user_binarization_threshold,
-            number_of_top_k_biclusters=top_k_patterns,
+            number_of_top_k_biclusters=number_of_top_k_biclusters,
             knn_k=knn_k,
             logger=logger,
         )
@@ -58,4 +64,4 @@ class BinaPsKNNRecommender(BiAKNN):
                     hidden_dimension=self.hidden_dimension_neurons_number,
                 )
 
-        self.patterns = get_patterns_from_weights(weights, self.weights_binarization_threshold)
+        self.biclusters = get_patterns_from_weights(weights, self.weights_binarization_threshold)
