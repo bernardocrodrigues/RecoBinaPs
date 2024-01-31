@@ -379,6 +379,10 @@ def count_impossible_predictions(predictions: List[Prediction]) -> int:
     Returns:
         int: The number of impossible predictions.
     """
+
+    assert isinstance(predictions, list)
+    assert all(isinstance(prediction, Prediction) for prediction in predictions)
+
     count = 0
     for prediction in predictions:
         if prediction.details["was_impossible"]:
