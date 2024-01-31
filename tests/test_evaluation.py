@@ -463,6 +463,13 @@ class TestMacroAveragedPrecision:
             precisions
         )
 
+    def test_macro_averaged_precision_no_predictions(self):
+        predictions = {}
+
+        precision = get_macro_averaged_precision(predictions, threshold=1)
+
+        assert precision == 0
+
 
 class TestPrecisionAtK:
     @pytest.mark.parametrize("execution_number", range(100))
