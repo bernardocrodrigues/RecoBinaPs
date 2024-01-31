@@ -21,6 +21,7 @@ from evaluation import (
     get_micro_averaged_recall,
     get_macro_averaged_recall,
     get_recall_at_k,
+    count_impossible_predictions,
 )
 
 RANDOM_NUMBER_GENERATOR = np.random.default_rng(seed=42)
@@ -691,3 +692,51 @@ class TestRecallAtK:
             ),
             recall_at_k,
         )
+
+
+class TestCountImpossiblePredictions:
+    def test_invalid_args(self):
+        with pytest.raises(AssertionError):
+            count_impossible_predictions(None)
+
+        with pytest.raises(AssertionError):
+            count_impossible_predictions(1)
+
+        with pytest.raises(AssertionError):
+            count_impossible_predictions("string")
+
+        with pytest.raises(AssertionError):
+            count_impossible_predictions([1, 2, 3])
+
+    def test_count_impossible_predictions_no_impossible_predictions(self):
+        predictions = [
+            Prediction(uid=None, iid=None, r_ui=1, est=1, details={"was_impossible": False}),
+            Prediction(uid=None, iid=None, r_ui=2, est=2, details={"was_impossible": False}),
+            Prediction(uid=None, iid=None, r_ui=3, est=3, details={"was_impossible": False}),
+        ]
+
+        assert count_impossible_predictions(predictions) == 0
+
+    def test_count_impossible_predictions_some_impossible_predictions(self):
+        predictions = [
+            Prediction(uid=None, iid=None, r_ui=1, est=1, details={"was_impossible": False}),
+            Prediction(uid=None, iid=None, r_ui=2, est=2, details={"was_impossible": True}),
+            Prediction(uid=None, iid=None, r_ui=3, est=3, details={"was_impossible": True}),
+            Prediction(uid=None, iid=None, r_ui=4, est=4, details={"was_impossible": False}),
+        ]
+
+        assert count_impossible_predictions(predictions) == 2
+
+    def test_count_impossible_predictions_all_impossible_predictions(self):
+        predictions = [
+            Prediction(uid=None, iid=None, r_ui=1, est=1, details={"was_impossible": True}),
+            Prediction(uid=None, iid=None, r_ui=2, est=2, details={"was_impossible": True}),
+            Prediction(uid=None, iid=None, r_ui=3, est=3, details={"was_impossible": True}),
+        ]
+
+        assert count_impossible_predictions(predictions) == 3
+
+    def test_count_impossible_predictions_empty_list(self):
+        predictions = []
+
+        assert count_impossible_predictions(predictions) == 0
