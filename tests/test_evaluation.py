@@ -542,6 +542,106 @@ class TestMicroAveragedRecall:
         assert recall == 0
 
 
+class TestMacroAveragedRecall:
+    @pytest.mark.parametrize(
+        "predictions, threshold, expected",
+        [
+            (
+                [
+                    Prediction(uid=1, iid=None, r_ui=1, est=1, details=None),
+                    Prediction(uid=1, iid=None, r_ui=1, est=1, details=None),
+                    Prediction(uid=1, iid=None, r_ui=1, est=1, details=None),
+                    Prediction(uid=2, iid=None, r_ui=1, est=1, details=None),
+                    Prediction(uid=2, iid=None, r_ui=1, est=1, details=None),
+                    Prediction(uid=2, iid=None, r_ui=1, est=1, details=None),
+                ],
+                1,
+                1.0,
+            ),
+            (
+                [
+                    Prediction(uid=1, iid=None, r_ui=1, est=1, details=None),
+                    Prediction(uid=1, iid=None, r_ui=1, est=1, details=None),
+                    Prediction(uid=1, iid=None, r_ui=1, est=1, details=None),
+                ],
+                1,
+                1.0,
+            ),
+            (
+                [
+                    Prediction(uid=0, iid=None, r_ui=1, est=0, details=None),
+                    Prediction(uid=1, iid=None, r_ui=1, est=1, details=None),
+                    Prediction(uid=0, iid=None, r_ui=1, est=0, details=None),
+                    Prediction(uid=1, iid=None, r_ui=1, est=1, details=None),
+                ],
+                1,
+                0.5,
+            ),
+            (
+                [
+                    Prediction(uid=0, iid=0, r_ui=1, est=0, details=None),
+                    Prediction(uid=0, iid=1, r_ui=1, est=1, details=None),
+                    Prediction(uid=0, iid=2, r_ui=1, est=0, details=None),
+                    Prediction(uid=0, iid=3, r_ui=1, est=1, details=None),
+                ],
+                1,
+                0.5,
+            ),
+            (
+                [
+                    Prediction(uid=0, iid=0, r_ui=1, est=0, details=None),
+                    Prediction(uid=0, iid=1, r_ui=1, est=1, details=None),
+                    Prediction(uid=0, iid=2, r_ui=1, est=0, details=None),
+                    Prediction(uid=1, iid=3, r_ui=1, est=1, details=None),
+                ],
+                1,
+                2 / 3,
+            ),
+            (
+                [
+                    Prediction(uid=0, iid=0, r_ui=2, est=2, details=None),  # True Negative
+                    Prediction(uid=0, iid=1, r_ui=1, est=4, details=None),  # False Positive
+                    Prediction(uid=0, iid=2, r_ui=4, est=4, details=None),  # True Positive
+                    Prediction(uid=1, iid=3, r_ui=2, est=5, details=None),  # False Positive
+                    Prediction(uid=1, iid=4, r_ui=3, est=3, details=None),  # True Positive
+                    Prediction(uid=2, iid=5, r_ui=1, est=2, details=None),  # True Negative
+                ],
+                3,
+                2 / 3,
+            ),
+        ],
+    )
+    def test_mixed(self, predictions, threshold, expected):
+        assert np.isclose(get_macro_averaged_recall(predictions, threshold=threshold), expected)
+
+    @pytest.mark.parametrize("execution_number", range(100))
+    def test_macro_averaged_recall_fuzzy(self, execution_number):
+        predictions = generate_predictions_list(10000, 1000, 1000)
+
+        generator = np.random.default_rng(seed=execution_number)
+        threshold = generator.uniform(0, 5)
+
+        ratings_per_user = group_predictions_by_user(predictions)
+
+        recalls = []
+        for user_ratings in ratings_per_user.values():
+            relevant_items = get_relevant_items(user_ratings, threshold=threshold)
+            selected_items = get_selected_items(user_ratings, threshold=threshold)
+            intersection = get_intersection(relevant_items, selected_items)
+
+            recall = 0
+            try:
+                recall = len(intersection) / len(relevant_items)
+            except ZeroDivisionError:
+                pass
+
+            recalls.append(recall)
+
+        assert np.isclose(
+            get_macro_averaged_recall(predictions, threshold=threshold), statistics.mean(recalls)
+        )
+
+
 class TestRecallAtK:
     @pytest.mark.parametrize("execution_number", range(100))
     def test_recall_at_k_fuzzy(self, execution_number):
