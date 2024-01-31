@@ -69,7 +69,7 @@ def generate_contingency_table(
     )
 
 
-def get_micro_averaged_precision(predictions: List[Prediction], threshold: float = 1):
+def get_micro_averaged_precision(predictions: List[Prediction], threshold: float = 1) -> float:
     """
     Returns the micro-averaged, or global, precision from a predictions list.
 
@@ -105,7 +105,7 @@ def get_micro_averaged_precision(predictions: List[Prediction], threshold: float
         return 0
 
 
-def get_macro_averaged_precision(predictions: List[Prediction], threshold: float = 1):
+def get_macro_averaged_precision(predictions: List[Prediction], threshold: float = 1) -> float:
     """
      Returns the macro-averaged, or the user-averaged, precision for a list of predictions.
 
@@ -153,7 +153,7 @@ def get_macro_averaged_precision(predictions: List[Prediction], threshold: float
         return 0
 
 
-def get_precision_at_k(predictions: List[Prediction], threshold: float = 1, k: int = 20):
+def get_precision_at_k(predictions: List[Prediction], threshold: float = 1, k: int = 20) -> float:
     """
     Calculate the precision at K (Precision@K) for a list of predictions.
 
@@ -218,7 +218,7 @@ def get_precision_at_k(predictions: List[Prediction], threshold: float = 1, k: i
         return 0
 
 
-def get_micro_averaged_recall(predictions: List[Prediction], threshold: float = 1):
+def get_micro_averaged_recall(predictions: List[Prediction], threshold: float = 1) -> float:
     """
     Returns the micro-averaged, or global, recall from a predictions list.
 
@@ -254,7 +254,7 @@ def get_micro_averaged_recall(predictions: List[Prediction], threshold: float = 
         return 0
 
 
-def get_macro_averaged_recall(predictions, threshold=1):
+def get_macro_averaged_recall(predictions, threshold=1) -> float:
     """
     Returns the macro-averaged, or the user-averaged, recall for a list of predictions.
 
@@ -298,7 +298,7 @@ def get_macro_averaged_recall(predictions, threshold=1):
     return statistics.mean(recalls)
 
 
-def get_recall_at_k(predictions, threshold=1, k=20):
+def get_recall_at_k(predictions, threshold=1, k=20) -> float:
     """
     Calculate the recall at K (Recall@K) for a list of predictions.
 
