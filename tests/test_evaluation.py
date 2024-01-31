@@ -23,6 +23,7 @@ from evaluation import (
     get_recall_at_k,
 )
 
+RANDOM_NUMBER_GENERATOR = np.random.default_rng(seed=42)
 
 def generate_predictions_list(
     num_predictions: int, num_users: int, num_items: int
@@ -43,8 +44,8 @@ def generate_predictions_list(
 
     for _ in range(num_predictions):
         while True:
-            user = np.random.randint(0, num_users)
-            item = np.random.randint(0, num_items)
+            user = RANDOM_NUMBER_GENERATOR.integers(0, num_users)
+            item = RANDOM_NUMBER_GENERATOR.integers(0, num_items)
 
             if (user, item) not in user_item_pairs:
                 break
@@ -52,8 +53,8 @@ def generate_predictions_list(
         new_prediction = Prediction(
             uid=user,
             iid=item,
-            r_ui=np.random.uniform(0, 5),
-            est=np.random.uniform(0, 5),
+            r_ui=RANDOM_NUMBER_GENERATOR.uniform(0, 5),
+            est=RANDOM_NUMBER_GENERATOR.uniform(0, 5),
             details=None,
         )
 
@@ -348,7 +349,7 @@ class TestMicroAveragedPrecision:
     def test_micro_averaged_precision_fuzzy(self, execution_number):
         predictions = generate_predictions_list(10000, 1000, 1000)
 
-        threshold = np.random.uniform(0, 5)
+        threshold = RANDOM_NUMBER_GENERATOR.uniform(0, 5)
 
         relevant_items = get_relevant_items(predictions, threshold=threshold)
         selected_items = get_selected_items(predictions, threshold=threshold)
@@ -443,7 +444,7 @@ class TestMacroAveragedPrecision:
     def test_macro_averaged_precision_fuzzy(self, execution_number):
         predictions = generate_predictions_list(10000, 1000, 1000)
 
-        threshold = np.random.uniform(0, 5)
+        threshold = RANDOM_NUMBER_GENERATOR.uniform(0, 5)
 
         ratings_per_user = group_predictions_by_user(predictions)
 
@@ -477,8 +478,8 @@ class TestPrecisionAtK:
     def test_precision_at_k_fuzzy(self, execution_number):
         predictions = generate_predictions_list(10000, 1000, 1000)
 
-        threshold = np.random.uniform(0, 5)
-        k = int(np.random.randint(1, 20))
+        threshold = RANDOM_NUMBER_GENERATOR.uniform(0, 5)
+        k = int(RANDOM_NUMBER_GENERATOR.integers(1, 20))
 
         predictions_per_user = group_predictions_by_user(predictions)
 
@@ -525,7 +526,7 @@ class TestMicroAveragedRecall:
     def test_micro_averaged_recall_fuzzy(self, execution_number):
         predictions = generate_predictions_list(10000, 1000, 1000)
 
-        threshold = np.random.uniform(0, 5)
+        threshold = RANDOM_NUMBER_GENERATOR.uniform(0, 5)
 
         relevant_items = get_relevant_items(predictions, threshold=threshold)
         selected_items = get_selected_items(predictions, threshold=threshold)
@@ -619,8 +620,7 @@ class TestMacroAveragedRecall:
     def test_macro_averaged_recall_fuzzy(self, execution_number):
         predictions = generate_predictions_list(10000, 1000, 1000)
 
-        generator = np.random.default_rng(seed=execution_number)
-        threshold = generator.uniform(0, 5)
+        threshold = RANDOM_NUMBER_GENERATOR.uniform(0, 5)
 
         ratings_per_user = group_predictions_by_user(predictions)
 
@@ -648,8 +648,8 @@ class TestRecallAtK:
     def test_recall_at_k_fuzzy(self, execution_number):
         predictions = generate_predictions_list(10000, 1000, 1000)
 
-        threshold = np.random.uniform(0, 5)
-        k = int(np.random.randint(1, 20))
+        threshold = RANDOM_NUMBER_GENERATOR.uniform(0, 5)
+        k = int(RANDOM_NUMBER_GENERATOR.integers(1, 20))
 
         predictions_per_user = group_predictions_by_user(predictions)
 
@@ -689,7 +689,3 @@ class TestRecallAtK:
             )
             == recall_at_k
         )
-
-
-if __name__ == "__main__":
-    pytest.main()
