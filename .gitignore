@@ -174,3 +174,5 @@ tmp
 datasets/*
 *.db
 *.h5
+
+.scannerwork
