@@ -26,7 +26,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt -y install r-base
 # Install extension dependencies
 RUN pip install rich \
                 surprise \
-                numba
+                numba \
+                pydantic
 
 # Data visualization dependencies
 RUN pip install matplotlib \
