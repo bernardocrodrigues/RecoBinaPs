@@ -20,6 +20,9 @@ from tabulate import tabulate
 from torch.nn import init
 import torch.optim as optim
 from torch.optim.lr_scheduler import MultiStepLR
+from pydantic import Field, validate_call, ConfigDict
+from typing_extensions import Annotated
+import numpy as np
 
 from pattern_mining.binaps.original.Binaps_code import dataLoader as mydl
 from pattern_mining.binaps.original.Binaps_code import my_loss as mylo
@@ -127,25 +130,26 @@ def run_binaps_cli(
     print(f"[output truncated] {stdout[-print_character_length:]}")
 
 
+@validate_call(config=ConfigDict(strict=True))
 def run_binaps(
-    input_dataset_path: str,
-    train_set_size: float = 0.9,
-    batch_size: int = 64,
-    test_batch_size: int = 64,
-    epochs: int = 10,
-    learning_rate: float = 0.01,
-    weight_decay: float = 0,
-    gamma: float = 0.1,
+    input_dataset_path: Annotated[str, Field(min_length=1)],
+    train_set_size: Annotated[float, Field(ge=0, le=1)] = 0.9,
+    batch_size: Annotated[int, Field(gt=0)] = 64,
+    test_batch_size: Annotated[int, Field(gt=0)] = 64,
+    epochs: Annotated[int, Field(gt=0)] = 10,
+    learning_rate: Annotated[float, Field(gt=0)] = 0.01,
+    weight_decay: Annotated[float, Field(ge=0)] = 0,
+    gamma: Annotated[float, Field(ge=0)] = 0.1,
     seed: int = 1,
-    hidden_dimension: int = -1,
+    hidden_dimension: Optional[Annotated[int, Field(gt=0)]] = 1,
 ):
     """
     Run the Binaps algorithm on a given dataset.
 
     Args:
         input_dataset_path (str): The path to the input dataset.
-        train_set_size (float): The size of the training set as a fraction
-                                of the dataset (default: 0.9).
+        train_set_size (float): The size of the training set as a fraction of the dataset
+                                (default: 0.9).
         batch_size (int): The batch size for training (default: 64).
         test_batch_size (int): The batch size for testing (default: 64).
         epochs (int): The number of training epochs (default: 10).
@@ -194,7 +198,10 @@ def run_binaps(
     return weights, training_losses, test_losses
 
 
-def get_patterns_from_weights(weights, threshold: float = 0.2):
+@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True))
+def get_patterns_from_weights(
+    weights: torch.Tensor, threshold: Annotated[float, Field(ge=0)]
+) -> List[np.ndarray]:
     """
     Extract patterns from a set of BinaPs weights using a given threshold.
 
