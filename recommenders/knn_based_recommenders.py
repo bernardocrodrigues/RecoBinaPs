@@ -51,8 +51,6 @@ def merge_biclusters(
 
     assert len(biclusters) > 0
     assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
-    assert all(bicluster.extent.size > 0 for bicluster in biclusters)
-    assert all(bicluster.intent.size > 0 for bicluster in biclusters)
 
     new_bicluster_extent = np.array([], dtype=np.int64)
     new_bicluster_intent = np.array([], dtype=np.int64)
