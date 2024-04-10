@@ -72,11 +72,6 @@ class BinaPsKNNRecommender(BiAKNN):
             self.trainset, threshold=self.dataset_binarization_threshold
         )
 
-        hidden_dimension_neurons_number = (
-            -1
-            if self.hidden_dimension_neurons_number is None
-            else self.hidden_dimension_neurons_number
-        )
 
         with TemporaryDirectory() as temporary_directory:
             with open(f"{temporary_directory}/dataset", "w+", encoding="UTF-8") as file_object:
@@ -85,7 +80,7 @@ class BinaPsKNNRecommender(BiAKNN):
                 weights, _, _ = run_binaps(
                     input_dataset_path=file_object.name,
                     epochs=self.epochs,
-                    hidden_dimension=hidden_dimension_neurons_number,
+                    hidden_dimension=self.hidden_dimension_neurons_number,
                 )
 
         self.biclusters = get_patterns_from_weights(weights, self.weights_binarization_threshold)
