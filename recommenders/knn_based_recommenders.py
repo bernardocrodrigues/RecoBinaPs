@@ -546,6 +546,10 @@ class BiAKNN(AlgoBase, ABC):
         self.compute_biclusters_from_trainset()
 
         self._apply_filters()
+
+        if not self.number_of_top_k_biclusters:
+            self.number_of_top_k_biclusters = len(self.biclusters)
+
         self._generate_neighborhood()
         self._calculate_means()
         self._instantiate_similarity_matrix()
@@ -576,9 +580,6 @@ class BiAKNN(AlgoBase, ABC):
             self.biclusters = apply_bicluster_relative_size_filter(
                 self.dataset, self.biclusters, self.minimum_bicluster_relative_size
             )
-
-        if not self.number_of_top_k_biclusters:
-            self.number_of_top_k_biclusters = len(self.biclusters)
 
     def _generate_neighborhood(self) -> None:
         """
