@@ -48,7 +48,7 @@ class BinaPsKNNRecommender(BiAKNN):
         )
         assert (
             isinstance(dataset_binarization_threshold, float)
-            and 0 < dataset_binarization_threshold <= 1
+            and 0 < dataset_binarization_threshold
         )
 
         super().__init__(
