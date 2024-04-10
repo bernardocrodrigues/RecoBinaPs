@@ -652,7 +652,7 @@ class BiAKNN(AlgoBase, ABC):
         user_neighborhood = np.setdiff1d(user_neighborhood, main_index)
 
         if user_neighborhood.size == 0:
-            return self.means[main_index], {"actual_k": 0}
+            raise PredictionImpossible("Not enough neighbors.")
 
         compute_neighborhood_cosine_similarity(
             dataset, self.similarity_matrix, main_index, user_neighborhood
@@ -669,7 +669,7 @@ class BiAKNN(AlgoBase, ABC):
         )
 
         if k_top_neighbors_ratings.size == 0:
-            return self.means[main_index], {"actual_k": 0}
+            raise PredictionImpossible("Not enough neighbors.")
 
         prediction = calculate_weighted_rating(
             self.means[main_index],
