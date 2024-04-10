@@ -594,11 +594,13 @@ class BiAKNN(AlgoBase, ABC):
                 self.dataset[user_id], self.user_binarization_threshold
             )
 
-            top_k_biclusters = get_top_k_biclusters_for_user(
-                self.biclusters, user_as_tidset, self.number_of_top_k_biclusters
-            )
-
-            merged_bicluster = merge_biclusters(top_k_biclusters)
+            merged_bicluster = create_concept([], [])
+            if self.number_of_top_k_biclusters:
+                top_k_biclusters = get_top_k_biclusters_for_user(
+                    self.biclusters, user_as_tidset, self.number_of_top_k_biclusters
+                )
+                if top_k_biclusters:
+                    merged_bicluster = merge_biclusters(top_k_biclusters)
 
             if self.knn_type == "user":
                 neighborhood = merged_bicluster.extent
