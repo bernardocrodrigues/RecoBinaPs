@@ -33,6 +33,8 @@ from .common import (
     get_indices_above_threshold,
 )
 
+from recommenders.common import cosine_similarity
+
 
 def merge_biclusters(
     biclusters: List[Concept],
@@ -272,6 +274,7 @@ def get_k_top_neighbors(
     k_top_means = valid_neighborhood_means[k_top_neighbors_indices_desc]
 
     return k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means
+
 
 
 # pylint: disable=C0103
@@ -670,6 +673,205 @@ class BiAKNN(AlgoBase, ABC):
 
         if k_top_neighbors_ratings.size == 0:
             raise PredictionImpossible("Not enough neighbors.")
+
+        prediction = calculate_weighted_rating(
+            self.means[main_index],
+            k_top_neighbors_ratings,
+            k_top_neighbors_similarity,
+            k_top_means,
+        )
+
+        return prediction, {"actual_k": k_top_neighbors_ratings.size}
+
+
+class BiAKNN2(AlgoBase, ABC):
+    """
+    Bicluster aware kNN (BiAKNN) is an abstract class for recommendation engines based on the kNN
+    algorithm. However, instead of using the original dataset, these recommendation engines use
+    restricts the neighborhood of each item to a union of biclusters. It extends the functionality
+    of the AlgoBase class from the Surprise library and provides methods for generating
+    recommendations.
+
+    The method compute_biclusters_from_trainset() must be implemented by subclasses. This method
+    is responsible for computing the biclusters from the dataset.
+    """
+
+    def __init__(
+        self,
+        knn_type: str = "item",
+        binarization_threshold: float = 1.0,
+        number_of_top_k_biclusters: Optional[int] = None,
+        knn_k: int = 5,
+        logger: logging.Logger = DEFAULT_LOGGER,
+    ):
+        AlgoBase.__init__(self)
+
+        # User-item neighborhood parameters
+        self.binarization_threshold = binarization_threshold
+        self.number_of_top_k_biclusters = number_of_top_k_biclusters
+
+        # KNN parameters
+        self.knn_type = knn_type
+        self.knn_k = knn_k
+
+        # Other internal attributes
+        self.logger = logger
+        self.dataset = None
+        self.neighborhood = {}
+        self.similarity_matrix = None
+        self.means = None
+        self.biclusters = None
+        self.n = None
+
+        self.trainset = None
+
+    @abstractmethod
+    def compute_biclusters_from_trainset(self) -> List[np.ndarray]:
+        """
+        This method is responsible for computing the biclusters that will be used to generate the
+        user-item neighborhood for each user in the dataset. Subclasses must implement this method.
+
+        This method will be called after the loading of the trainset. Therefore, the trainset
+        attribute will be available and should be used to generate the user-item neighborhood.
+
+        The biclusters must be returned as a list of Concepts.
+
+        """
+
+    def fit(self, trainset: Trainset):
+        """
+        Train the algorithm on a given training set.
+
+        Args:
+            trainset (Trainset): The training set to train the algorithm on.
+
+        Returns:
+            self: The trained algorithm.
+        """
+
+        AlgoBase.fit(self, trainset)
+
+        self.dataset = convert_trainset_to_matrix(trainset)
+        self.compute_biclusters_from_trainset()
+
+        if not self.number_of_top_k_biclusters:
+            self.number_of_top_k_biclusters = len(self.biclusters)
+
+        self._calculate_means()
+
+    def _generate_neighborhood(self, user_id, item_id) -> None:
+        """
+        Generates the neighborhood for each user based on the dataset and biclusters.
+
+        The neighborhood is determined by selecting the top-k biclusters that are most relevant to
+        the user, merging them into a single bicluster, and extracting either the extent or intent
+        depending on the knn_type.
+        """
+        # for user_id in range(self.dataset.shape[0]):
+
+        user_as_tidset = get_indices_above_threshold(
+            self.dataset[user_id], self.binarization_threshold
+        )
+
+        merged_bicluster = create_concept([], [])
+
+        if not self.number_of_top_k_biclusters:
+            return merged_bicluster
+
+        # print("number_of_top_k_biclusters", self.number_of_top_k_biclusters)
+
+        # get biclusters with user in extent and item in intent
+        biclusters_with_item = []
+        for bicluster in self.biclusters:
+            if item_id in bicluster.intent:
+                biclusters_with_item.append(bicluster)
+
+        # print("biclusters_with_item", len(biclusters_with_item))
+
+        top_k_biclusters = get_top_k_biclusters_for_user(
+            biclusters_with_item, user_as_tidset, self.number_of_top_k_biclusters
+        )
+
+        # print("top_k_biclusters", len(top_k_biclusters))
+
+        if top_k_biclusters:
+            merged_bicluster = merge_biclusters(top_k_biclusters)
+
+        return merged_bicluster
+
+    def _calculate_means(self):
+        """
+        Calculate the mean ratings for each user or item.
+
+        If knn_type is "user", calculate the mean ratings for each user.
+        If knn_type is "item", calculate the mean ratings for each item.
+        """
+        if self.knn_type == "user":
+            self.n = self.trainset.n_users
+            ratings_map = self.trainset.ur.items()
+        else:
+            self.n = self.trainset.n_items
+            ratings_map = self.trainset.ir.items()
+
+        self.means = np.full((self.n), dtype=np.float64, fill_value=np.NAN)
+        for ratings_id, ratings in ratings_map:
+            self.means[ratings_id] = np.mean([r for (_, r) in ratings])
+
+    def _instantiate_similarity_array(self, n: int):
+        """
+        Instantiate the similarity matrix with NaN values.
+
+        This method initializes the similarity matrix with NaN values. The similarity matrix is a
+        square matrix of size n x n, where n is the number of items in the dataset. Each element of
+        the matrix represents the similarity between two items.
+        """
+        return np.full((n), dtype=np.float64, fill_value=np.NAN)
+
+    def estimate(self, user: int, item: int):
+        if not (self.trainset.knows_user(user) and self.trainset.knows_item(item)):
+            raise PredictionImpossible("User and/or item is unknown.")
+
+        merged_bicluster = self._generate_neighborhood(user, item)
+
+        if not merged_bicluster.extent.any() and not merged_bicluster.intent.any():
+            raise PredictionImpossible("Not enough neighbors.")
+
+        if self.knn_type == "user":
+            main_index, secondary_index = user, item
+            main_slice, secondary_slice = merged_bicluster.extent, merged_bicluster.intent
+            dataset = self.dataset
+        else:
+            main_index, secondary_index = item, user
+            main_slice, secondary_slice = merged_bicluster.intent, merged_bicluster.extent
+            dataset = self.dataset.T
+
+        u = dataset[main_index, secondary_slice]
+        potential_neighborhood_ratings = dataset[main_slice, secondary_index]
+        non_null_rating_ids = np.where(~np.isnan(potential_neighborhood_ratings))[0]
+        neighborhood_slice = main_slice[non_null_rating_ids]
+        size_of_neighborhood = neighborhood_slice.shape[0]
+
+        if size_of_neighborhood == 0:
+            raise PredictionImpossible("Not enough neighbors.")
+
+        similarity_array = self._instantiate_similarity_array(size_of_neighborhood)
+
+        for i in range(size_of_neighborhood):
+            v = dataset[neighborhood_slice[i], secondary_slice]
+            similarity = cosine_similarity(u=u, v=v)
+            similarity_array[i] = similarity
+
+        neighborhood_ratings = dataset[neighborhood_slice, secondary_index]
+        neighborhood_means = self.means[neighborhood_slice]
+
+        k_top_neighbors_indices_asc = np.argsort(similarity_array)[
+            -min(self.knn_k, size_of_neighborhood) :
+        ]
+        k_top_neighbors_indices_desc = k_top_neighbors_indices_asc[::-1]
+
+        k_top_neighbors_ratings = neighborhood_ratings[k_top_neighbors_indices_desc]
+        k_top_neighbors_similarity = similarity_array[k_top_neighbors_indices_desc]
+        k_top_means = neighborhood_means[k_top_neighbors_indices_desc]
 
         prediction = calculate_weighted_rating(
             self.means[main_index],
