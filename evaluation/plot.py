@@ -5,6 +5,7 @@ This module implements all the functions used to plot the results of the benchma
 Copyright 2023 Bernardo C. Rodrigues
 See LICENSE file for license details
 """
+
 import itertools
 import multiprocessing
 from typing import Tuple, List
@@ -270,7 +271,7 @@ def calculate_boxplot_values(series: List[float]):
 
     assert isinstance(series, list)
     assert len(series) > 0
-    assert all(isinstance(element, float) or isinstance(element, int)  for element in series)
+    assert all(isinstance(element, float) or isinstance(element, int) for element in series)
 
     q_1 = np.percentile(series, 25)
     q_3 = np.percentile(series, 75)
@@ -316,7 +317,7 @@ def plot_metric_box_plot(metric_name: str, concatenated_results: dict):
     fig.show()
 
 
-def get_result_table(metric_name:str, concatenated_results: dict):
+def get_result_table(metric_name: str, concatenated_results: dict):
     """
     Get a table with the results for a given metric.
 
@@ -356,6 +357,47 @@ def get_result_table(metric_name:str, concatenated_results: dict):
         )
 
     return pd.DataFrame(results)
+
+
+def get_latex_boxplot_code(metric_name: str, concatenated_results: dict):
+    """
+    Get the latex code for a boxplot for a given metric.
+
+    Args:
+        metric_name: The name of the metric to be plotted.
+        concatenated_results: The results as given by concatenate_fold_results.
+    """
+
+    names = ""
+    plots = ""
+
+    for recommender_name, metric_results in concatenated_results.items():
+        metric_data = metric_results[metric_name]
+        median = np.median(metric_data)
+        Q1, Q3, lower_fence, upper_fence = calculate_boxplot_values(metric_data)
+
+        names += f"{recommender_name}, "
+
+        plots += f"""
+\\addplot+[
+    boxplot prepared=*
+        median={median},
+        upper quartile={Q3},
+        lower quartile={Q1},
+        upper whisker={upper_fence},
+        lower whisker={lower_fence}
+    $,
+    solid,
+    color=gray,
+    fill=gray!30
+] coordinates *$;
+        """.replace(
+            "*", "{"
+        ).replace(
+            "$", "}"
+        )
+
+    return names + plots
 
 
 def get_latex_table_from_pandas_table(pandas_table: pd.DataFrame):
