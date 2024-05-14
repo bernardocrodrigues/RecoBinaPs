@@ -99,5 +99,4 @@ def load_ml_1m_folds():
     return data, k_fold
 
 
-def resolve_folds(data, k_fold):
-    return list((index, fold) for index, fold in enumerate(k_fold.split(data)))
+

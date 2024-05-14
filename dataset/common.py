@@ -106,3 +106,6 @@ def convert_to_raw_ratings(dataset: np.ndarray) -> List[Tuple[int, int, float, N
                 raw_ratings.append((i, j, float(dataset[i][j]), None))
 
     return raw_ratings
+
+def resolve_folds(data, k_fold):
+    return list((index, fold) for index, fold in enumerate(k_fold.split(data)))
