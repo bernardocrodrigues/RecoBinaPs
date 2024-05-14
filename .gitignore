@@ -176,3 +176,7 @@ datasets/*
 *.h5
 
 .scannerwork
+
+*.results
+
+/*.ipynb
