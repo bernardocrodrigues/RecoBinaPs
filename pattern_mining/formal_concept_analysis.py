@@ -59,6 +59,7 @@ def create_concept(extent, intent):
 
     return Concept(processed_extent, processed_intent)
 
+
 def concepts_are_equal(concept1: Concept, concept2: Concept) -> bool:
     """
     Checks if two concepts are equal.
@@ -143,7 +144,7 @@ def erase_submatrix_values(
             U[row][column] = False
 
 
-def grecond(binary_dataset: np.ndarray, coverage: float = 1.0) -> List[Concept]:  # pragma: no cover
+def grecond(binary_dataset: np.ndarray, coverage: float = 1.0) -> tuple[List[Concept], float]:
     """
     Implements Algorithm 2 in section 2.5.2 (page 15) from [1].
 
@@ -159,7 +160,7 @@ def grecond(binary_dataset: np.ndarray, coverage: float = 1.0) -> List[Concept]:
         coverage: A float value between 0 and 1 that defines the desired coverage.
 
     Returns:
-        A list of formal concepts.
+        A tuple containing a list of formal concepts and the current coverage.
 
     """
 

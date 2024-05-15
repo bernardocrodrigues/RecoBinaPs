@@ -7,7 +7,7 @@ import pytest
 
 from unittest.mock import patch, Mock
 
-from recommenders.knn_based_recommenders import (
+from recommenders.BiAKNN import (
     merge_biclusters,
     calculate_weighted_rating,
     get_k_top_neighbors,
