@@ -7,11 +7,11 @@ import pytest
 
 from unittest.mock import patch, Mock
 
-from recommenders.BiAKNN import (
+from recommenders.PAkNN import (
     merge_biclusters,
     calculate_weighted_rating,
     get_k_top_neighbors,
-    BiAKNN,
+    PAkNN,
 )
 from pattern_mining.formal_concept_analysis import Concept, create_concept
 
@@ -2589,7 +2589,7 @@ class TestGetKTopNeighbors:
 
 
 class TestBiAKNN:
-    class ConcreteBiAKNN(BiAKNN):
+    class ConcreteBiAKNN(PAkNN):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 

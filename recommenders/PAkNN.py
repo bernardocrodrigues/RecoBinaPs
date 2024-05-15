@@ -272,7 +272,7 @@ def get_k_top_neighbors(
     return k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means
 
 
-class BiAKNN(AlgoBase):
+class PAkNN(AlgoBase):
     """
     Bicluster aware kNN (BiAKNN) is an abstract class for recommendation engines based on the kNN
     algorithm. However, instead of using the original dataset, these recommendation engines use
