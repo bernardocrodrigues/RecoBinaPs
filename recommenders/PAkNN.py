@@ -7,17 +7,12 @@ This module defines recommendation engines apply some kind of kNN algorithm to e
 
 import logging
 from typing import List, Optional, Tuple
-from abc import ABC, abstractmethod
 
 import numpy as np
 from surprise import AlgoBase, PredictionImpossible, Trainset
 
 from dataset.common import convert_trainset_to_matrix
-from pattern_mining.common import (
-    apply_bicluster_sparsity_filter,
-    apply_bicluster_coverage_filter,
-    apply_bicluster_relative_size_filter,
-)
+
 from pattern_mining.formal_concept_analysis import (
     Concept,
     create_concept,
@@ -287,36 +282,14 @@ class PAkNN(AlgoBase):
     def __init__(
         self,
         mining_strategy: PatternMiningStrategy,
-        minimum_bicluster_sparsity: Optional[float] = None,
-        minimum_bicluster_coverage: Optional[float] = None,
-        minimum_bicluster_relative_size: Optional[int] = None,
         knn_type: str = "item",
-        user_binarization_threshold: float = 1.0,
         number_of_top_k_biclusters: Optional[int] = None,
         knn_k: int = 5,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
         AlgoBase.__init__(self)
 
-        assert isinstance(minimum_bicluster_sparsity, float) or minimum_bicluster_sparsity is None
-        if minimum_bicluster_sparsity is not None:
-            assert 0 <= minimum_bicluster_sparsity <= 1
-
-        assert isinstance(minimum_bicluster_coverage, float) or minimum_bicluster_coverage is None
-        if minimum_bicluster_coverage is not None:
-            assert 0 <= minimum_bicluster_coverage <= 1
-
-        assert (
-            isinstance(minimum_bicluster_relative_size, float)
-            or minimum_bicluster_relative_size is None
-        )
-        if minimum_bicluster_relative_size is not None:
-            assert 0 <= minimum_bicluster_relative_size <= 1
-
         assert knn_type in ["user", "item"]
-
-        assert isinstance(user_binarization_threshold, float)
-        assert user_binarization_threshold >= 0
 
         assert isinstance(number_of_top_k_biclusters, int) or number_of_top_k_biclusters is None
         if number_of_top_k_biclusters is not None:
@@ -327,13 +300,7 @@ class PAkNN(AlgoBase):
 
         self.mining_strategy = mining_strategy
 
-        # Bicluster filtering parameters
-        self.minimum_bicluster_sparsity = minimum_bicluster_sparsity
-        self.minimum_bicluster_coverage = minimum_bicluster_coverage
-        self.minimum_bicluster_relative_size = minimum_bicluster_relative_size
-
         # User-item neighborhood parameters
-        self.user_binarization_threshold = user_binarization_threshold
         self.number_of_top_k_biclusters = number_of_top_k_biclusters
 
         # KNN parameters
@@ -351,7 +318,6 @@ class PAkNN(AlgoBase):
 
         self.trainset = None
 
-
     def fit(self, trainset: Trainset):
         """
         Train the algorithm on a given training set.
@@ -368,41 +334,12 @@ class PAkNN(AlgoBase):
         self.dataset = convert_trainset_to_matrix(trainset)
         self.biclusters = self.mining_strategy(trainset)
 
-        self._apply_filters()
-
         if not self.number_of_top_k_biclusters:
             self.number_of_top_k_biclusters = len(self.biclusters)
 
         self._generate_neighborhood()
         self._calculate_means()
         self._instantiate_similarity_matrix()
-
-    def _apply_filters(self) -> None:
-        """
-        Apply filters to the biclusters based on the specified criteria.
-
-        This method applies filters to the biclusters based on the following criteria:
-        - minimum bicluster sparsity
-        - minimum bicluster coverage
-        - minimum bicluster relative size
-
-        If the number of top k biclusters is not specified, it is set to the total number of
-        biclusters.
-        """
-        if self.minimum_bicluster_sparsity:
-            self.biclusters = apply_bicluster_sparsity_filter(
-                self.dataset, self.biclusters, self.minimum_bicluster_sparsity
-            )
-
-        if self.minimum_bicluster_coverage:
-            self.biclusters = apply_bicluster_coverage_filter(
-                self.dataset, self.biclusters, self.minimum_bicluster_coverage
-            )
-
-        if self.minimum_bicluster_relative_size:
-            self.biclusters = apply_bicluster_relative_size_filter(
-                self.dataset, self.biclusters, self.minimum_bicluster_relative_size
-            )
 
     def _generate_neighborhood(self) -> None:
         """
@@ -414,7 +351,7 @@ class PAkNN(AlgoBase):
         """
         for user_id in range(self.dataset.shape[0]):
             user_as_tidset = get_indices_above_threshold(
-                self.dataset[user_id], self.user_binarization_threshold
+                self.dataset[user_id], self.mining_strategy.dataset_binarization_threshold
             )
 
             merged_bicluster = create_concept([], [])
