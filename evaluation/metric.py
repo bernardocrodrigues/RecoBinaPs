@@ -1,8 +1,8 @@
-""" evaluation.py
+""" metric.py
 
-This module contains functions to evaluate the performance of a recommender system.
+This module contains functions to various performance metrics for recommender systems.
 
-Copyright 2023 Bernardo C. Rodrigues
+Copyright 2024 Bernardo C. Rodrigues
 See LICENSE file for license details
 """
 import statistics
