@@ -18,7 +18,6 @@ import plotly.io as pio
 import plotly.graph_objects as go
 from surprise import Trainset
 
-from .threads import RecommenderVariation, generic_benchmark_thread
 
 DPI = 300
 WIDTH = 1200
@@ -153,104 +152,6 @@ def concatenate_fold_results(coalesced_results: dict) -> dict:
             concatenated_results[recommender_name][metric_name] = list(
                 itertools.chain.from_iterable(fold_results.values())
             )
-    return concatenated_results
-
-
-def benchmark(
-    folds: List[Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]],
-    parallel_recommender_variations: List[RecommenderVariation],
-    sequential_recommender_variations: List[RecommenderVariation],
-    repeats: int,
-    relevance_threshold: float,
-    number_of_top_recommendations: int,
-    benchmark_thread=generic_benchmark_thread,
-    thread_count=multiprocessing.cpu_count(),
-):
-    """
-    Benchmarks a recommender system and returns the raw results.
-
-    Args:
-        fold (Tuple[int, Tuple[Trainset, List[Tuple[int, int, float]]]]): The fold to be processed.
-            It is a tuple of the fold index and the trainset and testset to be used.
-        parallel_recommender_variations (List[RecommenderVariation]): The recommender variations
-            that should be evaluated in parallel.
-        sequential_recommender_variations (List[RecommenderVariation]): The recommender variations
-            that should be evaluated sequentially. This is useful for recommender variations that
-            are not thread-safe or that use up a lot of resources.
-        repeats (int): The number of times each recommender variation should be evaluated.
-        relevance_threshold (float): The threshold that determines whether a rating is relevant or
-            not. This is used for calculating metrics that assume a binary prediction (e.g. recall).
-        number_of_top_recommendations (int): The number of top recommendations to be considered
-            when calculating metrics that assume a top-k list of recommendations (e.g. precision@k).
-        benchmark_thread (Callable): The function that should be used to benchmark a single
-            recommender variation. It should take the same arguments as the generic_benchmark_thread
-            function.
-        thread_count (int): The number of threads to be used for parallelization.
-
-    Returns:
-        Dictionary that maps recommender variations to metrics to lists of results. The dictionary
-        is structured as follows:
-
-        {
-            "Recommender Variation 1": {
-                "Metric 1": [Result 1, Result 2, Result 3, ...],
-                "Metric 2": [Result 1, Result 2, Result 3, ...],
-                ...
-            },
-            "Recommender Variation 2": {
-                "Metric 1": [Result 1, Result 2, Result 3, ...],
-                "Metric 2": [Result 1, Result 2, Result 3, ...],
-                ...
-            },
-            ...
-        }
-    """
-
-    assert isinstance(folds, list)
-    assert len(folds) > 0
-    assert isinstance(parallel_recommender_variations, list)
-    assert isinstance(sequential_recommender_variations, list)
-    assert isinstance(repeats, int)
-    assert repeats > 0
-    assert isinstance(relevance_threshold, float)
-    assert relevance_threshold > 0.0
-    assert isinstance(number_of_top_recommendations, int)
-    assert number_of_top_recommendations > 0
-    assert callable(benchmark_thread)
-    assert isinstance(thread_count, int)
-    assert thread_count > 0
-
-    threads_args = list(
-        itertools.product(
-            folds,
-            parallel_recommender_variations,
-            [relevance_threshold],
-            [number_of_top_recommendations],
-        )
-    )
-
-    threads_args = repeats * threads_args
-
-    with multiprocessing.Pool(thread_count) as pool:
-        raw_experiment_results = pool.starmap(benchmark_thread, iterable=threads_args)
-
-    threads_args = list(
-        itertools.product(
-            folds,
-            sequential_recommender_variations,
-            [relevance_threshold],
-            [number_of_top_recommendations],
-        )
-    )
-
-    threads_args = repeats * threads_args
-
-    for thread_args in threads_args:
-        raw_experiment_results.append(benchmark_thread(*thread_args))
-
-    coalesced_results = coalesce_fold_results(raw_experiment_results)
-    concatenated_results = concatenate_fold_results(coalesced_results)
-
     return concatenated_results
 
 
