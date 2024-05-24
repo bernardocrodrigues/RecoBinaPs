@@ -24,7 +24,7 @@ from pydantic import BaseModel, validate_call, ConfigDict
 
 from annotated_types import Gt
 
-from evaluation import (
+from evaluation.metric import (
     get_micro_averaged_recall,
     get_macro_averaged_recall,
     get_recall_at_k,
