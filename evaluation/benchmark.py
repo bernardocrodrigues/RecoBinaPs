@@ -1,6 +1,8 @@
 import time
 
-from typing import List, Tuple
+from abc import ABC, abstractmethod
+from typing import List, Tuple, Type
+from itertools import product
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
@@ -257,3 +259,94 @@ def cross_validade_recommenders(
     measurements = [recommender_measurements for recommender_measurements in output]
 
     return measurements
+
+
+class BaseSearch(ABC):
+    """Base class for hyper parameter search with cross-validation."""
+
+    @abstractmethod
+    def __init__(
+        self,
+        recommender_class: Type[AlgoBase],
+        param_grid: dict,
+        test_measures: List[TestMeasureStrategy] = [],
+        train_measures: List[TrainMeasureStrategy] = [],
+        max_workers=1,
+    ):
+        self.recommender_class = recommender_class
+        self.param_grid = param_grid
+        self.test_measures = test_measures
+        self.train_measures = train_measures
+        self.max_workers = max_workers
+        self.param_combinations = []
+
+    def fit(self, folds):
+
+        recommenders = [self.recommender_class(**params) for params in self.param_combinations]
+
+        recommenders_measurements = cross_validade_recommenders(
+            recommenders=recommenders,
+            folds=folds,
+            test_measures=self.test_measures,
+            train_measures=self.train_measures,
+            max_workers=self.max_workers,
+            verbose=True,
+        )
+
+        measures = self.train_measures + self.test_measures
+
+        recommenders_mean_measurements = [
+            {
+                measure: np.mean(measurements)
+                for measure, measurements in recommender_measurements.items()
+            }
+            for recommender_measurements in recommenders_measurements
+        ]
+
+        best = {}
+        for measure in measures:
+
+            measure_name = measure.get_name()
+
+            sorted_ids = np.argsort(
+                [
+                    recommender_mean_measurements[measure_name]
+                    for recommender_mean_measurements in recommenders_mean_measurements
+                ]
+            )
+
+            if measure.is_better_higher():
+                best_parameter_id = sorted_ids[-1]
+            else:
+                best_parameter_id = sorted_ids[0]
+
+            best_parameters = self.param_combinations[best_parameter_id]
+            best_metric = recommenders_mean_measurements[best_parameter_id][measure_name]
+
+            best[measure_name] = {"parameters": best_parameters, "mean": best_metric}
+
+        return best
+
+
+class GridSearch(BaseSearch):
+
+    def __init__(
+        self,
+        recommender_class: Type[AlgoBase],
+        param_grid: dict,
+        test_measures: List[TestMeasureStrategy] = [],
+        train_measures: List[TrainMeasureStrategy] = [],
+        max_workers=1,
+    ):
+
+        super().__init__(
+            recommender_class=recommender_class,
+            param_grid=param_grid,
+            test_measures=test_measures,
+            train_measures=train_measures,
+            max_workers=max_workers,
+        )
+
+        self.param_combinations = [
+            dict(zip(self.param_grid, v)) for v in product(*self.param_grid.values())
+        ]
