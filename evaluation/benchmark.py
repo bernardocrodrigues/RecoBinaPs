@@ -26,9 +26,24 @@ def print_progress(tasks: List) -> None:
         average_time = elapsed_time / i
         estimated_time_left = average_time * (total - i)
 
+        average_minutes = average_time // 60
+        average_seconds = average_time % 60
+
+        time_left_minutes = estimated_time_left // 60
+        time_left_seconds = estimated_time_left % 60
+
         print(
-            f"Completed {i}/{total} | Avg. time/task: {average_time/60:.2f} min | Est. time left: {estimated_time_left/60:.2f} min"
+            f"Completed {i}/{total} | "
+            f"Avg. time/task: {int(average_minutes)}m {average_seconds:.1f}s | "
+            f"Time left: {int(time_left_minutes)}m {time_left_seconds:.1f}s"
         )
+
+    print("All tasks completed.")
+    total_time = time.time() - start_time
+    hours = int(total_time // 3600)
+    minutes = int((total_time % 3600) // 60)
+    seconds = total_time % 60
+    print(f"Total time: {hours}h {minutes}m {seconds:.1f}s")
 
 
 @validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
