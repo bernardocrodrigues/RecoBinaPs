@@ -14,7 +14,7 @@ import numpy as np
 
 from surprise.prediction_algorithms.predictions import Prediction
 
-from evaluation import (
+from evaluation.metric import (
     get_micro_averaged_precision,
     get_macro_averaged_precision,
     get_precision_at_k,
