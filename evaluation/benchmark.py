@@ -1,6 +1,7 @@
 import time
 
 from typing import List, Tuple
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
 from surprise import AlgoBase, Trainset
@@ -44,6 +45,40 @@ def print_progress(tasks: List) -> None:
     minutes = int((total_time % 3600) // 60)
     seconds = total_time % 60
     print(f"Total time: {hours}h {minutes}m {seconds:.1f}s")
+
+
+def determine_worker_split(tasks: List, max_workers: int):
+    """
+    Determine the number of parent and child workers for parallelization.
+
+    This function is used to determine how to split the workers when parallelizing
+    tasks in a nested fashion. The idea is to have a number of parent workers that
+    is less than or equal to the number of tasks, and then split the remaining
+    workers among the tasks.
+
+    Args:
+    tasks: List
+        The tasks to parallelize.
+    max_workers: int
+        The maximum number of workers to use.
+
+    Returns:
+    Tuple[int, List[int]]
+        The number of parent workers and a list of child workers.
+    """
+    if len(tasks) < max_workers:
+        parent_workers = len(tasks)
+        whole_child_workers = max_workers // len(tasks)
+        workers_left = max_workers % len(tasks)
+
+        child_workers = [whole_child_workers] * len(tasks)
+
+        for i in range(workers_left):
+            child_workers[i] += 1
+    else:
+        parent_workers = max_workers
+        child_workers = [1] * len(tasks)
+    return parent_workers, child_workers
 
 
 @validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
@@ -159,5 +194,69 @@ def cross_validate(
 
     measurements["fit_time"] = list(fit_times)
     measurements["test_time"] = list(test_times)
+
+    return measurements
+
+
+def cross_validade_recommenders(
+    recommenders: List[AlgoBase],
+    folds: List[Tuple[Trainset, List[Tuple[str, str, float]]]],
+    test_measures: List[TestMeasureStrategy] = [],
+    train_measures: List[TrainMeasureStrategy] = [],
+    max_workers=1,
+    verbose=True,
+):
+    """
+    Cross validate a list of recommender systems.
+
+    Args:
+    recommenders: List[AlgoBase]
+        The recommender systems to cross validate.
+    folds: List[Tuple[Trainset, List[Tuple[str, str, float]]]]
+        The train-test splits.
+    test_measures: List[TestMeasureStrategy]
+        The test measures to compute.
+    train_measures: List[TrainMeasureStrategy]
+        The train measures to compute.
+    max_workers: int
+        The maximum number of workers to use.
+    verbose: bool
+        Whether to print progress.
+
+    Returns:
+    Dict[AlgoBase, dict]
+        A dictionary mapping each recommender to its measurements.
+    """
+
+    parent_workers, child_workers = determine_worker_split(recommenders, max_workers)
+
+    if verbose:
+        print("Parent workers: ", parent_workers)
+        print("Child workers: ", child_workers)
+
+    with ProcessPoolExecutor(max_workers=parent_workers) as executor:
+
+        futures = [
+            executor.submit(
+                cross_validate,
+                recommender,
+                folds,
+                test_measures,
+                train_measures,
+                child_workers[id],
+                False,
+            )
+            for id, recommender in enumerate(recommenders)
+        ]
+
+        if verbose:
+            print_progress(futures)
+
+        output = [future.result() for future in futures]
+
+    measurements = {}
+
+    for recommender, recommender_measurements in zip(recommenders, output):
+        measurements[recommender] = recommender_measurements
 
     return measurements
