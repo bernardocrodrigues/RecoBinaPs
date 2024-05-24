@@ -254,9 +254,6 @@ def cross_validade_recommenders(
 
         output = [future.result() for future in futures]
 
-    measurements = {}
-
-    for recommender, recommender_measurements in zip(recommenders, output):
-        measurements[recommender] = recommender_measurements
+    measurements = [recommender_measurements for recommender_measurements in output]
 
     return measurements
