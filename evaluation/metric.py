@@ -5,6 +5,7 @@ This module contains functions to various performance metrics for recommender sy
 Copyright 2024 Bernardo C. Rodrigues
 See LICENSE file for license details
 """
+
 import statistics
 from typing import List
 from collections import defaultdict
@@ -366,6 +367,43 @@ def get_recall_at_k(predictions, threshold=1, k=20) -> float:
     try:
         return statistics.mean(recalls)
     except statistics.StatisticsError:
+        return 0
+
+
+def get_f1_score(predictions: List[Prediction], threshold: float = 1, k: int = None) -> float:
+    """
+    Calculate the F1 score for a list of predictions.
+
+    The F1 score is the harmonic mean of the precision and recall metrics. It is a single metric
+    that combines both precision and recall into a single value. The F1 score is defined as:
+
+        F1 = 2 * (precision * recall) / (precision + recall)
+
+    Where precision is the fraction of retrieved instances that are relevant and recall is the
+    fraction of relevant instances that are retrieved.
+
+    If the value of k is not provided, the F1 score is calculated using the micro-averaged precision
+    and recall. Otherwise, the F1 score is calculated using the precision and recall at K.
+
+    Args:
+        predictions (List[Prediction]): A list of predictions.
+        threshold (float, optional): The threshold used to determine if an item is relevant and
+                                        should be retrieved. Defaults to 1.
+        k (int, optional): The number of recommendations to consider. Defaults to None.
+
+    Returns:
+        float: The F1 score.
+    """
+    if k:
+        precision = get_precision_at_k(predictions, threshold, k)
+        recall = get_recall_at_k(predictions, threshold, k)
+    else:
+        precision = get_micro_averaged_precision(predictions, threshold)
+        recall = get_micro_averaged_recall(predictions, threshold)
+
+    try:
+        return 2 * (precision * recall) / (precision + recall)
+    except ZeroDivisionError:
         return 0
 
 

@@ -17,7 +17,7 @@ See LICENSE file for license details
 import statistics
 
 from abc import ABC, abstractmethod
-from typing import List, Annotated
+from typing import List, Annotated, Optional
 from surprise.accuracy import mae, rmse
 from surprise.prediction_algorithms import Prediction, AlgoBase
 from pydantic import BaseModel, validate_call, ConfigDict
@@ -31,6 +31,7 @@ from evaluation.metric import (
     get_micro_averaged_precision,
     get_macro_averaged_precision,
     get_precision_at_k,
+    get_f1_score,
     count_impossible_predictions,
 )
 
@@ -284,6 +285,24 @@ class PrecisionAtKStrategy(TestMeasureStrategy):
     )
     def calculate(self, predictions: List[Prediction]) -> float:
         return get_precision_at_k(predictions, k=self.k, threshold=self.threshold)
+
+
+class F1ScoreStrategy(TestMeasureStrategy):
+
+    threshold: Annotated[float, Gt(0.0)] = 1.0
+    k: Optional[Annotated[int, Gt(0)]] = None
+
+    def get_name(self) -> str:
+        return "f1_score"
+
+    def is_better_higher(self) -> bool:
+        return True
+
+    @validate_call(
+        config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
+    )
+    def calculate(self, predictions: List[Prediction]) -> float:
+        return get_f1_score(predictions, threshold=self.threshold, k=self.k)
 
 
 class CountImpossiblePredictionsStrategy(TestMeasureStrategy):
