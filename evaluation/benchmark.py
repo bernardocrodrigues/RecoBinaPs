@@ -232,10 +232,6 @@ def cross_validade_recommenders(
 
     parent_workers, child_workers = determine_worker_split(recommenders, max_workers)
 
-    if verbose:
-        print("Parent workers: ", parent_workers)
-        print("Child workers: ", child_workers)
-
     with ProcessPoolExecutor(max_workers=parent_workers) as executor:
 
         futures = [
