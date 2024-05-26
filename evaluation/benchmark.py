@@ -280,7 +280,7 @@ class BaseSearch(ABC):
 
         recommenders = [self.recommender_class(**params) for params in self.param_combinations]
 
-        recommenders_measurements = cross_validade_recommenders(
+        self.recommenders_measurements = cross_validade_recommenders(
             recommenders=recommenders,
             folds=folds,
             test_measures=self.test_measures,
@@ -289,6 +289,19 @@ class BaseSearch(ABC):
             verbose=True,
         )
 
+        return self.compute_results()
+
+    def compute_results(self):
+        """
+        Compute the results of the hyperparameter search.
+
+        Returns:
+        Tuple[dict, dict, List[Tuple[dict, dict]]]
+            The best parameters for each measure,
+            the ascending ordering of the recommenders for each measure,
+            and the raw measurements for each recommender.
+        """
+
         measures = self.train_measures + self.test_measures
 
         recommenders_mean_measurements = [
@@ -296,12 +309,19 @@ class BaseSearch(ABC):
                 measure: np.mean(measurements)
                 for measure, measurements in recommender_measurements.items()
             }
-            for recommender_measurements in recommenders_measurements
+            for recommender_measurements in self.recommenders_measurements
         ]
-
+        raw = [
+            (
+                params,
+                {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in measure.items()},
+            )
+            for params, measure in zip(self.param_combinations, self.recommenders_measurements)
+        ]
+        ordering = {}
         best = {}
-        for measure in measures:
 
+        for measure in measures:
             measure_name = measure.get_name()
 
             sorted_ids = np.argsort(
@@ -312,16 +332,22 @@ class BaseSearch(ABC):
             )
 
             if measure.is_better_higher():
+                ordering[measure_name] = sorted_ids.tolist()
                 best_parameter_id = sorted_ids[-1]
             else:
+                ordering[measure_name] = sorted_ids[::-1].tolist()
                 best_parameter_id = sorted_ids[0]
 
-            best_parameters = self.param_combinations[best_parameter_id]
-            best_metric = recommenders_mean_measurements[best_parameter_id][measure_name]
+            best[measure_name] = {
+                "parameters": self.param_combinations[best_parameter_id],
+                "other_metrincs": recommenders_mean_measurements[best_parameter_id],
+                "raw": self.recommenders_measurements[best_parameter_id][measure_name].tolist(),
+                "mean": recommenders_mean_measurements[best_parameter_id][measure_name],
+                "fit_time": recommenders_mean_measurements[best_parameter_id]["fit_time"],
+                "test_time": recommenders_mean_measurements[best_parameter_id]["test_time"],
+            }
 
-            best[measure_name] = {"parameters": best_parameters, "mean": best_metric}
-
-        return best
+        return best, ordering, raw
 
 
 class GridSearch(BaseSearch):
