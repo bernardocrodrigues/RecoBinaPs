@@ -83,7 +83,7 @@ Follow the instructions below to build and run the environment.
       your local IPython kernel directory. Substitute the placeholder
       \[SOURCE_ROOT_DIR\] inside kernel.json with the appropriate value.
        ```bash
-       mkdir ~/.local/share/jupyter/kernels/binaps/
-       cp environment/kernel.json ~/.local/share/jupyter/kernels/binaps/kernel.json
+       mkdir ~/.local/share/jupyter/kernels/recommender/
+       cp environment/kernel.json ~/.local/share/jupyter/kernels/recommender/kernel.json
        ```
       Then, you can use the environment as a kernel in your favorite editor.
