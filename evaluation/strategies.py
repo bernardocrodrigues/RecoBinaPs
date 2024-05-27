@@ -47,6 +47,9 @@ class TestMeasureStrategy(ABC, BaseModel):
 
     """
 
+    # This attribute is used to tell pytest to ignore this class as a test case.
+    __test__ = False
+
     @abstractmethod
     def calculate(self, predictions: List[Prediction]) -> float:
         """
