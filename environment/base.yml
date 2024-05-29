@@ -5,6 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: recommender-systems-cuda
     # Keep the container running indefinitely.
     # command: /bin/sh -c "while sleep 1000; do :; done"
     entrypoint: python3
