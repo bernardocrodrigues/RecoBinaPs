@@ -4,15 +4,176 @@ common.py
 This module contains common functions used by the recommenders.
 """
 
-import math
 from typing import List
+
 import numpy as np
 import numba as nb
 import pandas as pd
+from numba import cuda
 
-from scipy.spatial import distance
+from pydantic import validate_call, ConfigDict
 
 from pattern_mining.formal_concept_analysis import Concept
+
+
+@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
+def cosine_similarity(u: np.array, v: np.array) -> float:
+    """
+    Computes the cosine similarity between two vectors u and v. The cosine similarity is defined
+    as follows:
+
+    cosine_similarity(u, v) = (u . v) / (||u|| * ||v||)
+                            = sum(u[i] * v[i]) / (sqrt(sum(u[i] ** 2)) * sqrt(sum(v[i] ** 2))),
+                              for all i in [0, n)
+
+        where u and v are two vectors and ||u|| is the norm of u and n is the size of the vectors.
+
+    Unlike scipy.spatial.distance.cosine, this function handles NaN values in the vectors. If a
+    NaN value is found in the vectors, that coordinate is ignored in the calculation of the
+    similarity. If all coordinates are NaN, the similarity is NaN. In addition, this function
+    returns the similarity instead of the dissimilarity.
+
+    Args:
+        u (np.array): The first vector.
+        v (np.array): The second vector.
+
+    Returns:
+        float: The cosine similarity between u and v.
+
+    Raises:
+        AssertionError: If the vectors are not 1D numpy arrays.
+        AssertionError: If the vectors have different sizes.
+        AssertionError: If the vectors are not of type np.float64.
+    """
+    assert u.ndim == 1
+    assert v.ndim == 1
+    assert u.size == v.size
+    assert np.issubdtype(u.dtype, np.float64)
+    assert np.issubdtype(v.dtype, np.float64)
+
+    return _cosine_similarity(u=u, v=v)
+
+
+@nb.njit
+def _cosine_similarity(u: np.array, v: np.array, eps: float = 1e-08) -> float:
+    not_null_u = np.nonzero(~np.isnan(u))[0]
+    not_null_v = np.nonzero(~np.isnan(v))[0]
+
+    common_indices_in_uv = np.intersect1d(not_null_u, not_null_v)
+
+    if common_indices_in_uv.size == 0:
+        return np.NaN
+
+    common_u = u[common_indices_in_uv]
+    common_v = v[common_indices_in_uv]
+
+    numerator = np.dot(common_u, common_v)
+
+    uu = np.dot(common_u, common_u)
+    vv = np.dot(common_v, common_v)
+
+    denominator = max(np.sqrt(uu * vv), eps)
+
+    similarity = numerator / denominator
+
+    return similarity
+
+
+@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
+def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
+    """
+    Computes the adjusted cosine similarity between two vectors u and v. The adjusted cosine
+    similarity is defined as follows:
+
+    adjusted_cosine_similarity(u, v) = sum((u[i] - mean(u)) * (v[i] - mean(v))) /
+                                       (sqrt(sum((u[i] - mean(u)) ** 2)) * sqrt(sum((v[i] - mean(v)) ** 2))),
+                                       for all i in [0, n)
+
+        where u and v are two vectors and n is the size of the vectors.
+
+    Unlike scipy.spatial.distance.cosine, this function handles NaN values in the vectors. If a
+    NaN value is found in the vectors, that coordinate is ignored in the calculation of the
+    similarity. If all coordinates are NaN, the similarity is NaN. In addition, this function
+    returns the similarity instead of the dissimilarity.
+
+    Args:
+        u (np.array): The first vector.
+        v (np.array): The second vector.
+
+    Returns:
+        float: The adjusted cosine similarity between u and v.
+
+    Raises:
+        AssertionError: If the vectors are not 1D numpy arrays.
+        AssertionError: If the vectors have different sizes.
+        AssertionError: If the vectors are not of type np.float64.
+    """
+    assert u.ndim == 1
+    assert v.ndim == 1
+    assert u.size == v.size
+    assert np.issubdtype(u.dtype, np.float64)
+    assert np.issubdtype(v.dtype, np.float64)
+
+    return _adjusted_cosine_similarity(u=u, v=v)
+
+
+@nb.njit
+def _adjusted_cosine_similarity(u: np.array, v: np.array, eps: float = 1e-08) -> float:
+    not_null_u = np.nonzero(~np.isnan(u))[0]
+    not_null_v = np.nonzero(~np.isnan(v))[0]
+
+    common_indices_in_uv = np.intersect1d(not_null_u, not_null_v)
+
+    if common_indices_in_uv.size == 0:
+        return np.NaN
+
+    common_u = u[common_indices_in_uv]
+    common_v = v[common_indices_in_uv]
+
+    mean_u = np.mean(common_u)
+    mean_v = np.mean(common_v)
+
+    common_u = common_u - mean_u
+    common_v = common_v - mean_v
+
+    numerator = np.dot(common_u, common_v)
+
+    uu = np.dot(common_u, common_u)
+    vv = np.dot(common_v, common_v)
+
+    denominator = max(np.sqrt(uu * vv), eps)
+
+    similarity = numerator / denominator
+
+    return similarity
+
+
+@nb.njit
+def _get_similarity_matrix(dataset: np.array, similarity_strategy=_cosine_similarity):
+
+    similarity_matrix = np.full((dataset.shape[0], dataset.shape[0]), np.NaN, dtype=np.float64)
+
+    for i, row1 in enumerate(dataset):
+        for j, row2 in enumerate(dataset):
+            if not np.isnan(similarity_matrix[i, j]):
+                continue
+
+            similarity = similarity_strategy(row1, row2)
+            similarity_matrix[i, j] = similarity
+            similarity_matrix[j, i] = similarity
+
+    return similarity_matrix
+
+
+@nb.njit
+def _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy):
+    if not np.isnan(similarity_matrix[i, j]):
+        return similarity_matrix[i, j]
+    else:
+        similarity = similarity_strategy(dataset[i], dataset[j])
+        similarity_matrix[i, j] = similarity
+        similarity_matrix[j, i] = similarity
+        return similarity
 
 
 def jaccard_distance(a: np.array, b: np.array) -> float:
@@ -250,70 +411,6 @@ def _get_cosine_similarity_matrix(dataset: np.array):
     return similarity_matrix
 
 
-def cosine_similarity(u: np.array, v: np.array) -> float:
-    """
-    Computes the cosine similarity between two vectors u and v. The cosine similarity is defined
-    as follows:
-
-    cosine_similarity(u, v) = (u . v) / (||u|| * ||v||)
-                            = sum(u[i] * v[i]) / (sqrt(sum(u[i] ** 2)) * sqrt(sum(v[i] ** 2))),
-                              for all i in [0, n)
-
-        where u and v are two vectors and ||u|| is the norm of u and n is the size of the vectors.
-
-    Unlike scipy.spatial.distance.cosine, this function handles NaN values in the vectors. If a
-    NaN value is found in the vectors, that coordinate is ignored in the calculation of the
-    similarity. If all coordinates are NaN, the similarity is NaN. In addition, this function
-    returns the similarity instead of the dissimilarity.
-
-    Args:
-        u (np.array): The first vector.
-        v (np.array): The second vector.
-
-    Returns:
-        float: The cosine similarity between u and v.
-
-    Raises:
-        AssertionError: If the vectors are not 1D numpy arrays.
-        AssertionError: If the vectors have different sizes.
-        AssertionError: If the vectors are not of type np.float64.
-    """
-    assert isinstance(u, np.ndarray)
-    assert isinstance(v, np.ndarray)
-    assert u.ndim == 1
-    assert v.ndim == 1
-    assert u.size == v.size
-    assert np.issubdtype(u.dtype, np.float64)
-    assert np.issubdtype(v.dtype, np.float64)
-
-    return _cosine_similarity(u=u, v=v)
-
-
-@nb.njit
-def _cosine_similarity(u: np.array, v: np.array) -> float:
-    not_null_u = np.nonzero(~np.isnan(u))[0]
-    not_null_v = np.nonzero(~np.isnan(v))[0]
-
-    common_indices_in_uv = np.intersect1d(not_null_u, not_null_v)
-
-    if common_indices_in_uv.size == 0:
-        return np.NaN
-
-    common_u = u[common_indices_in_uv]
-    common_v = v[common_indices_in_uv]
-
-    numerator = np.dot(common_u, common_v)
-
-    uu = np.dot(common_u, common_u)
-    vv = np.dot(common_v, common_v)
-
-    denominator = np.sqrt(uu * vv)
-
-    similarity = numerator / denominator
-
-    return similarity
-
-
 def compute_neighborhood_cosine_similarity(
     dataset: np.array, similarity_matrix: np.array, target: int, neighborhood: np.array
 ):
@@ -332,6 +429,7 @@ def compute_neighborhood_cosine_similarity(
         neighborhood (np.array): The indices of the items in the neighborhood of the target. The
                                  target item must not be in the neighborhood.
     """
+
     def validate_inputs(dataset, similarity_matrix, target, neighborhood):
         assert isinstance(dataset, np.ndarray)
         assert dataset.ndim == 2
