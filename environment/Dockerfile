@@ -57,3 +57,9 @@ RUN rm sonar-scanner-cli-5.0.1.3006-linux.zip
 
 # Install Arrow to fix Pandas requirements warning
 RUN pip install pyarrow
+
+# Install CUDA Toolkit
+RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+RUN dpkg -i cuda-keyring_1.1-1_all.deb
+RUN apt-get update
+RUN apt-get -y install cuda-toolkit-12-2
