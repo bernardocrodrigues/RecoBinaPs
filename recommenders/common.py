@@ -4,16 +4,16 @@ common.py
 This module contains common functions used by the recommenders.
 """
 
-from typing import List
+from typing import List, Callable, Annotated
+from annotated_types import Gt
 
 import numpy as np
 import numba as nb
 import pandas as pd
-from numba import cuda
 
 from pydantic import validate_call, ConfigDict
 
-from pattern_mining.formal_concept_analysis import Concept
+from pattern_mining.formal_concept_analysis import Concept as Bicluster
 
 
 @validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
@@ -148,6 +148,73 @@ def _adjusted_cosine_similarity(u: np.array, v: np.array, eps: float = 1e-08) ->
     return similarity
 
 
+@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
+def user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
+    """
+    Calculates the similarity between a user and a pattern (bicluster) based on the number of items
+    they have in common. The similarity is defined as follows:
+
+            similarity = |I_u ∩ I_p| / |I_u ∩ I_p| + |I_p - I_u|
+
+        where I_u is the set of relevant items for the user and I_p is the set of items
+        for the pattern.
+
+    This similarity metric is used is defined by Symeonidis[1].
+
+    [1] Symeonidis, P., Nanopoulos, A., Papadopoulos, A., & Manolopoulos, Y. (n.d.).
+        Nearest-Biclusters Collaborative Filtering with Constant Values. Lecture Notes in Computer
+        Science, 36-55. doi:10.1007/978-3-540-77485-3
+
+    Args:
+        user (np.ndarray): A 1D numpy array representing the user's relevant items. The array must
+        be an itemset representation.
+        pattern (np.ndarray): A 1D numpy array representing the pattern's items.The array
+        must be an itemset representation.
+
+    Returns:
+        float: A value between 0 and 1 representing the similarity between the user and the pattern.
+    """
+
+    assert user.dtype == np.int64
+    assert user.ndim == 1
+
+    assert pattern.dtype == np.int64
+    assert pattern.ndim == 1
+
+    return _user_pattern_similarity(user=user, pattern=pattern)
+
+
+@nb.njit
+def _user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
+
+    number_of_itens_from_pattern_in_user = np.intersect1d(user, pattern).size
+
+    if pattern.size == 0:
+        return 0.0
+
+    similarity = number_of_itens_from_pattern_in_user / pattern.size
+
+    return similarity
+
+
+@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
+def get_similarity_matrix(dataset: np.ndarray, similarity_strategy: Callable = _cosine_similarity):
+    """
+    Given a np.ndarray and some method that calculates some distance between two vector,
+    computes the similarity matrix between all users (rows).
+
+    The distance strategy must compute the distance between two numpy arrays. A return value of 1
+    implies that the vectors are completely different (maximum distance) while a return value of 0
+    implies that the vectors are identical (minimum distance).
+    """
+
+    assert dataset.ndim == 2
+    assert dataset.shape[0] > 0
+    assert dataset.shape[1] > 0
+
+    return _get_similarity_matrix(dataset, similarity_strategy)
+
+
 @nb.njit
 def _get_similarity_matrix(dataset: np.array, similarity_strategy=_cosine_similarity):
 
@@ -177,37 +244,54 @@ def _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy):
 
 @validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True))
 def get_top_k_biclusters_for_user(
-    biclusters: List[Concept], user_as_tidset: np.array, number_of_top_k_patterns: int
-) -> List[Concept]:
+    biclusters: List[Bicluster],
+    user_as_tidset: np.ndarray,
+    number_of_top_k_patterns: Annotated[int, Gt(0)],
+    similarity_strategy: Callable = _user_pattern_similarity,
+) -> List[Bicluster]:
     """
     Gets the top-k patterns for a given user. The top-k patterns are the patterns that
     have the highest similarity with the user.
 
     Args:
-        patterns (List[Concept]): The patterns that will be analyzed. Each pattern must be an
+        patterns (List[Bicluster]): The patterns that will be analyzed. Each pattern must be an
                                     itemset representation.
-        user_as_tidset (np.array): The target user. The array must be an tidset representation.
+        user_as_tidset (np.ndarray): The target user. The array must be an tidset representation.
         number_of_top_k_patterns (int): The number of patterns to return.
 
     Returns:
-        List[Concept]: The top-k patterns. The patterns are sorted in ascending order of
+        List[Bicluster]: The top-k patterns. The patterns are sorted in ascending order of
                         similarity.
     """
-    assert isinstance(biclusters, list)
-    assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
 
-    assert isinstance(user_as_tidset, np.ndarray)
+    assert all(isinstance(bicluster, Bicluster) for bicluster in biclusters)
+
     assert user_as_tidset.dtype == np.int64
     assert user_as_tidset.ndim == 1
 
-    assert isinstance(number_of_top_k_patterns, int)
     assert number_of_top_k_patterns > 0
+
+    if len(biclusters) == 0:
+        return []
+
+    return _get_top_k_biclusters_for_user(
+        biclusters, user_as_tidset, number_of_top_k_patterns, similarity_strategy
+    )
+
+
+@nb.njit
+def _get_top_k_biclusters_for_user(
+    biclusters: List[Bicluster],
+    user_as_tidset: np.ndarray,
+    number_of_top_k_patterns: int,
+    similarity_strategy: Callable = _user_pattern_similarity,
+) -> List[Bicluster]:
 
     similar_biclusters = []
     similarities = []
 
     for bicluster in biclusters:
-        similarity = get_user_pattern_similarity(user_as_tidset, bicluster.intent)
+        similarity = similarity_strategy(user_as_tidset, bicluster.intent)
         if similarity > 0:
             similar_biclusters.append(bicluster)
             similarities.append(similarity)
@@ -251,40 +335,6 @@ def get_sparse_representation_of_the_bicluster(
     dataframe = pd.DataFrame(raw_dataframe, columns=["user", "item", "rating"])
 
     return dataframe
-
-
-@nb.njit
-def _get_cosine_similarity_matrix(dataset: np.array):
-    similarity_matrix = np.ones((dataset.shape[0], dataset.shape[0]), dtype=np.float32)
-
-    similarity_matrix = -2 * similarity_matrix
-
-    for i, row1 in enumerate(dataset):
-        for j, row2 in enumerate(dataset):
-            if similarity_matrix[i, j] != -2:
-                continue
-
-            if not row1.any() or not row2.any():
-                similarity_matrix[i, j] = 0
-                similarity_matrix[j, i] = 0
-                continue
-
-            # The snippet below was taken from scipy.spatial.distance.cosine
-            u = row1
-            v = row2
-            uv = np.average(u * v)
-            uu = np.average(np.square(u))
-            vv = np.average(np.square(v))
-            dist = 1.0 - uv / np.sqrt(uu * vv)
-            a = np.abs(dist)
-            dissimilarity = max(0, min(a, 2.0))
-            # end of snippet
-
-            similarity = 1 - dissimilarity
-            similarity_matrix[i, j] = similarity
-            similarity_matrix[j, i] = similarity
-
-    return similarity_matrix
 
 
 def compute_neighborhood_cosine_similarity(

@@ -9,15 +9,16 @@ import pandas as pd
 import scipy
 import pytest
 from recommenders.common import (
-    jaccard_distance,
     get_similarity_matrix,
-    get_user_pattern_similarity,
+    user_pattern_similarity,
+    _user_pattern_similarity,
     get_sparse_representation_of_the_bicluster,
     cosine_similarity,
     _cosine_similarity,
     adjusted_cosine_similarity,
     _adjusted_cosine_similarity,
     get_top_k_biclusters_for_user,
+    _get_top_k_biclusters_for_user,
     get_indices_above_threshold,
     compute_neighborhood_cosine_similarity,
 )
@@ -28,41 +29,14 @@ from pattern_mining.formal_concept_analysis import Concept, concepts_are_equal
 # pylint: disable=missing-function-docstring
 
 
-def test_jaccard_distance():
-    vector_a = [True, False, True]
-    vector_b = [False, True, False]
+@patch("recommenders.common._get_similarity_matrix")
+def test_get_similarity_matrix(mock):
 
-    distance = jaccard_distance(vector_a, vector_b)
+    mock.return_value = np.array([[1, 2], [3, 4]])
 
-    assert distance == 1
-
-
-def test_jaccard_distance_2():
-    vector_a = [True, False, True]
-    vector_b = [True, False, True]
-
-    distance = jaccard_distance(vector_a, vector_b)
-
-    assert distance == 0
-
-
-def test_get_similarity_matrix():
-    distance_strategy_mock = Mock(side_effect=np.arange(0, 0.21, 0.01))
-    similarity_matrix = get_similarity_matrix(zaki_binary_dataset, distance_strategy_mock)
-
-    expected_similarity_matrix = [
-        [1.0, 0.99, 0.98, 0.97, 0.96, 0.95],
-        [0.99, 0.94, 0.93, 0.92, 0.91, 0.9],
-        [0.98, 0.93, 0.89, 0.88, 0.87, 0.86],
-        [0.97, 0.92, 0.88, 0.85, 0.84, 0.83],
-        [0.96, 0.91, 0.87, 0.84, 0.82, 0.81],
-        [0.95, 0.9, 0.86, 0.83, 0.81, 0.8],
-    ]
-
-    for i, _ in enumerate(similarity_matrix):
-        for j, _ in enumerate(similarity_matrix):
-            assert similarity_matrix[i][j] == similarity_matrix[j][i]
-            assert similarity_matrix[i][j] == pytest.approx(expected_similarity_matrix[i][j], 0.01)
+    assert np.array_equal(
+        get_similarity_matrix(np.array([[1, 2], [3, 4]])), np.array([[1, 2], [3, 4]])
+    )
 
 
 class Test_get_user_pattern_similarity:
@@ -70,101 +44,91 @@ class Test_get_user_pattern_similarity:
         user = np.array([1, 2, 3, 4], dtype=np.float32)
         pattern = np.array([1, 2, 3, 4], dtype=int)
         with np.testing.assert_raises(AssertionError):
-            get_user_pattern_similarity(user, pattern)
-
-        user = np.array([1, 2, 3, 4])
-        pattern = [1, 2, 3]
-        with np.testing.assert_raises(AssertionError):
-            get_user_pattern_similarity(user, pattern)
-
-        user = np.array([1, 2, 3, 4])
-        pattern = "string"
-        with np.testing.assert_raises(AssertionError):
-            get_user_pattern_similarity(user, pattern)
+            user_pattern_similarity(user, pattern)
 
     def test_no_similarity(self):
         user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
         pattern = np.array([6, 7, 8, 9, 10], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 0
 
         user = np.array([1, 2, 3], dtype=np.int64)
         pattern = np.array([4, 5, 6], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 0
 
         user = np.array([], dtype=np.int64)
         pattern = np.array([], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 0
 
         user = np.array([1], dtype=np.int64)
         pattern = np.array([], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 0
 
         user = np.array([], dtype=np.int64)
         pattern = np.array([2], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 0
 
     def test_full_similarity(self):
         user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
         pattern = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 1
 
         user = np.array([1], dtype=np.int64)
         pattern = np.array([1], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 1
 
         user = np.array([1, 2], dtype=np.int64)
         pattern = np.array([1, 2], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 1
 
     def test_full_similarity_but_user_has_more_items(self):
         user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
         pattern = np.array([1, 2, 3, 4], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 1
 
         user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
         pattern = np.array([1, 2, 3], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 1
 
         user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
         pattern = np.array([1], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert similarity == 1
 
     def test_partial_similarity_where_pattern_has_more_items(self):
         user = np.array([1, 2, 3, 4], dtype=np.int64)
         pattern = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert math.isclose(similarity, 0.8, rel_tol=1e-9)
 
         user = np.array([1, 2, 3], dtype=np.int64)
         pattern = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert math.isclose(similarity, 0.6, rel_tol=1e-9)
 
         user = np.array([1], dtype=np.int64)
         pattern = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert math.isclose(similarity, 0.2, rel_tol=1e-9)
 
     def test_partial_similarity_where_user_and_pattern_have_some_items_in_common(self):
         user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
         pattern = np.array([4, 5, 6, 7, 8], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert math.isclose(similarity, 0.4, rel_tol=1e-9)
 
         user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
         pattern = np.array([1, 2, 3, 6, 7], dtype=np.int64)
-        similarity = get_user_pattern_similarity(user, pattern)
+        similarity = user_pattern_similarity(user, pattern)
         assert math.isclose(similarity, 0.6, rel_tol=1e-9)
 
 
@@ -531,185 +495,172 @@ class TestGetTopKBiclustersForUser:
         extent=np.array([4, 4], dtype=np.int64),
     )
 
-    def test_invalid_args(self):
-        with pytest.raises(AssertionError):
-            get_top_k_biclusters_for_user("not a list", np.array([1, 2, 3], dtype=np.int64), 3)
-
-        with pytest.raises(AssertionError):
-            get_top_k_biclusters_for_user([1, 2, 3], np.array([1, 2, 3], dtype=np.int64), 3)
-
-        with pytest.raises(AssertionError):
-            get_top_k_biclusters_for_user(
-                [
-                    Concept(
-                        intent=np.array([1, 0, 1], dtype=np.int64),
-                        extent=np.array([1, 0, 1], dtype=np.int64),
-                    )
-                    for _ in range(5)
-                ],
-                "not a numpy array",
-                3,
-            )
-
-        with pytest.raises(AssertionError):
-            get_top_k_biclusters_for_user(
-                [
-                    Concept(
-                        intent=np.array([1, 0, 1], dtype=np.int64),
-                        extent=np.array([1, 0, 1], dtype=np.int64),
-                    )
-                    for _ in range(5)
-                ],
-                np.array([1, 2, 3], dtype=np.int64),
-                "not an integer",
-            )
-
-        with pytest.raises(AssertionError):
-            get_top_k_biclusters_for_user(
-                [
-                    Concept(
-                        intent=np.array([1, 0, 1], dtype=np.int64),
-                        extent=np.array([1, 0, 1], dtype=np.int64),
-                    )
-                    for _ in range(5)
-                ],
-                np.array([1, 2, 3], dtype=np.int64),
-                0,
-            )
-
     def test_empty_list(self):
         top_k_biclusters = get_top_k_biclusters_for_user([], np.array([1, 2, 3], dtype=np.int64), 3)
         assert top_k_biclusters == []
 
-    @patch("recommenders.common.get_user_pattern_similarity")
-    def test_k_is_less_than_the_number_of_biclusters_1(self, get_user_pattern_similarity_mock):
-        get_user_pattern_similarity_mock.side_effect = [0.8, 0.6, 0.4, 0.2]
+    @patch("recommenders.common._get_top_k_biclusters_for_user")
+    def test_get_top_k_biclusters_for_user_1(self, mock):
 
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 2
+        mock.return_value = [self.A, self.B]
+
+        output = get_top_k_biclusters_for_user([self.A, self.B, self.C, self.D], np.array([0]), 2)
+
+        mock.assert_called_once_with(
+            [self.A, self.B, self.C, self.D], np.array([0]), 2, _user_pattern_similarity
         )
+
+        assert len(output) == 2
+        assert concepts_are_equal(output[0], self.A)
+        assert concepts_are_equal(output[1], self.B)
+
+    @patch("recommenders.common._get_top_k_biclusters_for_user")
+    def test_get_top_k_biclusters_for_user_2(self, mock):
+
+        mock.return_value = [self.C, self.B, self.A]
+
+        output = get_top_k_biclusters_for_user([self.A, self.B, self.C, self.D], np.array([0]), 3)
+
+        mock.assert_called_once_with(
+            [self.A, self.B, self.C, self.D], np.array([0]), 3, _user_pattern_similarity
+        )
+
+        assert len(output) == 3
+        assert concepts_are_equal(output[0], self.C)
+        assert concepts_are_equal(output[1], self.B)
+        assert concepts_are_equal(output[2], self.A)
+
+    @patch("recommenders.common._get_top_k_biclusters_for_user")
+    def test_get_top_k_biclusters_for_user_2(self, mock):
+
+        output = get_top_k_biclusters_for_user([], np.array([0]), 3)
+        assert len(output) == 0
+
+    @patch("recommenders.common._user_pattern_similarity")
+    def test__get_top_k_biclusters_for_user_1(self, mock):
+        mock.side_effect = [0.8, 0.6, 0.4, 0.2]
+
+        top_k_biclusters = _get_top_k_biclusters_for_user.py_func(
+            [self.A, self.B, self.C, self.D], np.array([0]), 2, mock
+        )
+
+        mock.assert_has_calls(
+            [
+                call(np.array([0]), self.A.intent),
+                call(np.array([0]), self.B.intent),
+                call(np.array([0]), self.C.intent),
+                call(np.array([0]), self.D.intent),
+            ]
+        )
+
         assert len(top_k_biclusters) == 2
         assert concepts_are_equal(top_k_biclusters[0], self.B)
         assert concepts_are_equal(top_k_biclusters[1], self.A)
 
-        get_user_pattern_similarity_mock.side_effect = [0.8, 0.6, 0.4, 0.2]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 3
-        )
-        assert len(top_k_biclusters) == 3
-        assert concepts_are_equal(top_k_biclusters[0], self.C)
-        assert concepts_are_equal(top_k_biclusters[1], self.B)
-        assert concepts_are_equal(top_k_biclusters[2], self.A)
+    @patch("recommenders.common._user_pattern_similarity")
+    def test__get_top_k_biclusters_for_user_2(self, mock):
+        mock.side_effect = [0.2, 0.4, 0.6, 0.8]
 
-        get_user_pattern_similarity_mock.side_effect = [0.8, 0.6, 0.4, 0.2]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 4
+        top_k_biclusters = _get_top_k_biclusters_for_user.py_func(
+            [self.A, self.B, self.C, self.D], np.array([0]), 2, mock
         )
-        assert len(top_k_biclusters) == 4
-        assert concepts_are_equal(top_k_biclusters[0], self.D)
-        assert concepts_are_equal(top_k_biclusters[1], self.C)
-        assert concepts_are_equal(top_k_biclusters[2], self.B)
-        assert concepts_are_equal(top_k_biclusters[3], self.A)
 
-    @patch("recommenders.common.get_user_pattern_similarity")
-    def test_k_is_less_than_the_number_of_biclusters_2(self, get_user_pattern_similarity_mock):
-        get_user_pattern_similarity_mock.side_effect = [0.2, 0.4, 0.6, 0.8]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 1
+        mock.assert_has_calls(
+            [
+                call(np.array([0]), self.A.intent),
+                call(np.array([0]), self.B.intent),
+                call(np.array([0]), self.C.intent),
+                call(np.array([0]), self.D.intent),
+            ]
         )
-        assert len(top_k_biclusters) == 1
-        assert concepts_are_equal(top_k_biclusters[0], self.D)
 
-        get_user_pattern_similarity_mock.side_effect = [0.2, 0.4, 0.6, 0.8]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 2
-        )
         assert len(top_k_biclusters) == 2
         assert concepts_are_equal(top_k_biclusters[0], self.C)
         assert concepts_are_equal(top_k_biclusters[1], self.D)
 
-        get_user_pattern_similarity_mock.side_effect = [0.2, 0.4, 0.6, 0.8]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 3
+    @patch("recommenders.common._user_pattern_similarity")
+    def test__get_top_k_biclusters_for_user_3(self, mock):
+        mock.side_effect = [0.2, 0.4, 0.6, 0.8]
+
+        top_k_biclusters = _get_top_k_biclusters_for_user.py_func(
+            [self.A, self.B, self.C, self.D], np.array([0]), 3, mock
         )
+
+        mock.assert_has_calls(
+            [
+                call(np.array([0]), self.A.intent),
+                call(np.array([0]), self.B.intent),
+                call(np.array([0]), self.C.intent),
+                call(np.array([0]), self.D.intent),
+            ]
+        )
+
         assert len(top_k_biclusters) == 3
         assert concepts_are_equal(top_k_biclusters[0], self.B)
         assert concepts_are_equal(top_k_biclusters[1], self.C)
         assert concepts_are_equal(top_k_biclusters[2], self.D)
 
-        get_user_pattern_similarity_mock.side_effect = [0.2, 0.4, 0.6, 0.8]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 4
-        )
-        assert len(top_k_biclusters) == 4
-        assert concepts_are_equal(top_k_biclusters[0], self.A)
-        assert concepts_are_equal(top_k_biclusters[1], self.B)
-        assert concepts_are_equal(top_k_biclusters[2], self.C)
-        assert concepts_are_equal(top_k_biclusters[3], self.D)
+    @patch("recommenders.common._user_pattern_similarity")
+    def test__get_top_k_biclusters_for_user_3(self, mock):
+        mock.side_effect = [0.2, 0.8, 0.6, 0.4]
 
-        get_user_pattern_similarity_mock.side_effect = [0.2, 0.4, 0.6, 0.8]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 4
+        top_k_biclusters = _get_top_k_biclusters_for_user.py_func(
+            [self.A, self.B, self.C, self.D], np.array([0]), 1, mock
         )
-        assert len(top_k_biclusters) == 4
-        assert concepts_are_equal(top_k_biclusters[0], self.A)
-        assert concepts_are_equal(top_k_biclusters[1], self.B)
-        assert concepts_are_equal(top_k_biclusters[2], self.C)
-        assert concepts_are_equal(top_k_biclusters[3], self.D)
 
-    @patch("recommenders.common.get_user_pattern_similarity")
-    def test_k_is_more_than_the_number_of_biclusters(self, get_user_pattern_similarity_mock):
-        get_user_pattern_similarity_mock.side_effect = [0.2, 0.4, 0.6, 0.8]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 10
+        mock.assert_has_calls(
+            [
+                call(np.array([0]), self.A.intent),
+                call(np.array([0]), self.B.intent),
+                call(np.array([0]), self.C.intent),
+                call(np.array([0]), self.D.intent),
+            ]
         )
-        assert len(top_k_biclusters) == 4
-        assert concepts_are_equal(top_k_biclusters[0], self.A)
-        assert concepts_are_equal(top_k_biclusters[1], self.B)
-        assert concepts_are_equal(top_k_biclusters[2], self.C)
-        assert concepts_are_equal(top_k_biclusters[3], self.D)
 
-        get_user_pattern_similarity_mock.side_effect = [0.8, 0.6, 0.4, 0.2]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.B, self.C, self.D], np.array([0]), 10
-        )
-        assert len(top_k_biclusters) == 4
-        assert concepts_are_equal(top_k_biclusters[0], self.D)
-        assert concepts_are_equal(top_k_biclusters[1], self.C)
-        assert concepts_are_equal(top_k_biclusters[2], self.B)
-        assert concepts_are_equal(top_k_biclusters[3], self.A)
+        assert len(top_k_biclusters) == 1
+        assert concepts_are_equal(top_k_biclusters[0], self.B)
 
-    @patch("recommenders.common.get_user_pattern_similarity")
-    def test_bicluster_order_does_not_affect_result(self, get_user_pattern_similarity_mock):
-        get_user_pattern_similarity_mock.side_effect = [0.8, 0.6, 0.4, 0.2]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.D, self.C, self.B, self.A], np.array([0]), 4
-        )
-        assert len(top_k_biclusters) == 4
-        assert concepts_are_equal(top_k_biclusters[0], self.A)
-        assert concepts_are_equal(top_k_biclusters[1], self.B)
-        assert concepts_are_equal(top_k_biclusters[2], self.C)
-        assert concepts_are_equal(top_k_biclusters[3], self.D)
+    @patch("recommenders.common._user_pattern_similarity")
+    def test__get_top_k_biclusters_for_user_4(self, mock):
+        mock.side_effect = [0.2, 0.8, 0.6, 0.4]
 
-        get_user_pattern_similarity_mock.side_effect = [0.2, 0.8, 0.6, 0.4]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.A, self.D, self.C, self.B], np.array([0]), 4
+        top_k_biclusters = _get_top_k_biclusters_for_user.py_func(
+            [self.A, self.B, self.C, self.D], np.array([0]), 2, mock
         )
-        assert len(top_k_biclusters) == 4
-        assert concepts_are_equal(top_k_biclusters[0], self.A)
-        assert concepts_are_equal(top_k_biclusters[1], self.B)
-        assert concepts_are_equal(top_k_biclusters[2], self.C)
-        assert concepts_are_equal(top_k_biclusters[3], self.D)
 
-        get_user_pattern_similarity_mock.side_effect = [0.6, 0.2, 0.8, 0.4]
-        top_k_biclusters = get_top_k_biclusters_for_user(
-            [self.C, self.A, self.D, self.B], np.array([0]), 4
+        mock.assert_has_calls(
+            [
+                call(np.array([0]), self.A.intent),
+                call(np.array([0]), self.B.intent),
+                call(np.array([0]), self.C.intent),
+                call(np.array([0]), self.D.intent),
+            ]
         )
-        assert len(top_k_biclusters) == 4
-        assert concepts_are_equal(top_k_biclusters[0], self.A)
+
+        assert len(top_k_biclusters) == 2
+        assert concepts_are_equal(top_k_biclusters[0], self.C)
         assert concepts_are_equal(top_k_biclusters[1], self.B)
-        assert concepts_are_equal(top_k_biclusters[2], self.C)
-        assert concepts_are_equal(top_k_biclusters[3], self.D)
+
+    @patch("recommenders.common._user_pattern_similarity")
+    def test__get_top_k_biclusters_for_user_4(self, mock):
+        mock.side_effect = [0.2, 0.4, 0.8, 0.6]
+
+        top_k_biclusters = _get_top_k_biclusters_for_user.py_func(
+            [self.A, self.D, self.B, self.C], np.array([0]), 2, mock
+        )
+
+        mock.assert_has_calls(
+            [
+                call(np.array([0]), self.A.intent),
+                call(np.array([0]), self.D.intent),
+                call(np.array([0]), self.B.intent),
+                call(np.array([0]), self.C.intent),
+            ]
+        )
+
+        assert len(top_k_biclusters) == 2
+        assert concepts_are_equal(top_k_biclusters[0], self.C)
+        assert concepts_are_equal(top_k_biclusters[1], self.B)
 
 
 class TestGetIndicesAboveThreshold:
