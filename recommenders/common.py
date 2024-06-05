@@ -17,7 +17,7 @@ from pattern_mining.formal_concept_analysis import Concept as Bicluster
 
 
 @validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
-def cosine_similarity(u: np.array, v: np.array) -> float:
+def cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
     """
     Computes the cosine similarity between two vectors u and v. The cosine similarity is defined
     as follows:
@@ -34,8 +34,8 @@ def cosine_similarity(u: np.array, v: np.array) -> float:
     returns the similarity instead of the dissimilarity.
 
     Args:
-        u (np.array): The first vector.
-        v (np.array): The second vector.
+        u (np.ndarray): The first vector.
+        v (np.ndarray): The second vector.
 
     Returns:
         float: The cosine similarity between u and v.
@@ -55,7 +55,7 @@ def cosine_similarity(u: np.array, v: np.array) -> float:
 
 
 @nb.njit
-def _cosine_similarity(u: np.array, v: np.array, eps: float = 1e-08) -> float:
+def _cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
 
@@ -97,8 +97,8 @@ def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
     returns the similarity instead of the dissimilarity.
 
     Args:
-        u (np.array): The first vector.
-        v (np.array): The second vector.
+        u (np.ndarray): The first vector.
+        v (np.ndarray): The second vector.
 
     Returns:
         float: The adjusted cosine similarity between u and v.
@@ -118,7 +118,7 @@ def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
 
 
 @nb.njit
-def _adjusted_cosine_similarity(u: np.array, v: np.array, eps: float = 1e-08) -> float:
+def _adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
 
@@ -216,7 +216,7 @@ def get_similarity_matrix(dataset: np.ndarray, similarity_strategy: Callable = _
 
 
 @nb.njit
-def _get_similarity_matrix(dataset: np.array, similarity_strategy=_cosine_similarity):
+def _get_similarity_matrix(dataset: np.ndarray, similarity_strategy=_cosine_similarity):
 
     similarity_matrix = np.full((dataset.shape[0], dataset.shape[0]), np.NaN, dtype=np.float64)
 
@@ -338,7 +338,7 @@ def get_sparse_representation_of_the_bicluster(
 
 
 def compute_neighborhood_cosine_similarity(
-    dataset: np.array, similarity_matrix: np.array, target: int, neighborhood: np.array
+    dataset: np.ndarray, similarity_matrix: np.ndarray, target: int, neighborhood: np.ndarray
 ):
     """
     Computes the cosine similarities between a target item and each item in a given neighborhood.
@@ -349,10 +349,10 @@ def compute_neighborhood_cosine_similarity(
     updated in-place.
 
     Args:
-        dataset (np.array): The dataset.
-        similarity_matrix (np.array): The similarity matrix.
+        dataset (np.ndarray): The dataset.
+        similarity_matrix (np.ndarray): The similarity matrix.
         target (int): The index of the target item.
-        neighborhood (np.array): The indices of the items in the neighborhood of the target. The
+        neighborhood (np.ndarray): The indices of the items in the neighborhood of the target. The
                                  target item must not be in the neighborhood.
     """
 
@@ -399,20 +399,20 @@ def compute_neighborhood_cosine_similarity(
         similarity_matrix[neighbor, target] = similarity
 
 
-def get_indices_above_threshold(subset: np.array, binarization_threshold: float) -> np.array:
+def get_indices_above_threshold(subset: np.ndarray, binarization_threshold: float) -> np.ndarray:
     """
     Gets the indices of the elements in a subset that are above a given threshold. If this subset
     is a row or column of a matrix, this function can be used to get the user in a tidset
     representation or the items in an itemset representation, respectively.
 
     Args:
-        subset (np.array): A row or column of a matrix.
+        subset (np.ndarray): A row or column of a matrix.
         binarization_threshold (float): The threshold. Elements above this threshold will be
                                         considered relevant and will be present in the returned
                                         indices.
 
     Returns:
-        np.array: The indices of the elements in the subset that are above the threshold.
+        np.ndarray: The indices of the elements in the subset that are above the threshold.
     """
 
     assert isinstance(subset, np.ndarray)
