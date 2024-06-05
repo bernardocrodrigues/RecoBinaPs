@@ -23,8 +23,7 @@ from dataset.binary_dataset import (
     save_as_binaps_compatible_input,
 )
 
-from .common import Concept
-from .formal_concept_analysis import grecond
+from .formal_concept_analysis import grecond, Concept
 
 
 class PatternMiningStrategy(ABC):
