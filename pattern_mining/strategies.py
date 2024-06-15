@@ -88,6 +88,10 @@ class GreConDStrategy(PatternMiningStrategy, BaseModel):
 
         return formal_context
     
+    def get_trainset_fingerprint(self, trainset: Trainset) -> str:
+
+        ...
+    
     def __call__(self, trainset: Trainset) -> List[Concept]:
         return self.mine_patterns(trainset)
 

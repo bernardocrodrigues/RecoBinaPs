@@ -5,7 +5,7 @@ This module contains common functions used by the recommenders.
 """
 
 from typing import List, Callable, Annotated
-from annotated_types import Gt
+from annotated_types import Gt, Ge
 
 import numpy as np
 import numba as nb
@@ -54,7 +54,7 @@ def cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
     return _cosine_similarity(u=u, v=v)
 
 
-@nb.njit
+@nb.njit(cache=True)
 def _cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
@@ -117,7 +117,7 @@ def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
     return _adjusted_cosine_similarity(u=u, v=v)
 
 
-@nb.njit
+@nb.njit(cache=True)
 def _adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
@@ -184,7 +184,7 @@ def user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
     return _user_pattern_similarity(user=user, pattern=pattern)
 
 
-@nb.njit
+@nb.njit(cache=True)
 def _user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
 
     number_of_itens_from_pattern_in_user = np.intersect1d(user, pattern).size
@@ -193,6 +193,61 @@ def _user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
         return 0.0
 
     similarity = number_of_itens_from_pattern_in_user / pattern.size
+
+    return similarity
+
+
+@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
+def get_similarity(
+    i: Annotated[int, Ge(0)],
+    j: Annotated[int, Ge(0)],
+    dataset: np.ndarray,
+    similarity_matrix: np.ndarray = None,
+    similarity_strategy: Callable = _cosine_similarity,
+):
+    """
+    Given a np.ndarray and some method that calculates some distance between two vector,
+    computes the similarity between two users (rows).
+
+    If a similarity matrix is provided, the function will check if the similarity between the two
+    users has already been calculated. If so, the function will return the similarity stored in the
+    matrix. Otherwise, the function will calculate the similarity between the two users and store
+    it in the matrix.
+    """
+    assert dataset.ndim == 2
+    assert dataset.shape[0] > 0
+    assert dataset.shape[1] > 0
+
+    assert similarity_matrix is None or similarity_matrix.ndim == 2
+    assert similarity_matrix is None or similarity_matrix.shape[0] == dataset.shape[0]
+    assert similarity_matrix is None or similarity_matrix.shape[1] == dataset.shape[0]
+    assert similarity_matrix is None or similarity_matrix.dtype == np.float64
+
+    assert i < dataset.shape[0]
+    assert j < dataset.shape[0]
+
+    return _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy)
+
+
+@nb.njit(cache=True)
+def _get_similarity(
+    i: int,
+    j: int,
+    dataset: np.ndarray,
+    similarity_matrix: np.ndarray = None,
+    similarity_strategy: Callable = _cosine_similarity,
+) -> float:
+
+    if similarity_matrix is not None and not np.isnan(similarity_matrix[i, j]):
+        return similarity_matrix[i, j]
+    if i == j:
+        similarity = 1.0
+    else:
+        similarity = similarity_strategy(dataset[i], dataset[j])
+
+    if similarity_matrix is not None:
+        similarity_matrix[i, j] = similarity
+        similarity_matrix[j, i] = similarity
 
     return similarity
 
@@ -207,6 +262,7 @@ def get_similarity_matrix(dataset: np.ndarray, similarity_strategy: Callable = _
     implies that the vectors are completely different (maximum distance) while a return value of 0
     implies that the vectors are identical (minimum distance).
     """
+    print("calculating similarity matrix")
 
     assert dataset.ndim == 2
     assert dataset.shape[0] > 0
@@ -220,67 +276,53 @@ def _get_similarity_matrix(dataset: np.ndarray, similarity_strategy=_cosine_simi
 
     similarity_matrix = np.full((dataset.shape[0], dataset.shape[0]), np.NaN, dtype=np.float64)
 
-    for i, row1 in enumerate(dataset):
-        for j, row2 in enumerate(dataset):
-            if not np.isnan(similarity_matrix[i, j]):
-                continue
-
-            similarity = similarity_strategy(row1, row2)
-            similarity_matrix[i, j] = similarity
-            similarity_matrix[j, i] = similarity
+    for i in range(dataset.shape[0]):
+        for j in range(dataset.shape[0]):
+            if j >= i:
+                _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy)
 
     return similarity_matrix
 
 
-@nb.njit
-def _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy):
-    if not np.isnan(similarity_matrix[i, j]):
-        return similarity_matrix[i, j]
-    else:
-        similarity = similarity_strategy(dataset[i], dataset[j])
-        similarity_matrix[i, j] = similarity
-        similarity_matrix[j, i] = similarity
-        return similarity
+# @validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True))
+# def get_top_k_biclusters_for_user(
+#     biclusters: List[Bicluster],
+#     user_as_tidset: np.ndarray,
+#     number_of_top_k_patterns: Annotated[int, Gt(0)],
+#     similarity_strategy: Callable = _user_pattern_similarity,
+# ) -> List[Bicluster]:
+#     """
+#     Gets the top-k patterns for a given user. The top-k patterns are the patterns that
+#     have the highest similarity with the user.
 
-@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True))
+#     Args:
+#         patterns (List[Bicluster]): The patterns that will be analyzed. Each pattern must be an
+#                                     itemset representation.
+#         user_as_tidset (np.ndarray): The target user. The array must be an tidset representation.
+#         number_of_top_k_patterns (int): The number of patterns to return.
+
+#     Returns:
+#         List[Bicluster]: The top-k patterns. The patterns are sorted in ascending order of
+#                         similarity.
+#     """
+
+#     assert all(isinstance(bicluster, Bicluster) for bicluster in biclusters)
+
+#     assert user_as_tidset.dtype == np.int64
+#     assert user_as_tidset.ndim == 1
+
+#     assert number_of_top_k_patterns > 0
+
+#     if len(biclusters) == 0:
+#         return []
+
+#     return _get_top_k_biclusters_for_user(
+#         biclusters, user_as_tidset, number_of_top_k_patterns, similarity_strategy
+#     )
+
+
+@nb.njit(cache=True)
 def get_top_k_biclusters_for_user(
-    biclusters: List[Bicluster],
-    user_as_tidset: np.ndarray,
-    number_of_top_k_patterns: Annotated[int, Gt(0)],
-    similarity_strategy: Callable = _user_pattern_similarity,
-) -> List[Bicluster]:
-    """
-    Gets the top-k patterns for a given user. The top-k patterns are the patterns that
-    have the highest similarity with the user.
-
-    Args:
-        patterns (List[Bicluster]): The patterns that will be analyzed. Each pattern must be an
-                                    itemset representation.
-        user_as_tidset (np.ndarray): The target user. The array must be an tidset representation.
-        number_of_top_k_patterns (int): The number of patterns to return.
-
-    Returns:
-        List[Bicluster]: The top-k patterns. The patterns are sorted in ascending order of
-                        similarity.
-    """
-
-    assert all(isinstance(bicluster, Bicluster) for bicluster in biclusters)
-
-    assert user_as_tidset.dtype == np.int64
-    assert user_as_tidset.ndim == 1
-
-    assert number_of_top_k_patterns > 0
-
-    if len(biclusters) == 0:
-        return []
-
-    return _get_top_k_biclusters_for_user(
-        biclusters, user_as_tidset, number_of_top_k_patterns, similarity_strategy
-    )
-
-
-@nb.njit
-def _get_top_k_biclusters_for_user(
     biclusters: List[Bicluster],
     user_as_tidset: np.ndarray,
     number_of_top_k_patterns: int,
@@ -304,101 +346,7 @@ def _get_top_k_biclusters_for_user(
     return top_k_patterns
 
 
-def get_sparse_representation_of_the_bicluster(
-    bicluster: np.ndarray, bicluster_column_indexes: List[int]
-) -> pd.DataFrame:
-    """
-    Gets the sparse representation of a bicluster. The sparse representation is a list of tuples
-    (user, item, rating).
-
-    This representation is compatible with the Surprise's Dataset class (see Dataset.load_from_df).
-
-    Args:
-        bicluster (np.ndarray): The bicluster.
-        bicluster_column_indexes (List[int]): The original column indexes of the columns in the
-                                              bicluster. This is necessary to map the columns in
-                                              the bicluster to the original columns in the dataset.
-                                              For example, column 0 in the bicluster may be column
-                                              3 in the original dataset. This will be reflected in
-                                              'item' field of the tuple.
-
-    Returns:
-        pandas.DataFrame: The sparse representation of the bicluster.
-    """
-    raw_dataframe = []
-
-    for i, row in enumerate(bicluster):
-        for j, item in enumerate(row):
-            if item > 0:
-                raw_dataframe.append((i, bicluster_column_indexes[j], item))
-
-    dataframe = pd.DataFrame(raw_dataframe, columns=["user", "item", "rating"])
-
-    return dataframe
-
-
-def compute_neighborhood_cosine_similarity(
-    dataset: np.ndarray, similarity_matrix: np.ndarray, target: int, neighborhood: np.ndarray
-):
-    """
-    Computes the cosine similarities between a target item and each item in a given neighborhood.
-    The neighborhood is a list of indices of the items that are in the neighborhood of the target.
-
-    The similarities will be stored in a given similarity matrix. to avoid recomputing the
-    similarities between itens that have already been computed. The similarity matrix is
-    updated in-place.
-
-    Args:
-        dataset (np.ndarray): The dataset.
-        similarity_matrix (np.ndarray): The similarity matrix.
-        target (int): The index of the target item.
-        neighborhood (np.ndarray): The indices of the items in the neighborhood of the target. The
-                                 target item must not be in the neighborhood.
-    """
-
-    def validate_inputs(dataset, similarity_matrix, target, neighborhood):
-        assert isinstance(dataset, np.ndarray)
-        assert dataset.ndim == 2
-        assert dataset.shape[0] > 0
-        assert dataset.shape[1] > 0
-        assert np.issubdtype(dataset.dtype, np.number)
-
-        assert isinstance(similarity_matrix, np.ndarray)
-        assert similarity_matrix.ndim == 2
-        assert similarity_matrix.shape[0] == dataset.shape[0]
-        assert similarity_matrix.shape[1] == similarity_matrix.shape[0]
-        assert np.issubdtype(similarity_matrix.dtype, np.number)
-
-        assert isinstance(target, int)
-        assert 0 <= target < dataset.shape[0]
-        assert target not in neighborhood
-
-        assert isinstance(neighborhood, np.ndarray)
-        assert neighborhood.ndim == 1
-        assert neighborhood.size > 0
-        assert np.issubdtype(neighborhood.dtype, np.integer)
-        assert np.all(neighborhood >= 0)
-        assert np.all(neighborhood < dataset.shape[0])
-
-    validate_inputs(dataset, similarity_matrix, target, neighborhood)
-
-    for neighbor in neighborhood:
-        if not math.isnan(similarity_matrix[target, neighbor]):
-            continue
-
-        if not dataset[target, :].any() or not dataset[neighbor, :].any():
-            similarity_matrix[target, neighbor] = 0
-            similarity_matrix[neighbor, target] = 0
-            continue
-
-        u = dataset[target, :]
-        v = dataset[neighbor, :]
-
-        similarity = cosine_similarity(u=u, v=v)
-        similarity_matrix[target, neighbor] = similarity
-        similarity_matrix[neighbor, target] = similarity
-
-
+@nb.njit(cache=True)
 def get_indices_above_threshold(subset: np.ndarray, binarization_threshold: float) -> np.ndarray:
     """
     Gets the indices of the elements in a subset that are above a given threshold. If this subset
@@ -415,13 +363,131 @@ def get_indices_above_threshold(subset: np.ndarray, binarization_threshold: floa
         np.ndarray: The indices of the elements in the subset that are above the threshold.
     """
 
-    assert isinstance(subset, np.ndarray)
-    assert subset.ndim == 1
-    assert subset.size > 0
-    assert subset.dtype == np.float64
-
-    assert isinstance(binarization_threshold, float)
-
     binarized_subset = subset >= binarization_threshold
     indices_above_threshold = np.nonzero(binarized_subset)[0]
     return indices_above_threshold
+
+
+def merge_biclusters(
+    biclusters: List[Bicluster],
+) -> Bicluster:
+    """
+    Merges a list of biclusters into a single bicluster. This means that the extent of the new
+    bicluster will be the union of the extents of the given biclusters and the intent of the new
+    bicluster will be the union of the intents of the given biclusters.
+
+    Args:
+        biclusters (List[Bicluster]): A list of biclusters.
+
+    Returns:
+        Concept: A new bicluster that is the result of merging the given biclusters.
+    """
+
+    # assert len(biclusters) > 0
+    # assert all(isinstance(bicluster, Concept) for bicluster in biclusters)
+
+    new_bicluster_extent = np.array([], dtype=np.int64)
+    new_bicluster_intent = np.array([], dtype=np.int64)
+
+    for bicluster in biclusters:
+        new_bicluster_extent = np.union1d(new_bicluster_extent, bicluster.extent)
+        new_bicluster_intent = np.union1d(new_bicluster_intent, bicluster.intent)
+
+    return Bicluster(extent=new_bicluster_extent, intent=new_bicluster_intent)
+
+    # return create_concept(new_bicluster_extent, new_bicluster_intent)
+
+
+# def get_sparse_representation_of_the_bicluster(
+#     bicluster: np.ndarray, bicluster_column_indexes: List[int]
+# ) -> pd.DataFrame:
+#     """
+#     Gets the sparse representation of a bicluster. The sparse representation is a list of tuples
+#     (user, item, rating).
+
+#     This representation is compatible with the Surprise's Dataset class (see Dataset.load_from_df).
+
+#     Args:
+#         bicluster (np.ndarray): The bicluster.
+#         bicluster_column_indexes (List[int]): The original column indexes of the columns in the
+#                                               bicluster. This is necessary to map the columns in
+#                                               the bicluster to the original columns in the dataset.
+#                                               For example, column 0 in the bicluster may be column
+#                                               3 in the original dataset. This will be reflected in
+#                                               'item' field of the tuple.
+
+#     Returns:
+#         pandas.DataFrame: The sparse representation of the bicluster.
+#     """
+#     raw_dataframe = []
+
+#     for i, row in enumerate(bicluster):
+#         for j, item in enumerate(row):
+#             if item > 0:
+#                 raw_dataframe.append((i, bicluster_column_indexes[j], item))
+
+#     dataframe = pd.DataFrame(raw_dataframe, columns=["user", "item", "rating"])
+
+#     return dataframe
+
+
+# def compute_neighborhood_cosine_similarity(
+#     dataset: np.ndarray, similarity_matrix: np.ndarray, target: int, neighborhood: np.ndarray
+# ):
+#     """
+#     Computes the cosine similarities between a target item and each item in a given neighborhood.
+#     The neighborhood is a list of indices of the items that are in the neighborhood of the target.
+
+#     The similarities will be stored in a given similarity matrix. to avoid recomputing the
+#     similarities between itens that have already been computed. The similarity matrix is
+#     updated in-place.
+
+#     Args:
+#         dataset (np.ndarray): The dataset.
+#         similarity_matrix (np.ndarray): The similarity matrix.
+#         target (int): The index of the target item.
+#         neighborhood (np.ndarray): The indices of the items in the neighborhood of the target. The
+#                                  target item must not be in the neighborhood.
+#     """
+
+#     def validate_inputs(dataset, similarity_matrix, target, neighborhood):
+#         assert isinstance(dataset, np.ndarray)
+#         assert dataset.ndim == 2
+#         assert dataset.shape[0] > 0
+#         assert dataset.shape[1] > 0
+#         assert np.issubdtype(dataset.dtype, np.number)
+
+#         assert isinstance(similarity_matrix, np.ndarray)
+#         assert similarity_matrix.ndim == 2
+#         assert similarity_matrix.shape[0] == dataset.shape[0]
+#         assert similarity_matrix.shape[1] == similarity_matrix.shape[0]
+#         assert np.issubdtype(similarity_matrix.dtype, np.number)
+
+#         assert isinstance(target, int)
+#         assert 0 <= target < dataset.shape[0]
+#         assert target not in neighborhood
+
+#         assert isinstance(neighborhood, np.ndarray)
+#         assert neighborhood.ndim == 1
+#         assert neighborhood.size > 0
+#         assert np.issubdtype(neighborhood.dtype, np.integer)
+#         assert np.all(neighborhood >= 0)
+#         assert np.all(neighborhood < dataset.shape[0])
+
+#     validate_inputs(dataset, similarity_matrix, target, neighborhood)
+
+#     for neighbor in neighborhood:
+#         if not math.isnan(similarity_matrix[target, neighbor]):
+#             continue
+
+#         if not dataset[target, :].any() or not dataset[neighbor, :].any():
+#             similarity_matrix[target, neighbor] = 0
+#             similarity_matrix[neighbor, target] = 0
+#             continue
+
+#         u = dataset[target, :]
+#         v = dataset[neighbor, :]
+
+#         similarity = cosine_similarity(u=u, v=v)
+#         similarity_matrix[target, neighbor] = similarity
+#         similarity_matrix[neighbor, target] = similarity

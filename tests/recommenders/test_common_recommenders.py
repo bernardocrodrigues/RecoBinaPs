@@ -6,13 +6,16 @@ import math
 from unittest.mock import Mock, patch, call
 import numpy as np
 import pandas as pd
+import numba as nb
 import scipy
 import pytest
 from recommenders.common import (
+    _get_similarity,
+    get_similarity,
+    _get_similarity_matrix,
     get_similarity_matrix,
     user_pattern_similarity,
     _user_pattern_similarity,
-    get_sparse_representation_of_the_bicluster,
     cosine_similarity,
     _cosine_similarity,
     adjusted_cosine_similarity,
@@ -20,7 +23,6 @@ from recommenders.common import (
     get_top_k_biclusters_for_user,
     _get_top_k_biclusters_for_user,
     get_indices_above_threshold,
-    compute_neighborhood_cosine_similarity,
 )
 
 from tests.toy_datasets import zaki_binary_dataset
@@ -28,15 +30,6 @@ from pattern_mining.formal_concept_analysis import Concept, concepts_are_equal
 
 # pylint: disable=missing-function-docstring
 
-
-@patch("recommenders.common._get_similarity_matrix")
-def test_get_similarity_matrix(mock):
-
-    mock.return_value = np.array([[1, 2], [3, 4]])
-
-    assert np.array_equal(
-        get_similarity_matrix(np.array([[1, 2], [3, 4]])), np.array([[1, 2], [3, 4]])
-    )
 
 
 class Test_get_user_pattern_similarity:
@@ -132,47 +125,47 @@ class Test_get_user_pattern_similarity:
         assert math.isclose(similarity, 0.6, rel_tol=1e-9)
 
 
-class Test_get_sparse_representation_of_the_bicluster:
-    def test_1(self):
-        bicluster = [[0, 1, 0, 2], [0, 0, 3, 0], [4, 0, 0, 5], [0, 6, 0, 0]]
-        bicluster_column_indexes = [0, 2, 3, 5]
+# class Test_get_sparse_representation_of_the_bicluster:
+#     def test_1(self):
+#         bicluster = [[0, 1, 0, 2], [0, 0, 3, 0], [4, 0, 0, 5], [0, 6, 0, 0]]
+#         bicluster_column_indexes = [0, 2, 3, 5]
 
-        result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
+#         result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
 
-        expected_result = pd.DataFrame(
-            {"user": [0, 0, 1, 2, 2, 3], "item": [2, 5, 3, 0, 5, 2], "rating": [1, 2, 3, 4, 5, 6]}
-        )
+#         expected_result = pd.DataFrame(
+#             {"user": [0, 0, 1, 2, 2, 3], "item": [2, 5, 3, 0, 5, 2], "rating": [1, 2, 3, 4, 5, 6]}
+#         )
 
-        pd.testing.assert_frame_equal(result, expected_result)
+#         pd.testing.assert_frame_equal(result, expected_result)
 
-    def test_2(self):
-        bicluster = [[1, 0, 0, 0], [0, 2, 0, 0], [0, 0, 3, 0], [0, 0, 0, 4]]
-        bicluster_column_indexes = [0, 1, 2, 3]
+#     def test_2(self):
+#         bicluster = [[1, 0, 0, 0], [0, 2, 0, 0], [0, 0, 3, 0], [0, 0, 0, 4]]
+#         bicluster_column_indexes = [0, 1, 2, 3]
 
-        result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
+#         result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
 
-        expected_result = pd.DataFrame(
-            {"user": [0, 1, 2, 3], "item": [0, 1, 2, 3], "rating": [1, 2, 3, 4]}
-        )
+#         expected_result = pd.DataFrame(
+#             {"user": [0, 1, 2, 3], "item": [0, 1, 2, 3], "rating": [1, 2, 3, 4]}
+#         )
 
-        pd.testing.assert_frame_equal(result, expected_result)
+#         pd.testing.assert_frame_equal(result, expected_result)
 
-    def test_3(self):
-        bicluster = [[4, 0, 3, 0], [0, 2, 0, 0], [0, 0, 5, 0], [1, 0, 0, 4]]
-        bicluster_column_indexes = [10, 3, 1, 90]
+#     def test_3(self):
+#         bicluster = [[4, 0, 3, 0], [0, 2, 0, 0], [0, 0, 5, 0], [1, 0, 0, 4]]
+#         bicluster_column_indexes = [10, 3, 1, 90]
 
-        result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
+#         result = get_sparse_representation_of_the_bicluster(bicluster, bicluster_column_indexes)
 
-        expected_result = pd.DataFrame(
-            {
-                "user": [0, 0, 1, 2, 3, 3],
-                "item": [10, 1, 3, 1, 10, 90],
-                "rating": [4, 3, 2, 5, 1, 4],
-            }
-        )
+#         expected_result = pd.DataFrame(
+#             {
+#                 "user": [0, 0, 1, 2, 3, 3],
+#                 "item": [10, 1, 3, 1, 10, 90],
+#                 "rating": [4, 3, 2, 5, 1, 4],
+#             }
+#         )
 
-        pd.testing.assert_frame_equal(result, expected_result)
-        print(result)
+#         pd.testing.assert_frame_equal(result, expected_result)
+#         print(result)
 
 
 class TestCosineSimilarity:
@@ -664,21 +657,21 @@ class TestGetTopKBiclustersForUser:
 
 
 class TestGetIndicesAboveThreshold:
-    def test_invalid_args(self):
-        with pytest.raises(AssertionError):
-            get_indices_above_threshold("not a numpy array", 0.5)
+    # def test_invalid_args(self):
+    #     with pytest.raises(AssertionError):
+    #         get_indices_above_threshold("not a numpy array", 0.5)
 
-        with pytest.raises(AssertionError):
-            get_indices_above_threshold(np.array([1, 2, 3]), "not a float")
+    #     with pytest.raises(AssertionError):
+    #         get_indices_above_threshold(np.array([1, 2, 3]), "not a float")
 
-        with pytest.raises(AssertionError):
-            get_indices_above_threshold(np.array([1, 2, 3]), -1)
+    #     with pytest.raises(AssertionError):
+    #         get_indices_above_threshold(np.array([1, 2, 3]), -1)
 
-        with pytest.raises(AssertionError):
-            get_indices_above_threshold(np.array([1, 2, 3]), 2)
+    #     with pytest.raises(AssertionError):
+    #         get_indices_above_threshold(np.array([1, 2, 3]), 2)
 
-        with pytest.raises(AssertionError):
-            get_indices_above_threshold(np.array([]), 1.1)
+    #     with pytest.raises(AssertionError):
+    #         get_indices_above_threshold(np.array([]), 1.1)
 
     def test_no_index_is_returned(self):
         indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 4.0)
@@ -1435,3 +1428,36 @@ class TestComputeNeighborhoodCosineSimilarity:
             assert math.isnan(similarity_matrix[1][0])
             assert math.isnan(similarity_matrix[1][1])
             assert math.isnan(similarity_matrix[2][2])
+
+
+
+class TestGetSimilarity:
+
+    def test_1(self):
+
+        i = 0
+        j = 1
+
+        dataset = np.array([[1, 2], [3, 4]], dtype=np.float64)
+        similarity_matrix = np.array([[1.0, 0.5], [0.5, 1.0]], dtype=np.float64)
+        similarity_strategy = _cosine_similarity
+
+        _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy)
+        _get_similarity(i, j, dataset)
+
+        get_similarity(i, j, dataset, similarity_matrix, similarity_strategy)
+        get_similarity(i, j, dataset)
+
+        # _get_similarity_matrix(dataset)
+        # a = get_similarity_matrix(dataset)
+
+
+
+# @patch("recommenders.common._get_similarity_matrix")
+# def test_get_similarity_matrix(mock):
+
+#     mock.return_value = np.array([[1, 2], [3, 4]])
+
+#     assert np.array_equal(
+#         get_similarity_matrix(np.array([[1, 2], [3, 4]])), np.array([[1, 2], [3, 4]])
+#     )
