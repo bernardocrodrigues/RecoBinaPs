@@ -6,10 +6,10 @@ RUN DEBIAN_FRONTEND=noninteractive apt install -y python3 python3-pip
 
 ## Install basic data science libraries
 # Required by the BinaPs implementation
-RUN pip install numpy \
-                scipy \
-                pandas \
-                torch \
+RUN pip install numpy==1.26.4 \
+                scipy==1.13.1 \
+                pandas==2.2.2 \
+                torch==2.3.1 \
                 torchvision \
                 torchaudio
 
@@ -25,7 +25,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt -y install r-base
 
 # Install extension dependencies
 RUN pip install rich \
-                surprise \
+                scikit-surprise==1.1.3 \
                 numba \
                 pydantic
 
