@@ -238,8 +238,9 @@ def _get_similarity(
     return similarity
 
 
-@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
-def get_similarity_matrix(dataset: np.ndarray, similarity_strategy: Callable = _cosine_similarity):
+
+@nb.njit
+def _get_similarity_matrix(dataset: np.ndarray, similarity_strategy=_cosine_similarity):
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
     computes the similarity matrix between all users (rows).
@@ -248,42 +249,17 @@ def get_similarity_matrix(dataset: np.ndarray, similarity_strategy: Callable = _
     implies that the vectors are completely different (maximum distance) while a return value of 0
     implies that the vectors are identical (minimum distance).
     """
-
-    assert dataset.ndim == 2
-    assert dataset.shape[0] > 0
-    assert dataset.shape[1] > 0
-
-    return _get_similarity_matrix(dataset, similarity_strategy)
-
-
-@nb.njit
-def _get_similarity_matrix(dataset: np.ndarray, similarity_strategy=_cosine_similarity):
-
     similarity_matrix = np.full((dataset.shape[0], dataset.shape[0]), np.NaN, dtype=np.float64)
 
-    for i, row1 in enumerate(dataset):
-        for j, row2 in enumerate(dataset):
-            if not np.isnan(similarity_matrix[i, j]):
-                continue
-
-            similarity = similarity_strategy(row1, row2)
-            similarity_matrix[i, j] = similarity
-            similarity_matrix[j, i] = similarity
+    for i in range(dataset.shape[0]):
+        for j in range(dataset.shape[0]):
+            if j >= i:
+                _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy)
 
     return similarity_matrix
 
 
-@nb.njit
-def _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy):
-    if not np.isnan(similarity_matrix[i, j]):
-        return similarity_matrix[i, j]
-    else:
-        similarity = similarity_strategy(dataset[i], dataset[j])
-        similarity_matrix[i, j] = similarity
-        similarity_matrix[j, i] = similarity
-        return similarity
-
-@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True))
+@nb.njit(cache=True)
 def get_top_k_biclusters_for_user(
     biclusters: List[Bicluster],
     user_as_tidset: np.ndarray,
