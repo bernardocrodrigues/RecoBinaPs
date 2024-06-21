@@ -137,13 +137,14 @@ def _adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08
     return similarity
 
 
-@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
-def user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
+@nb.njit(cache=True)
+def _user_pattern_similarity(user: np.ndarray, pattern: Bicluster) -> float:
     """
     Calculates the similarity between a user and a pattern (bicluster) based on the number of items
     they have in common. The similarity is defined as follows:
 
             similarity = |I_u ∩ I_p| / |I_u ∩ I_p| + |I_p - I_u|
+                       = |I_u ∩ I_p| / |I_p|
 
         where I_u is the set of relevant items for the user and I_p is the set of items
         for the pattern.
@@ -157,31 +158,21 @@ def user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
     Args:
         user (np.ndarray): A 1D numpy array representing the user's relevant items. The array must
         be an itemset representation.
-        pattern (np.ndarray): A 1D numpy array representing the pattern's items.The array
-        must be an itemset representation.
+        pattern (Bicluster): A Bicluster representing the pattern.
 
     Returns:
         float: A value between 0 and 1 representing the similarity between the user and the pattern.
     """
 
-    assert user.dtype == np.int64
-    assert user.ndim == 1
+    number_of_itens_from_pattern_in_user = np.intersect1d(user, pattern.intent).size
 
-    assert pattern.dtype == np.int64
-    assert pattern.ndim == 1
-
-    return _user_pattern_similarity(user=user, pattern=pattern)
-
-
-@nb.njit
-def _user_pattern_similarity(user: np.ndarray, pattern: np.ndarray) -> float:
-
-    number_of_itens_from_pattern_in_user = np.intersect1d(user, pattern).size
-
-    if pattern.size == 0:
+    if pattern.intent.size == 0:
         return 0.0
 
-    similarity = number_of_itens_from_pattern_in_user / pattern.size
+    similarity = number_of_itens_from_pattern_in_user / pattern.intent.size
+
+    return similarity
+
 
     return similarity
 
