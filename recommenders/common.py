@@ -174,6 +174,67 @@ def _user_pattern_similarity(user: np.ndarray, pattern: Bicluster) -> float:
     return similarity
 
 
+@nb.njit(cache=True)
+def _weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
+    """
+    Calculates the similarity between a user and a pattern (bicluster) based on the number of items
+    they have in common and the number of users in the pattern. The similarity is defined as follows:
+
+            similarity = |U_p| * (|I_u ∩ I_p| / |I_p|)
+
+        where U_p is the set of users in the pattern, I_u is the set of relevant items for the user
+        and I_p is the set of items for the pattern.
+
+    This similarity metric is used is defined by Symeonidis[1].
+
+    [1] Symeonidis, P., Nanopoulos, A., Papadopoulos, A., & Manolopoulos, Y. (n.d.).
+        Nearest-Biclusters Collaborative Filtering with Constant Values. Lecture Notes in Computer
+        Science, 36-55. doi:10.1007/978-3-540-77485-3
+
+    Args:
+        user (np.ndarray): A 1D numpy array representing the user's relevant items. The array must
+        be an itemset representation.
+        pattern (Bicluster): A Bicluster representing the pattern.
+
+    Returns:
+        float: A value between 0 and 1 representing the similarity between the user and the pattern.
+
+    """
+
+    number_of_users_in_pattern = pattern.extent.size
+
+    return number_of_users_in_pattern * _user_pattern_similarity(user, pattern)
+
+
+@nb.njit(cache=True)
+def _get_similarity(
+    i: int,
+    j: int,
+    dataset: np.ndarray,
+    similarity_matrix: np.ndarray = None,
+    similarity_strategy: Callable = _cosine_similarity,
+) -> float:
+    """
+    Given a np.ndarray and some method that calculates some distance between two vector,
+    computes the similarity between two users (rows).
+
+    If a similarity matrix is provided, the function will check if the similarity between the two
+    users has already been calculated. If so, the function will return the similarity stored in the
+    matrix. Otherwise, the function will calculate the similarity between the two users and store
+    it in the matrix.
+    """
+
+    if similarity_matrix is not None and not np.isnan(similarity_matrix[i, j]):
+        return similarity_matrix[i, j]
+    if i == j:
+        similarity = 1.0
+    else:
+        similarity = similarity_strategy(dataset[i], dataset[j])
+
+    if similarity_matrix is not None:
+        similarity_matrix[i, j] = similarity
+        similarity_matrix[j, i] = similarity
+
     return similarity
 
 
