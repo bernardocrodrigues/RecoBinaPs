@@ -14,7 +14,7 @@ from pattern_mining.strategies import PatternMiningStrategy
 
 from . import DEFAULT_LOGGER
 from .common import (
-    get_cosine_similarity_matrix,
+    get_similarity_matrix,
 )
 
 
@@ -33,7 +33,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase):
         self,
         mining_strategy: PatternMiningStrategy,
         knn_k: int = 30,
-        knn_similarity_matrix_strategy: Callable = get_cosine_similarity_matrix,
+        knn_similarity_matrix_strategy: Callable = get_similarity_matrix,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
         AlgoBase.__init__(self)
@@ -86,7 +86,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase):
             self.trainset.n_items,
         )
 
-        self.sim = get_cosine_similarity_matrix(self.A)
+        self.sim = self.knn_distance_strategy(self.A)
         self.logger.info("Generating Similarity Matrix OK")
 
         return self
