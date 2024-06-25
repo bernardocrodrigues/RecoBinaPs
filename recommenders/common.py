@@ -4,8 +4,7 @@ common.py
 This module contains common functions used by the recommenders.
 """
 
-from typing import List, Callable, Annotated
-from annotated_types import Gt
+from typing import List, Callable
 
 import numpy as np
 import numba as nb
@@ -263,43 +262,6 @@ def _get_similarity_matrix(dataset: np.ndarray, similarity_strategy=_cosine_simi
 def get_top_k_biclusters_for_user(
     biclusters: List[Bicluster],
     user_as_tidset: np.ndarray,
-    number_of_top_k_patterns: Annotated[int, Gt(0)],
-    similarity_strategy: Callable = _user_pattern_similarity,
-) -> List[Bicluster]:
-    """
-    Gets the top-k patterns for a given user. The top-k patterns are the patterns that
-    have the highest similarity with the user.
-
-    Args:
-        patterns (List[Bicluster]): The patterns that will be analyzed. Each pattern must be an
-                                    itemset representation.
-        user_as_tidset (np.ndarray): The target user. The array must be an tidset representation.
-        number_of_top_k_patterns (int): The number of patterns to return.
-
-    Returns:
-        List[Bicluster]: The top-k patterns. The patterns are sorted in ascending order of
-                        similarity.
-    """
-
-    assert all(isinstance(bicluster, Bicluster) for bicluster in biclusters)
-
-    assert user_as_tidset.dtype == np.int64
-    assert user_as_tidset.ndim == 1
-
-    assert number_of_top_k_patterns > 0
-
-    if len(biclusters) == 0:
-        return []
-
-    return _get_top_k_biclusters_for_user(
-        biclusters, user_as_tidset, number_of_top_k_patterns, similarity_strategy
-    )
-
-
-@nb.njit
-def _get_top_k_biclusters_for_user(
-    biclusters: List[Bicluster],
-    user_as_tidset: np.ndarray,
     number_of_top_k_patterns: int,
     similarity_strategy: Callable = _user_pattern_similarity,
 ) -> List[Bicluster]:
@@ -308,7 +270,7 @@ def _get_top_k_biclusters_for_user(
     similarities = []
 
     for bicluster in biclusters:
-        similarity = similarity_strategy(user_as_tidset, bicluster.intent)
+        similarity = similarity_strategy(user_as_tidset, bicluster)
         if similarity > 0:
             similar_biclusters.append(bicluster)
             similarities.append(similarity)
