@@ -67,7 +67,7 @@ def cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float
 
 
 @nb.njit(cache=True)
-def _adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
+def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     """
     Computes the adjusted cosine similarity between two vectors u and v. The adjusted cosine
     similarity is defined as follows:
@@ -125,7 +125,7 @@ def _adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08
 
 
 @nb.njit(cache=True)
-def _user_pattern_similarity(user: np.ndarray, pattern: Bicluster) -> float:
+def user_pattern_similarity(user: np.ndarray, pattern: Bicluster) -> float:
     """
     Calculates the similarity between a user and a pattern (bicluster) based on the number of items
     they have in common. The similarity is defined as follows:
@@ -162,7 +162,7 @@ def _user_pattern_similarity(user: np.ndarray, pattern: Bicluster) -> float:
 
 
 @nb.njit(cache=True)
-def _weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
+def weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
     """
     Calculates the similarity between a user and a pattern (bicluster) based on the number of items
     they have in common and the number of users in the pattern. The similarity is defined as follows:
@@ -190,16 +190,16 @@ def _weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
 
     number_of_users_in_pattern = pattern.extent.size
 
-    return number_of_users_in_pattern * _user_pattern_similarity(user, pattern)
+    return number_of_users_in_pattern * user_pattern_similarity(user, pattern)
 
 
 @nb.njit(cache=True)
-def _get_similarity(
+def get_similarity(
     i: int,
     j: int,
     dataset: np.ndarray,
     similarity_matrix: np.ndarray = None,
-    similarity_strategy: Callable = _cosine_similarity,
+    similarity_strategy: Callable = cosine_similarity,
 ) -> float:
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
@@ -226,7 +226,7 @@ def _get_similarity(
 
 
 @nb.njit(cache=True)
-def _get_similarity_matrix(dataset: np.ndarray, similarity_strategy=_cosine_similarity):
+def get_similarity_matrix(dataset: np.ndarray, similarity_strategy=cosine_similarity):
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
     computes the similarity matrix between all users (rows).
@@ -240,7 +240,7 @@ def _get_similarity_matrix(dataset: np.ndarray, similarity_strategy=_cosine_simi
     for i in range(dataset.shape[0]):
         for j in range(dataset.shape[0]):
             if j >= i:
-                _get_similarity(i, j, dataset, similarity_matrix, similarity_strategy)
+                get_similarity(i, j, dataset, similarity_matrix, similarity_strategy)
 
     return similarity_matrix
 
@@ -250,7 +250,7 @@ def get_top_k_biclusters_for_user(
     biclusters: List[Bicluster],
     user_as_tidset: np.ndarray,
     number_of_top_k_patterns: int,
-    similarity_strategy: Callable = _user_pattern_similarity,
+    similarity_strategy: Callable = user_pattern_similarity,
 ) -> List[Bicluster]:
 
     similar_biclusters = []
@@ -317,3 +317,39 @@ def merge_biclusters(
 
     return Bicluster(extent=new_bicluster_extent, intent=new_bicluster_intent)
 
+
+# @validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True))
+# def get_top_k_biclusters_for_user(
+#     biclusters: List[Bicluster],
+#     user_as_tidset: np.ndarray,
+#     number_of_top_k_patterns: Annotated[int, Gt(0)],
+#     similarity_strategy: Callable = _user_pattern_similarity,
+# ) -> List[Bicluster]:
+#     """
+#     Gets the top-k patterns for a given user. The top-k patterns are the patterns that
+#     have the highest similarity with the user.
+
+#     Args:
+#         patterns (List[Bicluster]): The patterns that will be analyzed. Each pattern must be an
+#                                     itemset representation.
+#         user_as_tidset (np.ndarray): The target user. The array must be an tidset representation.
+#         number_of_top_k_patterns (int): The number of patterns to return.
+
+#     Returns:
+#         List[Bicluster]: The top-k patterns. The patterns are sorted in ascending order of
+#                         similarity.
+#     """
+
+#     assert all(isinstance(bicluster, Bicluster) for bicluster in biclusters)
+
+#     assert user_as_tidset.dtype == np.int64
+#     assert user_as_tidset.ndim == 1
+
+#     assert number_of_top_k_patterns > 0
+
+#     if len(biclusters) == 0:
+#         return []
+
+#     return _get_top_k_biclusters_for_user(
+#         biclusters, user_as_tidset, number_of_top_k_patterns, similarity_strategy
+#     )
