@@ -52,27 +52,21 @@ def compile_numba():
 
     DEFAULT_LOGGER.info("Forcing Numba compilation OK")
 
+def build_logger(name, level=logging.INFO):
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
 
-DEFAULT_LOGGER = logging.getLogger("recommenders")
-DEFAULT_LOGGER.setLevel(logging.INFO)
+    ch = logging.StreamHandler()
+    ch.setLevel(level)
 
-ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
 
-ch.setFormatter(formatter)
-DEFAULT_LOGGER.addHandler(ch)
+    return logger
 
-DEBUG_LOGGER = logging.getLogger("recommenders debug")
-DEBUG_LOGGER.setLevel(logging.DEBUG)
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
-ch.setFormatter(formatter)
-DEBUG_LOGGER.addHandler(ch)
+DEFAULT_LOGGER = build_logger("recommenders", logging.INFO)
+DEBUG_LOGGER = build_logger("recommenders debug", logging.DEBUG)
 
 compile_numba()
