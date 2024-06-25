@@ -14,9 +14,10 @@ import pytest
 from recommenders.common import (
     cosine_similarity,
     adjusted_cosine_similarity,
+    user_pattern_similarity,
 )
 
-# from pattern_mining.formal_concept_analysis import Concept, concepts_are_equal, create_concept
+from pattern_mining.formal_concept_analysis import create_concept
 
 # pylint: disable=missing-function-docstring
 
@@ -189,17 +190,17 @@ class TestCosineSimilarity:
         u = np.array([1, 2, 2, 5, 5], dtype=np.float64)
         v = np.array([5, 5, 3, 5, 5], dtype=np.float64)
 
-        wolfram_result = 71 /  math.sqrt(6431)
+        wolfram_result = 71 / math.sqrt(6431)
 
         similarity = cosine_similarity(u, v)
         assert math.isclose(similarity, wolfram_result, rel_tol=1e-8)
 
     def test_partial_similarity_against_wolfram_3(self):
 
-        u = np.array([1, 2, 2, 4, 5, 5,5], dtype=np.float64)
+        u = np.array([1, 2, 2, 4, 5, 5, 5], dtype=np.float64)
         v = np.array([5, 2, 3, 5, 5, 1, 2], dtype=np.float64)
 
-        wolfram_result = 5/2 * math.sqrt(3/31)
+        wolfram_result = 5 / 2 * math.sqrt(3 / 31)
 
         similarity = cosine_similarity(u, v)
         assert math.isclose(similarity, wolfram_result, rel_tol=1e-8)
@@ -270,7 +271,7 @@ class TestAdjustedCosineSimilarity:
         u = np.array([4, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([1, 3, 3, np.nan, np.nan], dtype=np.float64)
         similarity = adjusted_cosine_similarity(u, v)
-        assert math.isclose(similarity,-0.8660254037844387, rel_tol=1e-9)
+        assert math.isclose(similarity, -0.8660254037844387, rel_tol=1e-9)
         similarity = adjusted_cosine_similarity.py_func(u, v)
         assert math.isclose(similarity, -0.8660254037844387, rel_tol=1e-9)
 
@@ -306,107 +307,92 @@ class TestAdjustedCosineSimilarity:
         assert math.isclose(similarity, cosine_similarity(u_norm, v_norm), rel_tol=1e-9)
 
 
+class TestUserPatternSimilarity:
 
+    def test_no_similarity(self):
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2, 3], [6, 7, 8])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 0
 
+        user = np.array([1, 2, 3], dtype=np.int64)
+        pattern = create_concept([1, 2, 3], [6, 7, 8])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 0
 
+        user = np.array([], dtype=np.int64)
+        pattern = create_concept([], [])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 0
 
+        user = np.array([1], dtype=np.int64)
+        pattern = create_concept([], [])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 0
 
+        user = np.array([], dtype=np.int64)
+        pattern = create_concept([], [2])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 0
 
+    def test_full_similarity(self):
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([], [1, 2, 3, 4, 5])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 1
 
+        user = np.array([1], dtype=np.int64)
+        pattern = create_concept([1, 2, 3, 4], [1])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 1
 
+        user = np.array([1, 2], dtype=np.int64)
+        pattern = create_concept([1, 2], [1, 2])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 1
 
+    def test_full_similarity_but_user_has_more_items(self):
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2, 3, 4], [1, 2, 3, 4])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 1
 
-# class Test_get_user_pattern_similarity:
-#     # def test_invalid_args(self):
-#     #     user = np.array([1, 2, 3, 4], dtype=np.float32)
-#     #     pattern = np.array([1, 2, 3, 4], dtype=int)
-#     #     with np.testing.assert_raises(AssertionError):
-#     #         user_pattern_similarity(user, pattern)
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2], [1, 2, 3])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 1
 
-#     def test_no_similarity(self):
-#         user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#         pattern = create_concept([1, 2, 3], [6, 7, 8])
-#         similarity = user_pattern_similarity(user, pattern)
-#         assert similarity == 0
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2], [1])
+        similarity = user_pattern_similarity(user, pattern)
+        assert similarity == 1
 
-#         user = np.array([1, 2, 3], dtype=np.int64)
-#         pattern = create_concept([1, 2, 3], [6, 7, 8])
-#         similarity = user_pattern_similarity(user, pattern)
-#         assert similarity == 0
+    def test_partial_similarity_where_pattern_has_more_items(self):
+        user = np.array([1, 2, 3, 4], dtype=np.int64)
+        pattern = create_concept([1, 2], [1, 2, 3, 4, 5])
+        similarity = user_pattern_similarity(user, pattern)
+        assert math.isclose(similarity, 0.8, rel_tol=1e-9)
 
-#         # user = np.array([], dtype=np.int64)
-#         # pattern = np.array([], dtype=np.int64)
-#         # similarity = user_pattern_similarity(user, pattern)
-#         # assert similarity == 0
+        user = np.array([1, 2, 3], dtype=np.int64)
+        pattern = create_concept([1, 2], [1, 2, 3, 4, 5])
+        similarity = user_pattern_similarity(user, pattern)
+        assert math.isclose(similarity, 0.6, rel_tol=1e-9)
 
-#         # user = np.array([1], dtype=np.int64)
-#         # pattern = np.array([], dtype=np.int64)
-#         # similarity = user_pattern_similarity(user, pattern)
-#         # assert similarity == 0
+        user = np.array([1], dtype=np.int64)
+        pattern = create_concept([1, 2], [1, 2, 3, 4, 5])
+        similarity = user_pattern_similarity(user, pattern)
+        assert math.isclose(similarity, 0.2, rel_tol=1e-9)
 
-#         # user = np.array([], dtype=np.int64)
-#         # pattern = np.array([2], dtype=np.int64)
-#         # similarity = user_pattern_similarity(user, pattern)
-#         # assert similarity == 0
+    def test_partial_similarity_where_user_and_pattern_have_some_items_in_common(self):
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2], [4, 5, 6, 7, 8])
+        similarity = user_pattern_similarity(user, pattern)
+        assert math.isclose(similarity, 0.4, rel_tol=1e-9)
 
-#     # def test_full_similarity(self):
-#     #     user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     pattern = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert similarity == 1
-
-#     #     user = np.array([1], dtype=np.int64)
-#     #     pattern = np.array([1], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert similarity == 1
-
-#     #     user = np.array([1, 2], dtype=np.int64)
-#     #     pattern = np.array([1, 2], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert similarity == 1
-
-#     # def test_full_similarity_but_user_has_more_items(self):
-#     #     user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     pattern = np.array([1, 2, 3, 4], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert similarity == 1
-
-#     #     user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     pattern = np.array([1, 2, 3], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert similarity == 1
-
-#     #     user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     pattern = np.array([1], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert similarity == 1
-
-#     # def test_partial_similarity_where_pattern_has_more_items(self):
-#     #     user = np.array([1, 2, 3, 4], dtype=np.int64)
-#     #     pattern = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert math.isclose(similarity, 0.8, rel_tol=1e-9)
-
-#     #     user = np.array([1, 2, 3], dtype=np.int64)
-#     #     pattern = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert math.isclose(similarity, 0.6, rel_tol=1e-9)
-
-#     #     user = np.array([1], dtype=np.int64)
-#     #     pattern = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert math.isclose(similarity, 0.2, rel_tol=1e-9)
-
-#     # def test_partial_similarity_where_user_and_pattern_have_some_items_in_common(self):
-#     #     user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     pattern = np.array([4, 5, 6, 7, 8], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert math.isclose(similarity, 0.4, rel_tol=1e-9)
-
-#     #     user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
-#     #     pattern = np.array([1, 2, 3, 6, 7], dtype=np.int64)
-#     #     similarity = user_pattern_similarity(user, pattern)
-#     #     assert math.isclose(similarity, 0.6, rel_tol=1e-9)
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2, 3], [1, 2, 3, 6, 7])
+        similarity = user_pattern_similarity(user, pattern)
+        assert math.isclose(similarity, 0.6, rel_tol=1e-9)
 
 
 # # class Test_get_sparse_representation_of_the_bicluster:
