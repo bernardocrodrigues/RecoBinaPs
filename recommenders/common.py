@@ -14,8 +14,8 @@ from pydantic import validate_call, ConfigDict
 from pattern_mining.formal_concept_analysis import Concept as Bicluster
 
 
-@validate_call(config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True))
-def cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
+@nb.njit(cache=True)
+def cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     """
     Computes the cosine similarity between two vectors u and v. The cosine similarity is defined
     as follows:
@@ -43,17 +43,6 @@ def cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
         AssertionError: If the vectors have different sizes.
         AssertionError: If the vectors are not of type np.float64.
     """
-    assert u.ndim == 1
-    assert v.ndim == 1
-    assert u.size == v.size
-    assert np.issubdtype(u.dtype, np.float64)
-    assert np.issubdtype(v.dtype, np.float64)
-
-    return _cosine_similarity(u=u, v=v)
-
-
-@nb.njit(cache=True)
-def _cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
 
