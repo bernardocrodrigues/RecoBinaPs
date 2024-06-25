@@ -4,7 +4,7 @@
 
 import math
 
-# from unittest.mock import Mock, patch, call
+from unittest.mock import patch
 import numpy as np
 
 # import pandas as pd
@@ -16,6 +16,7 @@ from recommenders.common import (
     adjusted_cosine_similarity,
     user_pattern_similarity,
     weight_frequency,
+    get_similarity,
 )
 
 from pattern_mining.formal_concept_analysis import create_concept
@@ -482,6 +483,197 @@ class TestWeightFrequency:
         pattern = create_concept([1, 2, 3, 4, 5, 6], [1, 2, 3, 6, 7])
         similarity = weight_frequency(user, pattern)
         assert math.isclose(similarity, 3.6, rel_tol=1e-9)
+
+
+class TestGetSimilarity:
+
+    def test_similarity_already_computed(self):
+
+        dataset = np.array([[1, 2, 3], [3, 4, 6], [7, 8, 9]], dtype=np.float64)
+        similarity_matrix = np.array(
+            [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6], [0.7, 0.8, 0.9]], dtype=np.float64
+        )
+
+        similarity = get_similarity(0, 0, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.1, rel_tol=1e-9)
+
+        similarity = get_similarity(0, 1, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.2, rel_tol=1e-9)
+
+        similarity = get_similarity(0, 2, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.3, rel_tol=1e-9)
+
+        similarity = get_similarity(1, 0, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.4, rel_tol=1e-9)
+
+        similarity = get_similarity(1, 1, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.5, rel_tol=1e-9)
+
+        similarity = get_similarity(1, 2, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.6, rel_tol=1e-9)
+
+        similarity = get_similarity(2, 0, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.7, rel_tol=1e-9)
+
+        similarity = get_similarity(2, 1, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.8, rel_tol=1e-9)
+
+        similarity = get_similarity(2, 2, dataset, similarity_matrix)
+        assert math.isclose(similarity, 0.9, rel_tol=1e-9)
+
+    def test_similarity_not_computed_and_indices_are_equal(self):
+
+        dataset = np.array([[1, 2, 3], [3, 4, 6], [7, 8, 9]], dtype=np.float64)
+        similarity_matrix = np.array(
+            [[np.nan, 0.2, 0.3], [0.4, np.nan, 0.6], [0.7, 0.8, np.nan]], dtype=np.float64
+        )
+
+        similarity = get_similarity(0, 0, dataset, similarity_matrix)
+        assert math.isclose(similarity, 1, rel_tol=1e-9)
+
+        similarity = get_similarity(1, 1, dataset, similarity_matrix)
+        assert math.isclose(similarity, 1, rel_tol=1e-9)
+
+        similarity = get_similarity(2, 2, dataset, similarity_matrix)
+        assert math.isclose(similarity, 1, rel_tol=1e-9)
+
+    def test_similarity_not_computed_and_indices_are_not_equal(self):
+
+        dataset = np.array([[1, 2, 3], [3, 4, 6], [7, 8, 9], [10, 11, 12]], dtype=np.float64)
+        similarity_matrix = np.array(
+            [
+                [np.nan, np.nan, np.nan, np.nan],
+                [np.nan, np.nan, np.nan, np.nan],
+                [np.nan, np.nan, np.nan, np.nan],
+                [np.nan, np.nan, np.nan, np.nan],
+            ],
+            dtype=np.float64,
+        )
+
+        similarity = get_similarity(0, 0, dataset, similarity_matrix)
+        assert math.isclose(similarity, 1, rel_tol=1e-9)
+        assert math.isclose(similarity, cosine_similarity(dataset[0], dataset[0]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[0, 0], rel_tol=1e-9)
+
+        similarity = get_similarity(0, 1, dataset, similarity_matrix)
+        assert math.isclose(similarity, cosine_similarity(dataset[0], dataset[1]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[0, 1], rel_tol=1e-9)
+
+        similarity = get_similarity(0, 2, dataset, similarity_matrix)
+        assert math.isclose(similarity, cosine_similarity(dataset[0], dataset[2]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[0, 2], rel_tol=1e-9)
+
+        similarity = get_similarity(0, 3, dataset, similarity_matrix)
+        assert math.isclose(similarity, cosine_similarity(dataset[0], dataset[3]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[0, 3], rel_tol=1e-9)
+
+        similarity = get_similarity(1, 0, dataset, similarity_matrix)
+        assert math.isclose(similarity, cosine_similarity(dataset[1], dataset[0]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[1, 0], rel_tol=1e-9)
+
+        similarity = get_similarity(1, 1, dataset, similarity_matrix)
+        assert math.isclose(similarity, cosine_similarity(dataset[1], dataset[1]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[1, 1], rel_tol=1e-9)
+
+        similarity = get_similarity(1, 2, dataset, similarity_matrix)
+        assert math.isclose(similarity, cosine_similarity(dataset[1], dataset[2]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[1, 2], rel_tol=1e-9)
+
+        similarity = get_similarity(1, 3, dataset, similarity_matrix)
+        assert math.isclose(similarity, cosine_similarity(dataset[1], dataset[3]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[1, 3], rel_tol=1e-9)
+
+    @patch("recommenders.common.cosine_similarity")
+    def test_similarity_not_computed_and_indices_are_not_equal_with_mocks(
+        self, cosine_similarity_mock
+    ):
+
+        dataset = np.array([[1, 2, 3], [3, 4, 6], [7, 8, 9], [10, 11, 12]], dtype=np.float64)
+        similarity_matrix = np.array(
+            [
+                [np.nan, np.nan, np.nan, np.nan],
+                [np.nan, np.nan, np.nan, np.nan],
+                [np.nan, np.nan, np.nan, np.nan],
+                [np.nan, np.nan, np.nan, np.nan],
+            ],
+            dtype=np.float64,
+        )
+
+        similarity = get_similarity.py_func(
+            0, 0, dataset, similarity_matrix, cosine_similarity_mock
+        )
+        cosine_similarity_mock.assert_not_called()
+        assert math.isclose(similarity, 1, rel_tol=1e-9)
+        assert math.isclose(similarity, cosine_similarity(dataset[0], dataset[0]), rel_tol=1e-9)
+        assert math.isclose(similarity, similarity_matrix[0, 0], rel_tol=1e-9)
+
+        cosine_similarity_mock.reset_mock()
+        cosine_similarity_mock.return_value = 99
+
+        similarity = get_similarity.py_func(
+            0, 1, dataset, similarity_matrix, cosine_similarity_mock
+        )
+        assert cosine_similarity_mock.call_count == 1
+        np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][0], dataset[0])
+        np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][1], dataset[1])
+        assert similarity == 99
+        assert similarity_matrix[0, 1] == 99
+
+        cosine_similarity_mock.reset_mock()
+        cosine_similarity_mock.return_value = 105
+
+        similarity = get_similarity.py_func(
+            0, 2, dataset, similarity_matrix, cosine_similarity_mock
+        )
+        assert cosine_similarity_mock.call_count == 1
+        np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][0], dataset[0])
+        np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][1], dataset[2])
+        assert similarity == 105
+        assert similarity_matrix[0, 2] == 105
+
+        cosine_similarity_mock.reset_mock()
+        cosine_similarity_mock.return_value = 222
+
+        similarity = get_similarity.py_func(
+            0, 3, dataset, similarity_matrix, cosine_similarity_mock
+        )
+        assert cosine_similarity_mock.call_count == 1
+        np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][0], dataset[0])
+        np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][1], dataset[3])
+        assert similarity == 222
+        assert similarity_matrix[0, 3] == 222
+
+        cosine_similarity_mock.reset_mock()
+        cosine_similarity_mock.return_value = 11
+
+        similarity = get_similarity.py_func(
+            1, 0, dataset, similarity_matrix, cosine_similarity_mock
+        )
+        assert cosine_similarity_mock.call_count == 0
+        assert similarity == 99
+        assert similarity_matrix[1, 0] == 99
+
+        cosine_similarity_mock.reset_mock()
+        cosine_similarity_mock.return_value = 23
+
+        similarity = get_similarity.py_func(
+            1, 1, dataset, similarity_matrix, cosine_similarity_mock
+        )
+        assert cosine_similarity_mock.call_count == 0
+        assert similarity == 1
+        assert similarity_matrix[1, 1] == 1
+
+        cosine_similarity_mock.reset_mock()
+        cosine_similarity_mock.return_value = 44
+
+        similarity = get_similarity.py_func(
+            1, 2, dataset, similarity_matrix, cosine_similarity_mock
+        )
+        assert cosine_similarity_mock.call_count == 1
+        np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][0], dataset[1])
+        np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][1], dataset[2])
+        assert similarity == 44
+        assert similarity_matrix[1, 2] == 44
 
 
 # # class Test_get_sparse_representation_of_the_bicluster:
