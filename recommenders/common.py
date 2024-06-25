@@ -283,7 +283,7 @@ def get_top_k_biclusters_for_user(
     return top_k_patterns
 
 
-
+@nb.njit(cache=True)
 def get_indices_above_threshold(subset: np.ndarray, binarization_threshold: float) -> np.ndarray:
     """
     Gets the indices of the elements in a subset that are above a given threshold. If this subset
@@ -299,13 +299,6 @@ def get_indices_above_threshold(subset: np.ndarray, binarization_threshold: floa
     Returns:
         np.ndarray: The indices of the elements in the subset that are above the threshold.
     """
-
-    assert isinstance(subset, np.ndarray)
-    assert subset.ndim == 1
-    assert subset.size > 0
-    assert subset.dtype == np.float64
-
-    assert isinstance(binarization_threshold, float)
 
     binarized_subset = subset >= binarization_threshold
     indices_above_threshold = np.nonzero(binarized_subset)[0]
