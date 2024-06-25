@@ -2,220 +2,206 @@
 # Tests for the common implementations of the recommenders module.
 # """
 
-# import math
+import math
+
 # from unittest.mock import Mock, patch, call
-# import numpy as np
+import numpy as np
+
 # import pandas as pd
 # import numba as nb
-# import scipy
-# import pytest
-# from recommenders.common import (
-#     get_similarity,
-#     get_similarity_matrix,
-#     user_pattern_similarity,
-#     cosine_similarity,
-#     adjusted_cosine_similarity,
-#     get_top_k_biclusters_for_user,
-#     get_indices_above_threshold,
-# )
+import scipy
+import pytest
+from recommenders.common import (
+    cosine_similarity,
+)
 
 # from pattern_mining.formal_concept_analysis import Concept, concepts_are_equal, create_concept
 
-# # pylint: disable=missing-function-docstring
-
-
-# class TestCosineSimilarity:
-
-#     def test_no_nan_vaules(self):
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert similarity == 1
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert similarity == 1
-
-#         u = np.array([1], dtype=np.float64)
-#         v = np.array([1], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert similarity == 1
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert similarity == 1
-
-#         u = np.array([1, 2], dtype=np.float64)
-#         v = np.array([1, 2], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert similarity == 1
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert similarity == 1
-
-#         u = np.array([0, 0], dtype=np.float64)
-#         v = np.array([0, 0], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert similarity == 0
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert similarity == 0
-
-#     def test_one_vector_has_more_items(self):
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([1, 2, 3, 4, np.nan], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert similarity == 1
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert similarity == 1
-
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([1, 2, 3, np.nan, np.nan], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert similarity == 1
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert similarity == 1
-
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([1, 2, np.nan, np.nan, np.nan], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert similarity == 1
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert similarity == 1
-
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([1, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert similarity == 1
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert similarity == 1
-
-#     def test_vector_only_has_nans(self):
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([np.nan, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert math.isnan(similarity)
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert math.isnan(similarity)
+# pylint: disable=missing-function-docstring
+
+
+class TestCosineSimilarity:
+
+    def test_no_nan_vaules(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+        similarity = cosine_similarity.py_func(u, v)
+        assert similarity == 1
+
+        u = np.array([1], dtype=np.float64)
+        v = np.array([1], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+        similarity = cosine_similarity.py_func(u, v)
+        assert similarity == 1
+
+        u = np.array([1, 2], dtype=np.float64)
+        v = np.array([1, 2], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+        similarity = cosine_similarity.py_func(u, v)
+        assert similarity == 1
+
+        u = np.array([0, 0], dtype=np.float64)
+        v = np.array([0, 0], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 0
+        similarity = cosine_similarity.py_func(u, v)
+        assert similarity == 0
+
+    def test_one_vector_has_more_items(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, 3, 4, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+        similarity = cosine_similarity.py_func(u, v)
+        assert similarity == 1
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, 3, np.nan, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+        similarity = cosine_similarity.py_func(u, v)
+        assert similarity == 1
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, np.nan, np.nan, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+        similarity = cosine_similarity.py_func(u, v)
+        assert similarity == 1
+
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert similarity == 1
+        similarity = cosine_similarity.py_func(u, v)
+        assert similarity == 1
+
+    def test_vector_only_has_nans(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([np.nan, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert math.isnan(similarity)
+        similarity = cosine_similarity.py_func(u, v)
+        assert math.isnan(similarity)
+
+        u = np.array([np.nan, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
+        v = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        similarity = cosine_similarity(u, v)
+        assert math.isnan(similarity)
+        similarity = cosine_similarity.py_func(u, v)
+        assert math.isnan(similarity)
+
+    @pytest.mark.parametrize("execution_number", range(1000))
+    def test_partial_similarity_with_no_nans(self, execution_number):
+        size = np.random.default_rng().integers(1, 100)
+
+        u = np.random.default_rng().random(size) * 5
+        v = np.random.default_rng().random(size) * 5
+
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(similarity, 1 - scipy.spatial.distance.cosine(u, v), rel_tol=1e-9)
+        similarity = cosine_similarity.py_func(u, v)
+        assert math.isclose(similarity, 1 - scipy.spatial.distance.cosine(u, v), rel_tol=1e-9)
+
+    def test_partial_similarity_with_nans_1(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, 2, np.nan, np.nan, np.nan], dtype=np.float64)
+
+        u_no_nan = np.array([1, 2], dtype=np.float64)
+        v_no_nan = np.array([1, 2], dtype=np.float64)
+
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
+        similarity = cosine_similarity.py_func(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
 
-#         u = np.array([np.nan, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
-#         v = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         similarity = cosine_similarity(u, v)
-#         assert math.isnan(similarity)
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert math.isnan(similarity)
+    def test_partial_similarity_with_nans_2(self):
 
-#     @pytest.mark.parametrize("execution_number", range(1000))
-#     def test_partial_similarity_with_no_nans(self, execution_number):
-#         size = np.random.default_rng().integers(1, 100)
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([1, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
 
-#         u = np.random.default_rng().random(size) * 5
-#         v = np.random.default_rng().random(size) * 5
+        u_no_nan = np.array([1], dtype=np.float64)
+        v_no_nan = np.array([1], dtype=np.float64)
 
-#         similarity = cosine_similarity(u, v)
-#         assert math.isclose(similarity, 1 - scipy.spatial.distance.cosine(u, v), rel_tol=1e-9)
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert math.isclose(similarity, 1 - scipy.spatial.distance.cosine(u, v), rel_tol=1e-9)
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
+        similarity = cosine_similarity.py_func(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
 
-#     def test_partial_similarity_with_nans_1(self):
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([1, 2, np.nan, np.nan, np.nan], dtype=np.float64)
+    def test_partial_similarity_with_nans_3(self):
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([np.nan, np.nan, 2, np.nan, np.nan], dtype=np.float64)
 
-#         u_no_nan = np.array([1, 2], dtype=np.float64)
-#         v_no_nan = np.array([1, 2], dtype=np.float64)
+        u_no_nan = np.array([3], dtype=np.float64)
+        v_no_nan = np.array([2], dtype=np.float64)
 
-#         similarity = cosine_similarity(u, v)
-#         assert math.isclose(
-#             similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
-#         )
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert math.isclose(
-#             similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
-#         )
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
+        similarity = cosine_similarity.py_func(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
 
-#     def test_partial_similarity_with_nans_2(self):
+    def test_partial_similarity_with_nans_4(self):
 
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([1, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
+        u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+        v = np.array([np.nan, np.nan, np.nan, 1, 1], dtype=np.float64)
 
-#         u_no_nan = np.array([1], dtype=np.float64)
-#         v_no_nan = np.array([1], dtype=np.float64)
+        u_no_nan = np.array([4, 5], dtype=np.float64)
+        v_no_nan = np.array([1, 1], dtype=np.float64)
 
-#         similarity = cosine_similarity(u, v)
-#         assert math.isclose(
-#             similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
-#         )
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert math.isclose(
-#             similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
-#         )
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
+        similarity = cosine_similarity.py_func(u, v)
+        assert math.isclose(
+            similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
+        )
 
-#     def test_partial_similarity_with_nans_3(self):
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([np.nan, np.nan, 2, np.nan, np.nan], dtype=np.float64)
+    def test_partial_similarity_against_wolfram_1(self):
 
-#         u_no_nan = np.array([3], dtype=np.float64)
-#         v_no_nan = np.array([2], dtype=np.float64)
+        u = np.array([2, 3, 1], dtype=np.float64)
+        v = np.array([1, 2, 5], dtype=np.float64)
 
-#         similarity = cosine_similarity(u, v)
-#         assert math.isclose(
-#             similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
-#         )
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert math.isclose(
-#             similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
-#         )
+        wolfram_result = 13 / (2 * math.sqrt(105))
 
-#     def test_partial_similarity_with_nans_4(self):
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(similarity, wolfram_result, rel_tol=1e-8)
 
-#         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-#         v = np.array([np.nan, np.nan, np.nan, 1, 1], dtype=np.float64)
+    def test_partial_similarity_against_wolfram_2(self):
 
-#         u_no_nan = np.array([4, 5], dtype=np.float64)
-#         v_no_nan = np.array([1, 1], dtype=np.float64)
+        u = np.array([1, 2, 2, 5, 5], dtype=np.float64)
+        v = np.array([5, 5, 3, 5, 5], dtype=np.float64)
 
-#         similarity = cosine_similarity(u, v)
-#         assert math.isclose(
-#             similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
-#         )
-#         similarity = cosine_similarity.py_func(u, v)
-#         assert math.isclose(
-#             similarity, 1 - scipy.spatial.distance.cosine(u_no_nan, v_no_nan), rel_tol=1e-9
-#         )
+        wolfram_result = 71 /  math.sqrt(6431)
 
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(similarity, wolfram_result, rel_tol=1e-8)
 
+    def test_partial_similarity_against_wolfram_3(self):
 
+        u = np.array([1, 2, 2, 4, 5, 5,5], dtype=np.float64)
+        v = np.array([5, 2, 3, 5, 5, 1, 2], dtype=np.float64)
 
+        wolfram_result = 5/2 * math.sqrt(3/31)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        similarity = cosine_similarity(u, v)
+        assert math.isclose(similarity, wolfram_result, rel_tol=1e-8)
 
 # class Test_get_user_pattern_similarity:
 #     # def test_invalid_args(self):
