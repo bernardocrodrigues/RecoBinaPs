@@ -310,3 +310,30 @@ def get_indices_above_threshold(subset: np.ndarray, binarization_threshold: floa
     binarized_subset = subset >= binarization_threshold
     indices_above_threshold = np.nonzero(binarized_subset)[0]
     return indices_above_threshold
+
+
+@nb.njit(cache=True)
+def merge_biclusters(
+    biclusters: List[Bicluster],
+) -> Bicluster:
+    """
+    Merges a list of biclusters into a single bicluster. This means that the extent of the new
+    bicluster will be the union of the extents of the given biclusters and the intent of the new
+    bicluster will be the union of the intents of the given biclusters.
+
+    Args:
+        biclusters (List[Bicluster]): A list of biclusters.
+
+    Returns:
+        Concept: A new bicluster that is the result of merging the given biclusters.
+    """
+
+    new_bicluster_extent = np.array([], dtype=np.int64)
+    new_bicluster_intent = np.array([], dtype=np.int64)
+
+    for bicluster in biclusters:
+        new_bicluster_extent = np.union1d(new_bicluster_extent, bicluster.extent)
+        new_bicluster_intent = np.union1d(new_bicluster_intent, bicluster.intent)
+
+    return Bicluster(extent=new_bicluster_extent, intent=new_bicluster_intent)
+
