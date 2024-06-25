@@ -8,7 +8,6 @@ from typing import List, Callable
 
 import numpy as np
 import numba as nb
-import pandas as pd
 
 from pydantic import validate_call, ConfigDict
 
@@ -53,7 +52,7 @@ def cosine_similarity(u: np.ndarray, v: np.ndarray) -> float:
     return _cosine_similarity(u=u, v=v)
 
 
-@nb.njit
+@nb.njit(cache=True)
 def _cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
@@ -237,8 +236,7 @@ def _get_similarity(
     return similarity
 
 
-
-@nb.njit
+@nb.njit(cache=True)
 def _get_similarity_matrix(dataset: np.ndarray, similarity_strategy=_cosine_similarity):
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
