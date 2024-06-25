@@ -15,6 +15,7 @@ from recommenders.common import (
     cosine_similarity,
     adjusted_cosine_similarity,
     user_pattern_similarity,
+    weight_frequency,
 )
 
 from pattern_mining.formal_concept_analysis import create_concept
@@ -393,6 +394,94 @@ class TestUserPatternSimilarity:
         pattern = create_concept([1, 2, 3], [1, 2, 3, 6, 7])
         similarity = user_pattern_similarity(user, pattern)
         assert math.isclose(similarity, 0.6, rel_tol=1e-9)
+
+
+class TestWeightFrequency:
+
+    def test_no_similarity(self):
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2, 3], [6, 7, 8])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 0
+
+        user = np.array([1, 2, 3], dtype=np.int64)
+        pattern = create_concept([1, 2, 3], [6, 7, 8])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 0
+
+        user = np.array([], dtype=np.int64)
+        pattern = create_concept([], [])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 0
+
+        user = np.array([1], dtype=np.int64)
+        pattern = create_concept([], [])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 0
+
+        user = np.array([], dtype=np.int64)
+        pattern = create_concept([], [2])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 0
+
+    def test_full_similarity(self):
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([], [1, 2, 3, 4, 5])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 0
+
+        user = np.array([1], dtype=np.int64)
+        pattern = create_concept([1, 2, 3, 4], [1])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 4
+
+        user = np.array([1, 2], dtype=np.int64)
+        pattern = create_concept([1, 2], [1, 2])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 2
+
+    def test_full_similarity_but_user_has_more_items(self):
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2, 3, 4], [1, 2, 3, 4])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 4
+
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2, 5], [1, 2, 3])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 3
+
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2], [1])
+        similarity = weight_frequency(user, pattern)
+        assert similarity == 2
+
+    def test_partial_similarity_where_pattern_has_more_items(self):
+        user = np.array([1, 2, 3, 4], dtype=np.int64)
+        pattern = create_concept([1, 2], [1, 2, 3, 4, 5])
+        similarity = weight_frequency(user, pattern)
+        assert math.isclose(similarity, 1.6, rel_tol=1e-9)
+
+        user = np.array([1, 2, 3], dtype=np.int64)
+        pattern = create_concept([1, 2, 3], [1, 2, 3, 4, 5])
+        similarity = weight_frequency(user, pattern)
+        assert math.isclose(similarity, 1.8, rel_tol=1e-9)
+
+        user = np.array([1], dtype=np.int64)
+        pattern = create_concept([1, 2], [1, 2, 3, 4, 5])
+        similarity = weight_frequency(user, pattern)
+        assert math.isclose(similarity, 0.4, rel_tol=1e-9)
+
+    def test_partial_similarity_where_user_and_pattern_have_some_items_in_common(self):
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2], [4, 5, 6, 7, 8])
+        similarity = weight_frequency(user, pattern)
+        assert math.isclose(similarity, 0.8, rel_tol=1e-9)
+
+        user = np.array([1, 2, 3, 4, 5], dtype=np.int64)
+        pattern = create_concept([1, 2, 3, 4, 5, 6], [1, 2, 3, 6, 7])
+        similarity = weight_frequency(user, pattern)
+        assert math.isclose(similarity, 3.6, rel_tol=1e-9)
 
 
 # # class Test_get_sparse_representation_of_the_bicluster:
