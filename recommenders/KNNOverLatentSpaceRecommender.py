@@ -1,11 +1,9 @@
 import logging
 from typing import Callable, List
-from abc import ABC, abstractmethod
 
 import numpy as np
 from surprise import AlgoBase, PredictionImpossible, Trainset
 
-from dataset.binary_dataset import load_binary_dataset_from_trainset
 from pattern_mining.formal_concept_analysis import (
     get_factor_matrices_from_concepts,
     Concept,
@@ -13,9 +11,7 @@ from pattern_mining.formal_concept_analysis import (
 from pattern_mining.strategies import PatternMiningStrategy
 
 from . import DEFAULT_LOGGER
-from .common import (
-    get_cosine_similarity_matrix,
-)
+from .common import get_similarity_matrix
 
 
 # pylint: disable=C0103
@@ -33,7 +29,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase):
         self,
         mining_strategy: PatternMiningStrategy,
         knn_k: int = 30,
-        knn_similarity_matrix_strategy: Callable = get_cosine_similarity_matrix,
+        knn_similarity_matrix_strategy: Callable = get_similarity_matrix,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
         AlgoBase.__init__(self)
@@ -65,7 +61,6 @@ class KNNOverLatentSpaceRecommender(AlgoBase):
         """
         AlgoBase.fit(self, trainset)
 
-
         # Generate formal context
         self.logger.debug("Mining formal context...")
         self.formal_context = self.mining_strategy(trainset)
@@ -86,7 +81,7 @@ class KNNOverLatentSpaceRecommender(AlgoBase):
             self.trainset.n_items,
         )
 
-        self.sim = get_cosine_similarity_matrix(self.A)
+        self.sim = self.knn_distance_strategy(self.A)
         self.logger.info("Generating Similarity Matrix OK")
 
         return self
