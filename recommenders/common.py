@@ -251,9 +251,23 @@ def get_top_k_biclusters_for_user(
     number_of_top_k_patterns: int,
     similarity_strategy: Callable = user_pattern_similarity,
 ) -> List[Bicluster]:
+    """
+    Gets the top-k patterns for a given user. The top-k patterns are the patterns that
+    have the highest similarity with the user.
 
-    similar_biclusters = []
-    similarities = []
+    Args:
+        patterns (List[Bicluster]): The patterns that will be analyzed. Each pattern must be an
+                                    itemset representation. This list cannot be empty.
+        user_as_tidset (np.ndarray): The target user. The array must be an tidset representation.
+        number_of_top_k_patterns (int): The number of patterns to return.
+
+    Returns:
+        List[Bicluster]: The top-k patterns. The patterns are sorted in ascending order of
+                        similarity.
+    """
+
+    similar_biclusters = nb.typed.List()
+    similarities = nb.typed.List()
 
     for bicluster in biclusters:
         similarity = similarity_strategy(user_as_tidset, bicluster)
@@ -261,8 +275,9 @@ def get_top_k_biclusters_for_user(
             similar_biclusters.append(bicluster)
             similarities.append(similarity)
 
-    similarities = np.array(similarities, dtype=np.float64)
-    sorted_similarities_indexes = np.argsort(similarities)
+    sorted_similarities_indexes = [
+        x for x, y in sorted(enumerate(similarities), key=lambda x: x[1])
+    ]
     sorted_similar_patterns = [similar_biclusters[i] for i in sorted_similarities_indexes]
     top_k_patterns = sorted_similar_patterns[-number_of_top_k_patterns:]
 
@@ -307,8 +322,8 @@ def merge_biclusters(
         Concept: A new bicluster that is the result of merging the given biclusters.
     """
 
-    new_bicluster_extent = np.array([], dtype=np.int64)
-    new_bicluster_intent = np.array([], dtype=np.int64)
+    new_bicluster_extent = np.empty(0, dtype=np.int64)
+    new_bicluster_intent = np.empty(0, dtype=np.int64)
 
     for bicluster in biclusters:
         new_bicluster_extent = np.union1d(new_bicluster_extent, bicluster.extent)
