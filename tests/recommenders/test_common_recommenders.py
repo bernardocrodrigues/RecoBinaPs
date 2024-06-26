@@ -17,6 +17,7 @@ from recommenders.common import (
     user_pattern_similarity,
     weight_frequency,
     get_similarity,
+    get_similarity_matrix,
 )
 
 from pattern_mining.formal_concept_analysis import create_concept
@@ -674,6 +675,79 @@ class TestGetSimilarity:
         np.testing.assert_array_equal(cosine_similarity_mock.call_args[0][1], dataset[2])
         assert similarity == 44
         assert similarity_matrix[1, 2] == 44
+
+
+class TestGetSimilarityMatrix:
+
+    def test_computed_from_wolfram(self):
+
+        dataset = np.array([[1, 2, 3], [3, 4, 6], [7, 8, 9]], dtype=np.float64)
+
+        similarity_matrix = get_similarity_matrix(dataset)
+
+        expected_similarity_matrix = np.array(
+            [
+                [1, (29 / 854) * math.sqrt(854), 25 / math.sqrt(679)],
+                [(29 / 854) * math.sqrt(854), 1, 107 / math.sqrt(11834)],
+                [25 / math.sqrt(679), 107 / math.sqrt(11834), 1],
+            ],
+            dtype=np.float64,
+        )
+
+        np.testing.assert_allclose(similarity_matrix, expected_similarity_matrix, rtol=1e-9)
+
+    @patch("recommenders.common.get_similarity")
+    def test_with_mock(self, get_similarity_mock):
+
+        dataset = np.array([[1, 2, 3], [3, 4, 6], [7, 8, 9]], dtype=np.float64)
+
+        get_similarity_mock.side_effect = [1, 2, 3, 4, 5, 6]
+
+        get_similarity_matrix.py_func(dataset, get_similarity_mock)
+
+        assert len(get_similarity_mock.call_args_list) == 6
+
+        call_1_args = get_similarity_mock.call_args_list[0][0]
+        assert call_1_args[0] == 0
+        assert call_1_args[1] == 0
+        np.testing.assert_array_equal(call_1_args[2], dataset)
+        np.testing.assert_array_equal(call_1_args[3], np.full((3, 3), np.nan))
+        assert call_1_args[4] == get_similarity_mock
+
+        call_2_args = get_similarity_mock.call_args_list[1][0]
+        assert call_2_args[0] == 0
+        assert call_2_args[1] == 1
+        np.testing.assert_array_equal(call_2_args[2], dataset)
+        np.testing.assert_array_equal(call_2_args[3], np.full((3, 3), np.nan))
+        assert call_2_args[4] == get_similarity_mock
+
+        call_3_args = get_similarity_mock.call_args_list[2][0]
+        assert call_3_args[0] == 0
+        assert call_3_args[1] == 2
+        np.testing.assert_array_equal(call_3_args[2], dataset)
+        np.testing.assert_array_equal(call_3_args[3], np.full((3, 3), np.nan))
+        assert call_3_args[4] == get_similarity_mock
+
+        call_4_args = get_similarity_mock.call_args_list[3][0]
+        assert call_4_args[0] == 1
+        assert call_4_args[1] == 1
+        np.testing.assert_array_equal(call_4_args[2], dataset)
+        np.testing.assert_array_equal(call_4_args[3], np.full((3, 3), np.nan))
+        assert call_4_args[4] == get_similarity_mock
+
+        call_5_args = get_similarity_mock.call_args_list[4][0]
+        assert call_5_args[0] == 1
+        assert call_5_args[1] == 2
+        np.testing.assert_array_equal(call_5_args[2], dataset)
+        np.testing.assert_array_equal(call_5_args[3], np.full((3, 3), np.nan))
+        assert call_5_args[4] == get_similarity_mock
+
+        call_6_args = get_similarity_mock.call_args_list[5][0]
+        assert call_6_args[0] == 2
+        assert call_6_args[1] == 2
+        np.testing.assert_array_equal(call_6_args[2], dataset)
+        np.testing.assert_array_equal(call_6_args[3], np.full((3, 3), np.nan))
+        assert call_6_args[4] == get_similarity_mock
 
 
 # # class Test_get_sparse_representation_of_the_bicluster:
