@@ -19,6 +19,7 @@ from recommenders.common import (
     get_similarity,
     get_similarity_matrix,
     get_top_k_biclusters_for_user,
+    get_indices_above_threshold,
 )
 
 from pattern_mining.formal_concept_analysis import create_concept, concepts_are_equal
@@ -845,7 +846,6 @@ class TestGetTopKBiclustersForUser:
         assert concepts_are_equal(top_k_biclusters[1], self.C)
         assert concepts_are_equal(top_k_biclusters[2], self.D)
 
-
     @patch("recommenders.common.user_pattern_similarity")
     def test__get_top_k_biclusters_for_user_4(self, user_pattern_similarity_mock):
         user_pattern_similarity_mock.side_effect = [0.2, 0.8, 0.6, 0.4]
@@ -933,87 +933,77 @@ class TestGetTopKBiclustersForUser:
         assert concepts_are_equal(top_k_biclusters[1], self.C)
 
 
+class TestGetIndicesAboveThreshold:
 
-#     @patch("recommenders.common._user_pattern_similarity")
-#     def test__get_top_k_biclusters_for_user_4(self, mock):
-#         mock.side_effect = [0.2, 0.4, 0.8, 0.6]
+    def test_no_index_is_returned(self):
+        indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 4.0)
+        assert len(indices) == 0
 
-#         top_k_biclusters = _get_top_k_biclusters_for_user.py_func(
-#             [self.A, self.D, self.B, self.C], np.array([0]), 2, mock
-#         )
+        indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 3.1)
+        assert len(indices) == 0
 
-#         mock.assert_has_calls(
-#             [
-#                 call(np.array([0]), self.A.intent),
-#                 call(np.array([0]), self.D.intent),
-#                 call(np.array([0]), self.B.intent),
-#                 call(np.array([0]), self.C.intent),
-#             ]
-#         )
+        indices = get_indices_above_threshold(np.array([1, 2], dtype=np.float64), 3.0)
+        assert len(indices) == 0
 
-#         assert len(top_k_biclusters) == 2
-#         assert concepts_are_equal(top_k_biclusters[0], self.C)
-#         assert concepts_are_equal(top_k_biclusters[1], self.B)
+        indices = get_indices_above_threshold(
+            np.array([1, 2, 3, 4, 3, 4, 3, 1, 2, 3], dtype=np.float64), 4.5
+        )
+        assert len(indices) == 0
+
+    def test_some_indices_are_returned(self):
+        indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 3.0)
+        assert len(indices) == 1
+        assert indices[0] == 2
+
+        indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 2.0)
+        assert len(indices) == 2
+        assert indices[0] == 1
+        assert indices[1] == 2
+
+        indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 2.5)
+        assert len(indices) == 1
+        assert indices[0] == 2
+
+        indices = get_indices_above_threshold(
+            np.array([1, 2, 3, 4, 3, 4, 3, 1, 2, 3], dtype=np.float64), 3.0
+        )
+        assert len(indices) == 6
+        assert indices[0] == 2
+        assert indices[1] == 3
+        assert indices[2] == 4
+        assert indices[3] == 5
+        assert indices[4] == 6
+        assert indices[5] == 9
+
+    def test_all_indices_are_returned(self):
+        indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 0.0)
+        assert len(indices) == 3
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+
+        indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 1.0)
+        assert len(indices) == 3
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+
+        indices = get_indices_above_threshold(
+            np.array([1, 2, 3, 4, 3, 4, 3, 1, 2, 3], dtype=np.float64), 1.0
+        )
+        assert len(indices) == 10
+        assert indices[0] == 0
+        assert indices[1] == 1
+        assert indices[2] == 2
+        assert indices[3] == 3
+        assert indices[4] == 4
+        assert indices[5] == 5
+        assert indices[6] == 6
+        assert indices[7] == 7
+        assert indices[8] == 8
+        assert indices[9] == 9
 
 
-# class TestGetIndicesAboveThreshold:
-#     # def test_invalid_args(self):
-#     #     with pytest.raises(AssertionError):
-#     #         get_indices_above_threshold("not a numpy array", 0.5)
-
-#     #     with pytest.raises(AssertionError):
-#     #         get_indices_above_threshold(np.array([1, 2, 3]), "not a float")
-
-#     #     with pytest.raises(AssertionError):
-#     #         get_indices_above_threshold(np.array([1, 2, 3]), -1)
-
-#     #     with pytest.raises(AssertionError):
-#     #         get_indices_above_threshold(np.array([1, 2, 3]), 2)
-
-#     #     with pytest.raises(AssertionError):
-#     #         get_indices_above_threshold(np.array([]), 1.1)
-
-#     def test_no_index_is_returned(self):
-#         indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 4.0)
-#         assert len(indices) == 0
-
-#         indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 3.1)
-#         assert len(indices) == 0
-
-#         indices = get_indices_above_threshold(np.array([1, 2], dtype=np.float64), 3.0)
-#         assert len(indices) == 0
-
-#         indices = get_indices_above_threshold(
-#             np.array([1, 2, 3, 4, 3, 4, 3, 1, 2, 3], dtype=np.float64), 4.5
-#         )
-#         assert len(indices) == 0
-
-#     def test_some_indices_are_returned(self):
-#         indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 3.0)
-#         assert len(indices) == 1
-#         assert indices[0] == 2
-
-#         indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 2.0)
-#         assert len(indices) == 2
-#         assert indices[0] == 1
-#         assert indices[1] == 2
-
-#         indices = get_indices_above_threshold(np.array([1, 2, 3], dtype=np.float64), 1.0)
-#         assert len(indices) == 3
-#         assert indices[0] == 0
-#         assert indices[1] == 1
-#         assert indices[2] == 2
-
-#         indices = get_indices_above_threshold(
-#             np.array([1, 2, 3, 4, 3, 4, 3, 1, 2, 3], dtype=np.float64), 3.0
-#         )
-#         assert len(indices) == 6
-#         assert indices[0] == 2
-#         assert indices[1] == 3
-#         assert indices[2] == 4
-#         assert indices[3] == 5
-#         assert indices[4] == 6
-#         assert indices[5] == 9
 
 
 # class TestComputeNeighborhoodCosineSimilarity:
