@@ -20,6 +20,7 @@ from recommenders.common import (
     get_similarity_matrix,
     get_top_k_biclusters_for_user,
     get_indices_above_threshold,
+    merge_biclusters,
 )
 
 from pattern_mining.formal_concept_analysis import create_concept, concepts_are_equal
@@ -1004,6 +1005,49 @@ class TestGetIndicesAboveThreshold:
         assert indices[9] == 9
 
 
+class TestMergeBiclusters:
+
+    def test_no_overlap_1(self):
+        biclusters = [create_concept([1, 2], [1, 2, 3]), create_concept([3, 4], [4, 5, 6])]
+        merged_bicluster = merge_biclusters(biclusters)
+
+        assert concepts_are_equal(
+            merged_bicluster, create_concept([1, 2, 3, 4], [1, 2, 3, 4, 5, 6])
+        )
+
+    def test_no_overlap_2(self):
+        biclusters = [
+            create_concept([1, 2, 3], [1, 2, 3, 4, 5]),
+            create_concept([4, 5, 6], [6, 7, 8, 9]),
+        ]
+        merged_bicluster = merge_biclusters(biclusters)
+
+        assert concepts_are_equal(
+            merged_bicluster, create_concept([1, 2, 3, 4, 5, 6], [1, 2, 3, 4, 5, 6, 7, 8, 9])
+        )
+
+    def test_no_overlap_3(self):
+        biclusters = [create_concept([1, 2], [1, 2]), create_concept([4, 5], [4, 5])]
+        merged_bicluster = merge_biclusters(biclusters)
+
+        assert concepts_are_equal(merged_bicluster, create_concept([1, 2, 4, 5], [1, 2, 4, 5]))
+
+    def test_overlap_1(self):
+        biclusters = [create_concept([1, 2], [1, 2]), create_concept([2, 3], [2, 3])]
+        merged_bicluster = merge_biclusters(biclusters)
+
+        assert concepts_are_equal(merged_bicluster, create_concept([1, 2, 3], [1, 2, 3]))
+
+    def test_overlap_2(self):
+        biclusters = [
+            create_concept([1, 2, 5, 6], [1, 2, 7, 8, 9]),
+            create_concept([1, 2], [9, 10]),
+        ]
+        merged_bicluster = merge_biclusters(biclusters)
+
+        assert concepts_are_equal(
+            merged_bicluster, create_concept([1, 2, 5, 6], [1, 2, 7, 8, 9, 10])
+        )
 
 
 # class TestComputeNeighborhoodCosineSimilarity:
