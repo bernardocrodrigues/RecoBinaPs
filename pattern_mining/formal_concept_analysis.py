@@ -23,8 +23,6 @@ from typing import List
 
 from dataset.binary_dataset import i, t, _it, assert_binary_dataset
 
-from . import DEFAULTLOGGER
-
 Concept = namedtuple("Concept", "extent intent")
 
 
