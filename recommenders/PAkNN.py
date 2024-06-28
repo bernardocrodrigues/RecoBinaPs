@@ -333,7 +333,7 @@ class PAkNN(AlgoBase):
         AlgoBase.fit(self, trainset)
 
         self.dataset = convert_trainset_to_matrix(trainset)
-        self.biclusters = self.mining_strategy(trainset)
+        self.biclusters = self.mining_strategy.mine_patterns(trainset)
 
         if not self.number_of_top_k_biclusters:
             self.number_of_top_k_biclusters = len(self.biclusters)
