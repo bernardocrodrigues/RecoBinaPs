@@ -63,3 +63,13 @@ RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86
 RUN dpkg -i cuda-keyring_1.1-1_all.deb
 RUN apt-get update
 RUN apt-get -y install cuda-toolkit-12-2
+
+# Add QUBIC2 wrapper dependencies
+# Install git
+RUN apt-get -y install git
+
+# Install git for python
+RUN pip install gitpython
+
+# Install gcc and make
+RUN apt-get -y install gcc make
