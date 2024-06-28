@@ -15,7 +15,7 @@ services:
       - /etc/group:/etc/group:ro
       # Make the project folder available in the container.
       - $SOURCE_ROOT_DIR:$SOURCE_ROOT_DIR
-      # By sharing the tmp folder with the host, we'll only donwload surprise's builtin datasets
+      # By sharing the tmp folder with the host, we'll only download surprise's builtin datasets
       # once per session
       - /tmp:/tmp
     tmpfs:
