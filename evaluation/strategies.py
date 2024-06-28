@@ -154,6 +154,7 @@ class TrainMeasureStrategy(ABC, BaseModel):
 
 class MAEStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     verbose: bool = False
 
     def get_name(self) -> str:
@@ -166,11 +167,22 @@ class MAEStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return mae(predictions, verbose=self.verbose)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return mae(resolved_predictions, verbose=self.verbose)
 
 
 class RMSEStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     verbose: bool = False
 
     def get_name(self) -> str:
@@ -183,11 +195,22 @@ class RMSEStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return rmse(predictions, verbose=self.verbose)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+    
+        return rmse(resolved_predictions, verbose=self.verbose)
 
 
 class MicroAveragedRecallStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
     def get_name(self) -> str:
@@ -200,11 +223,22 @@ class MicroAveragedRecallStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return get_micro_averaged_recall(predictions, threshold=self.threshold)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return get_micro_averaged_recall(resolved_predictions, threshold=self.threshold)
 
 
 class MacroAveragedRecallStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
     def get_name(self) -> str:
@@ -217,11 +251,22 @@ class MacroAveragedRecallStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return get_macro_averaged_recall(predictions, threshold=self.threshold)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return get_macro_averaged_recall(resolved_predictions, threshold=self.threshold)
 
 
 class RecallAtKStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     k: Annotated[int, Gt(0)] = 10
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
@@ -235,11 +280,22 @@ class RecallAtKStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return get_recall_at_k(predictions, k=self.k, threshold=self.threshold)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return get_recall_at_k(resolved_predictions, k=self.k, threshold=self.threshold)
 
 
 class MicroAveragedPrecisionStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
     def get_name(self) -> str:
@@ -252,11 +308,22 @@ class MicroAveragedPrecisionStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return get_micro_averaged_precision(predictions, threshold=self.threshold)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return get_micro_averaged_precision(resolved_predictions, threshold=self.threshold)
 
 
 class MacroAveragedPrecisionStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
     def get_name(self) -> str:
@@ -269,11 +336,22 @@ class MacroAveragedPrecisionStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return get_macro_averaged_precision(predictions, threshold=self.threshold)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return get_macro_averaged_precision(resolved_predictions, threshold=self.threshold)
 
 
 class PrecisionAtKStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     k: Annotated[int, Gt(0)] = 10
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
@@ -287,11 +365,22 @@ class PrecisionAtKStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return get_precision_at_k(predictions, k=self.k, threshold=self.threshold)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return get_precision_at_k(resolved_predictions, k=self.k, threshold=self.threshold)
 
 
 class F1ScoreStrategy(TestMeasureStrategy):
 
+    include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
     k: Optional[Annotated[int, Gt(0)]] = None
 
@@ -305,7 +394,17 @@ class F1ScoreStrategy(TestMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, predictions: List[Prediction]) -> float:
-        return get_f1_score(predictions, threshold=self.threshold, k=self.k)
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return get_f1_score(resolved_predictions, threshold=self.threshold, k=self.k)
 
 
 class CountImpossiblePredictionsStrategy(TestMeasureStrategy):
