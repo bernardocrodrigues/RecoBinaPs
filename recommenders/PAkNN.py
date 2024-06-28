@@ -354,9 +354,14 @@ class PAkNN(AlgoBase):
         the user, merging them into a single bicluster, and extracting either the extent or intent
         depending on the knn_type.
         """
+
+        binarization_threshold = getattr(
+            self.mining_strategy, "dataset_binarization_threshold", 1.0
+        )
+
         for user_id in range(self.dataset.shape[0]):
             user_as_tidset = get_indices_above_threshold(
-                self.dataset[user_id], self.mining_strategy.dataset_binarization_threshold
+                self.dataset[user_id], binarization_threshold
             )
 
             merged_bicluster = create_concept([], [])
