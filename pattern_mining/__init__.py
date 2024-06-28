@@ -1,7 +1,7 @@
 import logging
 
-DEFAULTLOGGER = logging.getLogger("FormalConceptAnalysis")
-DEFAULTLOGGER.setLevel(logging.INFO)
+DEFAULT_LOGGER = logging.getLogger("FormalConceptAnalysis")
+DEFAULT_LOGGER.setLevel(logging.INFO)
 
 ch = logging.StreamHandler()
 ch.setLevel(logging.INFO)
@@ -9,4 +9,4 @@ ch.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 ch.setFormatter(formatter)
-DEFAULTLOGGER.addHandler(ch)
+DEFAULT_LOGGER.addHandler(ch)
