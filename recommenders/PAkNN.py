@@ -24,6 +24,7 @@ from .common import (
     get_top_k_biclusters_for_user,
     get_indices_above_threshold,
     get_similarity_matrix,
+    weight_frequency,
 )
 
 
@@ -361,7 +362,7 @@ class PAkNN(AlgoBase):
             merged_bicluster = create_concept([], [])
             if self.number_of_top_k_biclusters:
                 top_k_biclusters = get_top_k_biclusters_for_user(
-                    self.biclusters, user_as_tidset, self.number_of_top_k_biclusters
+                    self.biclusters, user_as_tidset, self.number_of_top_k_biclusters, weight_frequency
                 )
                 if top_k_biclusters:
                     merged_bicluster = merge_biclusters(top_k_biclusters)
