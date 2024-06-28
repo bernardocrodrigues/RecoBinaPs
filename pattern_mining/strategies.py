@@ -29,8 +29,10 @@ from pattern_mining.qubic2 import (
 )
 from dataset.binary_dataset import (
     load_binary_dataset_from_trainset,
-    load_discrete_dataset_from_trainset,
     save_as_binaps_compatible_input,
+)
+from dataset.discrete_dataset import (
+    load_discrete_dataset_from_trainset,
     save_as_qubic2_compatible_input,
 )
 
