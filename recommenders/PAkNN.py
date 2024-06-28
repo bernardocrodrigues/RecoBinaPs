@@ -22,8 +22,8 @@ from pattern_mining.strategies import PatternMiningStrategy
 from . import DEFAULT_LOGGER
 from .common import (
     get_top_k_biclusters_for_user,
-    compute_neighborhood_cosine_similarity,
     get_indices_above_threshold,
+    get_similarity_matrix,
 )
 
 
@@ -339,7 +339,11 @@ class PAkNN(AlgoBase):
 
         self._generate_neighborhood()
         self._calculate_means()
-        self._instantiate_similarity_matrix()
+
+        if self.knn_type == "user":
+            self.similarity_matrix = get_similarity_matrix(self.dataset)
+        else:
+            self.similarity_matrix = get_similarity_matrix(self.dataset.T)
 
     def _generate_neighborhood(self) -> None:
         """
@@ -387,16 +391,6 @@ class PAkNN(AlgoBase):
         for ratings_id, ratings in ratings_map:
             self.means[ratings_id] = np.mean([r for (_, r) in ratings])
 
-    def _instantiate_similarity_matrix(self):
-        """
-        Instantiate the similarity matrix with NaN values.
-
-        This method initializes the similarity matrix with NaN values. The similarity matrix is a
-        square matrix of size n x n, where n is the number of items in the dataset. Each element of
-        the matrix represents the similarity between two items.
-        """
-        self.similarity_matrix = np.full((self.n, self.n), dtype=np.float64, fill_value=np.NAN)
-
     def estimate(self, user: int, item: int):
         if not (self.trainset.knows_user(user) and self.trainset.knows_item(item)):
             raise PredictionImpossible("User and/or item is unknown.")
@@ -414,9 +408,6 @@ class PAkNN(AlgoBase):
         if user_neighborhood.size == 0:
             raise PredictionImpossible("Not enough neighbors.")
 
-        compute_neighborhood_cosine_similarity(
-            dataset, self.similarity_matrix, main_index, user_neighborhood
-        )
 
         k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means = get_k_top_neighbors(
             main_index,
