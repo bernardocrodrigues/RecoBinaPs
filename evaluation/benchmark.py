@@ -43,12 +43,57 @@ def print_progress(tasks: List) -> None:
             end="\r",
         )
 
-    print("All tasks completed.")
+    print("\nAll tasks completed.")
     total_time = time.time() - start_time
     hours = int(total_time // 3600)
     minutes = int((total_time % 3600) // 60)
     seconds = total_time % 60
-    print(f"Total time: {hours}h {minutes}m {seconds:.1f}s")
+    print(f"Total time: {hours}h {minutes}m {seconds:.1f}s", flush=True, end="\r")
+
+def iterator_progress(tasks):
+    """
+    A iterator wrapper that prints progress of a list of tasks.
+    """
+
+    total = len(tasks)
+    start_time = time.time()
+
+    def update(task_number):
+
+        now = time.time()
+        elapsed_time = now - start_time
+
+        average_time = elapsed_time / task_number
+        estimated_time_left = average_time * (total - task_number)
+
+        average_minutes = average_time // 60
+        average_seconds = average_time % 60
+
+        time_left_minutes = estimated_time_left // 60
+        time_left_seconds = estimated_time_left % 60
+
+        print(
+            f"Completed {task_number}/{total} | "
+            f"Avg. time/task: {int(average_minutes)}m {average_seconds:.1f}s | "
+            f"Time left: {int(time_left_minutes)}m {time_left_seconds:.1f}s",
+            end="\r",
+            flush=True,
+        )
+
+    update(0.1)  # avoid div/0
+
+    for i, item in enumerate(tasks):
+        yield item
+        update(i + 1)
+
+    print("\nAll tasks completed.", flush=True)
+
+    total_time = time.time() - start_time
+    hours = int(total_time // 3600)
+    minutes = int((total_time % 3600) // 60)
+    seconds = total_time % 60
+
+    print(f"Total time: {hours}h {minutes}m {seconds:.1f}s", flush=True)
 
 
 def determine_worker_split(tasks: List, max_workers: int):
@@ -127,6 +172,9 @@ def fit_and_score(
     for measure in train_measures:
         measure_name = measure.get_name()
         train_measurements[measure_name] = measure.calculate(recommender_system)
+
+    if verbose:
+        testset = iterator_progress(testset)
 
     start_test = time.time()
     predictions = recommender_system.test(testset)
