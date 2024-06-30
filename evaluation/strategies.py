@@ -465,9 +465,10 @@ class NDCGStrategy(TestMeasureStrategy):
         return get_ndcg_at_k(resolved_predictions, k=self.k)
 
 
+class BiclusteringCoverageStrategy(TrainMeasureStrategy):
 
     def get_name(self) -> str:
-        return "coverage"
+        return "biclustering_coverage"
 
     def is_better_higher(self) -> bool:
         return True
