@@ -38,7 +38,9 @@ def print_progress(tasks: List) -> None:
         print(
             f"Completed {i}/{total} | "
             f"Avg. time/task: {int(average_minutes)}m {average_seconds:.1f}s | "
-            f"Time left: {int(time_left_minutes)}m {time_left_seconds:.1f}s"
+            f"Time left: {int(time_left_minutes)}m {time_left_seconds:.1f}s",
+            flush=True,
+            end="\r",
         )
 
     print("All tasks completed.")
