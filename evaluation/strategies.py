@@ -422,6 +422,21 @@ class CountImpossiblePredictionsStrategy(TestMeasureStrategy):
         return count_impossible_predictions(predictions)
 
 
+class PredictionCoverageStrategy(TestMeasureStrategy):
+
+    def get_name(self) -> str:
+        return "prediction_coverage"
+
+    def is_better_higher(self) -> bool:
+        return True
+
+    @validate_call(
+        config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
+    )
+    def calculate(self, predictions: List[Prediction]) -> float:
+        return 1 - (count_impossible_predictions(predictions) / len(predictions))
+
+
 class NDCGStrategy(TestMeasureStrategy):
 
     include_impossible_predictions: bool = False
