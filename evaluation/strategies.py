@@ -32,6 +32,7 @@ from evaluation.metric import (
     get_macro_averaged_precision,
     get_precision_at_k,
     get_f1_score,
+    get_ndcg_at_k,
     count_impossible_predictions,
 )
 
@@ -204,7 +205,7 @@ class RMSEStrategy(TestMeasureStrategy):
                 for prediction in predictions
                 if prediction.details["was_impossible"] is False
             ]
-    
+
         return rmse(resolved_predictions, verbose=self.verbose)
 
 
