@@ -36,6 +36,7 @@ class BBCF(AlgoBase):
         mining_strategy: PatternMiningStrategy,
         knn_type: str = "item",
         number_of_top_k_biclusters: Optional[int] = None,
+        bicluster_similarity_strategy: callable = weight_frequency,
         knn_k: int = 5,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
@@ -54,6 +55,7 @@ class BBCF(AlgoBase):
 
         # User-item neighborhood parameters
         self.number_of_top_k_biclusters = number_of_top_k_biclusters
+        self.bicluster_similarity_strategy = bicluster_similarity_strategy
 
         # KNN parameters
         self.knn_type = knn_type
@@ -124,7 +126,7 @@ class BBCF(AlgoBase):
                     self.biclusters,
                     user_as_tidset,
                     self.number_of_top_k_biclusters,
-                    weight_frequency,
+                    self.bicluster_similarity_strategy,
                 )
                 if top_k_biclusters:
                     merged_bicluster = merge_biclusters(top_k_biclusters)
