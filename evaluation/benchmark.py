@@ -137,6 +137,7 @@ def fit_and_score(
     testset: List[Tuple[str, str, float]],
     test_measures: List[TestMeasureStrategy] = [],
     train_measures: List[TrainMeasureStrategy] = [],
+    verbose=True,
 ) -> Tuple[dict, dict, float, float]:
     """
     Fit a recommender system on a trainset and evaluate it on a testset.
@@ -219,6 +220,7 @@ def cross_validate(
                 testset,
                 test_measures,
                 train_measures,
+                False,
             )
             for trainset, testset in folds
         ]
@@ -390,7 +392,7 @@ class BaseSearch(ABC):
 
             best[measure_name] = {
                 "parameters": self.param_combinations[best_parameter_id],
-                "other_metrincs": recommenders_mean_measurements[best_parameter_id],
+                "other_metrics": recommenders_mean_measurements[best_parameter_id],
                 "raw": self.recommenders_measurements[best_parameter_id][measure_name].tolist(),
                 "mean": recommenders_mean_measurements[best_parameter_id][measure_name],
                 "fit_time": recommenders_mean_measurements[best_parameter_id]["fit_time"],
