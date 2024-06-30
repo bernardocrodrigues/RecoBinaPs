@@ -422,7 +422,34 @@ class CountImpossiblePredictionsStrategy(TestMeasureStrategy):
         return count_impossible_predictions(predictions)
 
 
-class CoverageStrategy(TrainMeasureStrategy):
+class NDCGStrategy(TestMeasureStrategy):
+
+    include_impossible_predictions: bool = False
+    k: Annotated[int, Gt(0)] = 10
+
+    def get_name(self) -> str:
+        return f"nDCG_at_{self.k}"
+
+    def is_better_higher(self) -> bool:
+        return True
+
+    @validate_call(
+        config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
+    )
+    def calculate(self, predictions: List[Prediction]) -> float:
+
+        if self.include_impossible_predictions:
+            resolved_predictions = predictions
+        else:
+            resolved_predictions = [
+                prediction
+                for prediction in predictions
+                if prediction.details["was_impossible"] is False
+            ]
+
+        return get_ndcg_at_k(resolved_predictions, k=self.k)
+
+
 
     def get_name(self) -> str:
         return "coverage"

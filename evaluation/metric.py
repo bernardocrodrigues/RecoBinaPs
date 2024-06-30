@@ -7,6 +7,7 @@ See LICENSE file for license details
 """
 
 import statistics
+import math
 from typing import List
 from collections import defaultdict
 
@@ -426,3 +427,77 @@ def count_impossible_predictions(predictions: List[Prediction]) -> int:
         if prediction.details["was_impossible"]:
             count += 1
     return count
+
+
+def get_ndcg_at_k(predictions, threshold=1, k=20) -> float:
+    """
+    Calculate the Normalized Discounted Cumulative Gain (NDCG) at K for a list of predictions.
+
+    NDCG is a measure of ranking quality. It is a measure of how well the recommendations are
+    ranked, with higher values indicating better rankings. NDCG is defined as:
+
+        NDCG = DCG / IDCG
+
+    Where DCG (Discounted Cumulative Gain) is the sum of the relevance scores of the top K
+    recommendations, discounted by their position in the ranking. The DCG is defined as:
+
+        DCG = rel_1 / log2(2) + rel_3 / log2(3) + ... + rel_k / log2(k)
+
+    Where rel_i is the relevance of the i-th recommendation (i.e. relevant(predictions[i])) and
+    k is the number of recommendations to consider. The IDCG (Ideal Discounted Cumulative Gain) is
+    the DCG of the ideal ranking, where the recommendations are sorted by relevance.
+
+    The IDCG is defined as:
+
+        IDCG = rel_1 / log2(2) + rel_3 / log2(3) + ... + rel_n / log2(n)
+
+    Where rel_i is the relevance of the i-th recommendation and n is the total number of
+    recommendations.
+
+    Finally, the NDCG at K is defined as:
+
+        NDCG = DCG / IDCG
+
+    Args:
+        predictions (List[Prediction]): A list of predictions.
+        threshold (float, optional): The threshold used to determine if an item is relevant and
+                                        should be retrieved. Defaults to 1.
+        k (int, optional): The number of recommendations to consider. Defaults to 20.
+
+    Returns:
+        float: The NDCG at K.
+    """
+
+    def relevant(prediction):
+        return 1 if prediction.r_ui >= threshold else 0
+
+    def dcg(predictions):
+        return sum(
+            relevant(prediction) / math.log2(i + 1)
+            for i, prediction in enumerate(predictions, start=1)
+        )
+
+    predictions_per_user = defaultdict(list)
+    for prediction in predictions:
+        predictions_per_user[prediction.uid].append(prediction)
+
+    ndcgs = set()
+    for user_predictions in predictions_per_user.values():
+        if len(user_predictions) < k:
+            # skip this user if there are not enough recommendations to reach k
+            continue
+
+        user_predictions.sort(key=lambda prediction: prediction.est, reverse=True)
+
+        if user_predictions[k - 1].est < threshold:
+            # skip this user if the k-th item is not relevant
+            continue
+
+        top_k_ratings = user_predictions[:k]
+
+        ndcgs.add(dcg(top_k_ratings) / dcg(user_predictions))
+
+    try:
+        return statistics.mean(ndcgs)
+    except statistics.StatisticsError:
+        return 0
