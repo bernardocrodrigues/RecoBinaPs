@@ -193,6 +193,29 @@ def weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
 
 
 @nb.njit(cache=True)
+def double_weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
+    """
+    Calculates the similarity between a user and a pattern (bicluster) based on the number of items
+    they have in common and the number of users and items in the pattern. The similarity is defined
+    as follows:
+
+            similarity = |U_p| * |I_p| * (|I_u ∩ I_p| / |I_p|)
+
+        where U_p is the set of users in the pattern, I_u is the set of relevant items for the user
+        and I_p is the set of items for the pattern.
+    """
+
+    number_of_users_in_pattern = pattern.extent.size
+    number_of_items_in_pattern = pattern.intent.size
+
+    return (
+        number_of_users_in_pattern
+        * number_of_items_in_pattern
+        * user_pattern_similarity(user, pattern)
+    )
+
+
+@nb.njit(cache=True)
 def get_similarity(
     i: int,
     j: int,
@@ -330,4 +353,3 @@ def merge_biclusters(
         new_bicluster_intent = np.union1d(new_bicluster_intent, bicluster.intent)
 
     return Bicluster(extent=new_bicluster_extent, intent=new_bicluster_intent)
-
