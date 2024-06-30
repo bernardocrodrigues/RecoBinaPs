@@ -59,6 +59,10 @@ class BBCF(AlgoBase):
         self.knn_type = knn_type
         self.knn_k = knn_k
 
+        # Training statistics
+        self.item_coverage = None
+        self.user_coverage = None
+
         # Other internal attributes
         self.logger = logger
         self.dataset = None
@@ -101,7 +105,12 @@ class BBCF(AlgoBase):
         depending on the knn_type.
         """
 
-        binarization_threshold = getattr(self.mining_strategy, "dataset_binarization_threshold", 1.0)
+        binarization_threshold = getattr(
+            self.mining_strategy, "dataset_binarization_threshold", 1.0
+        )
+
+        individual_item_coverage = []
+        user_is_covered = 0
 
         for user_id in range(self.dataset.shape[0]):
             user_as_tidset = get_indices_above_threshold(
@@ -120,7 +129,15 @@ class BBCF(AlgoBase):
                 if top_k_biclusters:
                     merged_bicluster = merge_biclusters(top_k_biclusters)
 
+            if user_id in merged_bicluster.extent:
+                user_is_covered += 1
+
+            individual_item_coverage.append(len(merged_bicluster.intent))
+
             self.neighborhood[user_id] = merged_bicluster
+
+        self.item_coverage = np.mean(individual_item_coverage) / self.dataset.shape[1]
+        self.user_coverage = user_is_covered / self.dataset.shape[0]
 
     def _calculate_means(self):
         """
