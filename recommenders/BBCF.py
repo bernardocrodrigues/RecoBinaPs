@@ -119,7 +119,7 @@ class BBCF(AlgoBase):
                 self.dataset[user_id], binarization_threshold
             )
 
-            merged_bicluster = Concept(np.array([], dtype=float), np.array([], dtype=float))
+            merged_bicluster = Concept(np.array([], dtype=np.int64), np.array([], dtype=np.int64))
 
             if self.number_of_top_k_biclusters and self.biclusters:
                 top_k_biclusters = get_top_k_biclusters_for_user(
