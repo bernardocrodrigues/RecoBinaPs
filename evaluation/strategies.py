@@ -553,3 +553,33 @@ class MeanBiclusterExtentStrategy(TrainMeasureStrategy):
             [len(bicluster.extent) for bicluster in recommender_system.biclusters]
         )
         return mean_bicluster_extent
+
+
+class ItemCoverage(TrainMeasureStrategy):
+
+    def get_name(self) -> str:
+        return "item_coverage"
+
+    def is_better_higher(self) -> bool:
+        return True
+
+    @validate_call(
+        config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
+    )
+    def calculate(self, recommender_system: AlgoBase) -> float:
+        return recommender_system.item_coverage
+
+
+class UserCoverage(TrainMeasureStrategy):
+
+    def get_name(self) -> str:
+        return "user_coverage"
+
+    def is_better_higher(self) -> bool:
+        return True
+
+    @validate_call(
+        config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
+    )
+    def calculate(self, recommender_system: AlgoBase) -> float:
+        return recommender_system.user_coverage
