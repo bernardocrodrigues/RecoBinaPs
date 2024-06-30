@@ -480,6 +480,21 @@ class BiclusteringCoverageStrategy(TrainMeasureStrategy):
         return recommender_system.mining_strategy.actual_coverage
 
 
+class BiclusterCountStrategy(TrainMeasureStrategy):
+
+    def get_name(self) -> str:
+        return "bicluster_count"
+
+    def is_better_higher(self) -> bool:
+        return True
+
+    @validate_call(
+        config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
+    )
+    def calculate(self, recommender_system: AlgoBase) -> float:
+        return len(recommender_system.biclusters)
+
+
 class MeanBiclusterSizeStrategy(TrainMeasureStrategy):
 
     def get_name(self) -> str:
