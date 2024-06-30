@@ -38,6 +38,7 @@ class BBCF(AlgoBase):
         number_of_top_k_biclusters: Optional[int] = None,
         bicluster_similarity_strategy: callable = weight_frequency,
         knn_k: int = 5,
+        force_inclusion_of_user: bool = False,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
         AlgoBase.__init__(self)
@@ -55,6 +56,7 @@ class BBCF(AlgoBase):
 
         # User-item neighborhood parameters
         self.number_of_top_k_biclusters = number_of_top_k_biclusters
+        self.force_inclusion_of_user = force_inclusion_of_user
         self.bicluster_similarity_strategy = bicluster_similarity_strategy
 
         # KNN parameters
@@ -129,6 +131,10 @@ class BBCF(AlgoBase):
                     self.bicluster_similarity_strategy,
                 )
                 if top_k_biclusters:
+                    if user_id not in merged_bicluster.extent and self.force_inclusion_of_user:
+                        top_k_biclusters.append(
+                            Concept(np.array([user_id]), np.array([], dtype=np.int64))
+                        )
                     merged_bicluster = merge_biclusters(top_k_biclusters)
 
             if user_id in merged_bicluster.extent:
