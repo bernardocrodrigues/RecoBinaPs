@@ -30,6 +30,7 @@ from pattern_mining.qubic2 import (
 from dataset.binary_dataset import (
     load_binary_dataset_from_trainset,
     save_as_binaps_compatible_input,
+    t
 )
 from dataset.discrete_dataset import (
     load_discrete_dataset_from_trainset,
@@ -151,8 +152,10 @@ class BinaPsStrategy(PatternMiningStrategy, BaseModel):
 
         biclusters = []
         for pattern in patterns:
-            concept = create_concept([], pattern)
-            biclusters.append(concept)
+            extent =  t(binary_dataset, pattern)
+            if len(extent) > 0:
+                concept = create_concept(extent, pattern)
+                biclusters.append(concept)
 
         return biclusters
 
@@ -177,9 +180,7 @@ class QUBIC2Strategy(PatternMiningStrategy, BaseModel):
     )
     def mine_patterns(self, trainset: Trainset) -> List[Concept]:
 
-        if is_qubic2_available(QUBIC2_DESTINATION_PATH):
-            print("QUBIC2 is available")
-        else:
+        if not is_qubic2_available(QUBIC2_DESTINATION_PATH):
             fetch_qubic2_source_code(QUBIC2_DESTINATION_PATH)
             compile_qubic2(QUBIC2_DESTINATION_PATH)
 

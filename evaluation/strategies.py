@@ -63,14 +63,16 @@ class TestMeasureStrategy(ABC, BaseModel):
             float: The calculated measure value.
         """
 
+    @staticmethod
     @abstractmethod
-    def get_name(self) -> str:
+    def get_name() -> str:
         """
         Returns the name of the measure.
         """
 
+    @staticmethod
     @abstractmethod
-    def is_better_higher(self) -> bool:
+    def is_better_higher() -> bool:
         """
         Returns whether a higher value of the measure is better.
 
@@ -119,14 +121,16 @@ class TrainMeasureStrategy(ABC, BaseModel):
             float: The calculated measure value.
         """
 
+    @staticmethod
     @abstractmethod
-    def get_name(self) -> str:
+    def get_name() -> str:
         """
         Returns the name of the measure.
         """
 
+    @staticmethod
     @abstractmethod
-    def is_better_higher(self) -> bool:
+    def is_better_higher() -> bool:
         """
         Returns whether a higher value of the measure is better.
 
@@ -158,10 +162,12 @@ class MAEStrategy(TestMeasureStrategy):
     include_impossible_predictions: bool = False
     verbose: bool = False
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "mae"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return False
 
     @validate_call(
@@ -186,10 +192,12 @@ class RMSEStrategy(TestMeasureStrategy):
     include_impossible_predictions: bool = False
     verbose: bool = False
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "rmse"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return False
 
     @validate_call(
@@ -214,10 +222,12 @@ class MicroAveragedRecallStrategy(TestMeasureStrategy):
     include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "micro_averaged_recall"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -242,10 +252,12 @@ class MacroAveragedRecallStrategy(TestMeasureStrategy):
     include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "macro_averaged_recall"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -271,10 +283,12 @@ class RecallAtKStrategy(TestMeasureStrategy):
     k: Annotated[int, Gt(0)] = 10
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
-    def get_name(self) -> str:
-        return f"recall_at_{self.k}"
+    @staticmethod
+    def get_name() -> str:
+        return "recall_at_k"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -299,10 +313,12 @@ class MicroAveragedPrecisionStrategy(TestMeasureStrategy):
     include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "micro_averaged_precision"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -327,10 +343,12 @@ class MacroAveragedPrecisionStrategy(TestMeasureStrategy):
     include_impossible_predictions: bool = False
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "macro_averaged_precision"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -356,10 +374,12 @@ class PrecisionAtKStrategy(TestMeasureStrategy):
     k: Annotated[int, Gt(0)] = 10
     threshold: Annotated[float, Gt(0.0)] = 1.0
 
-    def get_name(self) -> str:
-        return f"precision_at_{self.k}"
+    @staticmethod
+    def get_name() -> str:
+        return "precision_at_k"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -385,10 +405,12 @@ class F1ScoreStrategy(TestMeasureStrategy):
     threshold: Annotated[float, Gt(0.0)] = 1.0
     k: Optional[Annotated[int, Gt(0)]] = None
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "f1_score"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -410,10 +432,12 @@ class F1ScoreStrategy(TestMeasureStrategy):
 
 class CountImpossiblePredictionsStrategy(TestMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "count_impossible_predictions"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return False
 
     @validate_call(
@@ -425,10 +449,12 @@ class CountImpossiblePredictionsStrategy(TestMeasureStrategy):
 
 class PredictionCoverageStrategy(TestMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "prediction_coverage"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -443,10 +469,12 @@ class NDCGStrategy(TestMeasureStrategy):
     include_impossible_predictions: bool = False
     k: Annotated[int, Gt(0)] = 10
 
-    def get_name(self) -> str:
-        return f"nDCG_at_{self.k}"
+    @staticmethod
+    def get_name() -> str:
+        return "nDCG_at_k"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -468,10 +496,12 @@ class NDCGStrategy(TestMeasureStrategy):
 
 class BiclusteringCoverageStrategy(TrainMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "biclustering_coverage"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -483,31 +513,42 @@ class BiclusteringCoverageStrategy(TrainMeasureStrategy):
 
 class BiclusterCountStrategy(TrainMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "bicluster_count"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, recommender_system: AlgoBase) -> float:
+        
+        if len(recommender_system.biclusters) == 0:
+            raise ValueError("No biclusters found.")
+        
         return len(recommender_system.biclusters)
 
 
 class MeanBiclusterSizeStrategy(TrainMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "mean_bicluster_size"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, recommender_system: AlgoBase) -> float:
+
+        if len(recommender_system.biclusters) == 0:
+            raise ValueError("No biclusters found.")
 
         mean_bicluster_size = statistics.mean(
             [
@@ -520,16 +561,21 @@ class MeanBiclusterSizeStrategy(TrainMeasureStrategy):
 
 class MeanBiclusterIntentStrategy(TrainMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "mean_bicluster_intent"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, recommender_system: AlgoBase) -> float:
+
+        if len(recommender_system.biclusters) == 0:
+            raise ValueError("No biclusters found.")
 
         mean_bicluster_intent = statistics.mean(
             [len(bicluster.intent) for bicluster in recommender_system.biclusters]
@@ -539,16 +585,21 @@ class MeanBiclusterIntentStrategy(TrainMeasureStrategy):
 
 class MeanBiclusterExtentStrategy(TrainMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "mean_bicluster_extent"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, recommender_system: AlgoBase) -> float:
+
+        if len(recommender_system.biclusters) == 0:
+            raise ValueError("No biclusters found.")
 
         mean_bicluster_extent = statistics.mean(
             [len(bicluster.extent) for bicluster in recommender_system.biclusters]
@@ -558,10 +609,12 @@ class MeanBiclusterExtentStrategy(TrainMeasureStrategy):
 
 class ItemCoverage(TrainMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "item_coverage"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(
@@ -573,10 +626,12 @@ class ItemCoverage(TrainMeasureStrategy):
 
 class UserCoverage(TrainMeasureStrategy):
 
-    def get_name(self) -> str:
+    @staticmethod
+    def get_name() -> str:
         return "user_coverage"
 
-    def is_better_higher(self) -> bool:
+    @staticmethod
+    def is_better_higher() -> bool:
         return True
 
     @validate_call(

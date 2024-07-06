@@ -16,6 +16,8 @@ from .common import (
     merge_biclusters,
     get_similarity_matrix,
     weight_frequency,
+    adjusted_cosine_similarity,
+    pearson_similarity,
 )
 
 
@@ -185,10 +187,12 @@ class BBCF(AlgoBase):
             main_index, secondary_index = user, item
             main_slice, secondary_slice = neighborhood.extent, neighborhood.intent
             dataset = self.dataset
+            similarity_strategy = pearson_similarity
         else:
             main_index, secondary_index = item, user
             main_slice, secondary_slice = neighborhood.intent, neighborhood.extent
             dataset = self.dataset.T
+            similarity_strategy = adjusted_cosine_similarity
 
         main_index_in_submatrix = np.nonzero(main_slice == main_index)[0][0]
         secondary_index_in_submatrix = np.nonzero(secondary_slice == secondary_index)[0][0]
@@ -197,7 +201,9 @@ class BBCF(AlgoBase):
 
         # Lazy computation of similarity matrix
         if user not in self.similarity_matrix:
-            self.similarity_matrix[user] = get_similarity_matrix(submatrix)
+            self.similarity_matrix[user] = get_similarity_matrix(
+                dataset=submatrix, similarity_strategy=similarity_strategy
+            )
 
         similarity_matrix = self.similarity_matrix[user]
         neighborhood_similarity = similarity_matrix[main_index_in_submatrix]

@@ -97,6 +97,9 @@ def get_micro_averaged_precision(predictions: List[Prediction], threshold: float
         float: The micro-averaged precision.
     """
 
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
+
     contingency_table = generate_contingency_table(predictions, threshold)
 
     try:
@@ -139,7 +142,10 @@ def get_macro_averaged_precision(predictions: List[Prediction], threshold: float
     Returns:
         float: The macro-averaged precision.
 
-    """
+    """ 
+
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
 
     predictions_per_user = defaultdict(list)
     for prediction in predictions:
@@ -194,6 +200,9 @@ def get_precision_at_k(predictions: List[Prediction], threshold: float = 1, k: i
         float: The precision at K.
     """
 
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
+
     predictions_per_user = defaultdict(list)
     for prediction in predictions:
         predictions_per_user[prediction.uid].append(prediction)
@@ -245,6 +254,9 @@ def get_micro_averaged_recall(predictions: List[Prediction], threshold: float = 
     Returns:
         float: The micro-averaged recall.
     """
+    
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
 
     contingency_table = generate_contingency_table(predictions, threshold)
 
@@ -288,6 +300,9 @@ def get_macro_averaged_recall(predictions, threshold=1) -> float:
         float: The macro-averaged recall.
 
     """
+
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
 
     predictions_per_user = defaultdict(list)
     for prediction in predictions:
@@ -333,6 +348,9 @@ def get_recall_at_k(predictions, threshold=1, k=20) -> float:
     Returns:
         float: The recall at K.
     """
+
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
 
     predictions_per_user = defaultdict(list)
     for prediction in predictions:
@@ -395,6 +413,10 @@ def get_f1_score(predictions: List[Prediction], threshold: float = 1, k: int = N
     Returns:
         float: The F1 score.
     """
+
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
+
     if k:
         precision = get_precision_at_k(predictions, threshold, k)
         recall = get_recall_at_k(predictions, threshold, k)
@@ -418,6 +440,9 @@ def count_impossible_predictions(predictions: List[Prediction]) -> int:
     Returns:
         int: The number of impossible predictions.
     """
+
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
 
     assert isinstance(predictions, list)
     assert all(isinstance(prediction, Prediction) for prediction in predictions)
@@ -476,6 +501,9 @@ def get_ndcg_at_k(predictions, threshold=1, k=20) -> float:
             relevant(prediction) / math.log2(i + 1)
             for i, prediction in enumerate(predictions, start=1)
         )
+
+    if not predictions:
+        raise ValueError("The predictions list is empty.")
 
     predictions_per_user = defaultdict(list)
     for prediction in predictions:

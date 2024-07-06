@@ -1,3 +1,4 @@
+// enter container as user instead of root
 {
     "argv": [
         "/usr/bin/docker",
