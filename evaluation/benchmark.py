@@ -96,6 +96,30 @@ def iterator_progress(tasks):
     print(f"Total time: {hours}h {minutes}m {seconds:.1f}s", flush=True)
 
 
+def generate_parameter_combinations(parameters_grid: dict) -> List[dict]:
+    """
+    Generate all possible combinations as a list of named arguments. This is similar
+    to itertools.product but returns a list of named arguments instead of tuples.
+
+    Args:
+    parameters_grid: dict
+        A dictionary of parameter names and their possible values.
+        Ex. {"a": [1, 2], "b": [3, 4]}
+
+    Returns:
+    List[dict]
+        A list of named arguments.
+        Ex. [{"a": 1, "b": 3}, {"a": 1, "b": 4}, {"a": 2, "b": 3}, {"a": 2, "b": 4}]
+
+    """
+    named_args = []
+    keys = list(parameters_grid.keys())
+    for combination in product(*parameters_grid.values()):
+        named_args.append({keys[i]: combination[i] for i in range(len(keys))})
+    return named_args
+
+
+
 def determine_worker_split(tasks: List, max_workers: int):
     """
     Determine the number of parent and child workers for parallelization.
