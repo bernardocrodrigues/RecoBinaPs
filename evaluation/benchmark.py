@@ -35,10 +35,14 @@ def print_progress(tasks: List) -> None:
         time_left_minutes = estimated_time_left // 60
         time_left_seconds = estimated_time_left % 60
 
+        estimated_completion_time = start_time + estimated_time_left
+        estimated_completion_time -= 3 * 3600  # account for timezone
+
         print(
             f"Completed {i}/{total} | "
             f"Avg. time/task: {int(average_minutes)}m {average_seconds:.1f}s | "
-            f"Time left: {int(time_left_minutes)}m {time_left_seconds:.1f}s",
+            f"Time left: {int(time_left_minutes)}m {time_left_seconds:.1f}s | "
+            f"Estimated completion time: {time.strftime('%H:%M:%S', time.localtime(estimated_completion_time))}",
             flush=True,
             end="\r",
         )
@@ -49,6 +53,7 @@ def print_progress(tasks: List) -> None:
     minutes = int((total_time % 3600) // 60)
     seconds = total_time % 60
     print(f"Total time: {hours}h {minutes}m {seconds:.1f}s", flush=True, end="\r")
+
 
 def iterator_progress(tasks):
     """
