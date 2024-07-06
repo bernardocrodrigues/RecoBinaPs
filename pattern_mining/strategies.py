@@ -177,9 +177,7 @@ class QUBIC2Strategy(PatternMiningStrategy, BaseModel):
     )
     def mine_patterns(self, trainset: Trainset) -> List[Concept]:
 
-        if is_qubic2_available(QUBIC2_DESTINATION_PATH):
-            print("QUBIC2 is available")
-        else:
+        if not is_qubic2_available(QUBIC2_DESTINATION_PATH):
             fetch_qubic2_source_code(QUBIC2_DESTINATION_PATH)
             compile_qubic2(QUBIC2_DESTINATION_PATH)
 
