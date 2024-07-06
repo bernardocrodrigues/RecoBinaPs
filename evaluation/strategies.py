@@ -493,6 +493,10 @@ class BiclusterCountStrategy(TrainMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, recommender_system: AlgoBase) -> float:
+        
+        if len(recommender_system.biclusters) == 0:
+            raise ValueError("No biclusters found.")
+        
         return len(recommender_system.biclusters)
 
 
@@ -508,6 +512,9 @@ class MeanBiclusterSizeStrategy(TrainMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, recommender_system: AlgoBase) -> float:
+
+        if len(recommender_system.biclusters) == 0:
+            raise ValueError("No biclusters found.")
 
         mean_bicluster_size = statistics.mean(
             [
@@ -531,6 +538,9 @@ class MeanBiclusterIntentStrategy(TrainMeasureStrategy):
     )
     def calculate(self, recommender_system: AlgoBase) -> float:
 
+        if len(recommender_system.biclusters) == 0:
+            raise ValueError("No biclusters found.")
+
         mean_bicluster_intent = statistics.mean(
             [len(bicluster.intent) for bicluster in recommender_system.biclusters]
         )
@@ -549,6 +559,9 @@ class MeanBiclusterExtentStrategy(TrainMeasureStrategy):
         config=ConfigDict(strict=True, arbitrary_types_allowed=True, validate_return=True)
     )
     def calculate(self, recommender_system: AlgoBase) -> float:
+
+        if len(recommender_system.biclusters) == 0:
+            raise ValueError("No biclusters found.")
 
         mean_bicluster_extent = statistics.mean(
             [len(bicluster.extent) for bicluster in recommender_system.biclusters]
