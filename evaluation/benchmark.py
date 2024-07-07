@@ -232,7 +232,10 @@ def fit_and_score(
     train_measurements = {}
     for measure in train_measures:
         measure_name = measure.get_name()
-        train_measurements[measure_name] = measure.calculate(recommender_system)
+        try:
+            train_measurements[measure_name] = measure.calculate(recommender_system)
+        except ValueError:
+            train_measurements[measure_name] = None
 
     if verbose:
         testset = iterator_progress(testset)
@@ -245,7 +248,10 @@ def fit_and_score(
 
     for measure in test_measures:
         measure_name = measure.get_name()
-        test_measurements[measure_name] = measure.calculate(predictions)
+        try:
+            test_measurements[measure_name] = measure.calculate(predictions)
+        except ValueError:
+            test_measurements[measure_name] = None
 
     return test_measurements, train_measurements, fit_time, test_time
 
