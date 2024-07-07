@@ -1,11 +1,13 @@
 import time
 
 from abc import ABC, abstractmethod
+from json import JSONEncoder
 from typing import List, Tuple, Type
 from itertools import product
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
+import numba as nb
 from surprise import AlgoBase, Trainset
 from pydantic import validate_call, ConfigDict
 
@@ -123,6 +125,35 @@ def generate_parameter_combinations(parameters_grid: dict) -> List[dict]:
         named_args.append({keys[i]: combination[i] for i in range(len(keys))})
     return named_args
 
+
+class FallbackEncoder(JSONEncoder):
+    """
+    A custom JSON encoder that handles serialization of objects.
+
+    This encoder extends the JSONEncoder class and provides a custom implementation
+    of the `default` method to handle serialization of objects that are not natively
+    serializable by the JSONEncoder.
+
+    If the object is an instance of `nb.core.registry.CPUDispatcher`, it returns the
+    object's name. Otherwise, it serializes the object by creating a dictionary with
+    the object's class name and its attributes.
+
+    Args:
+        JSONEncoder (class): The base JSONEncoder class.
+
+    Returns:
+        str: The serialized JSON string representation of the object.
+    """
+    def default(self, obj):
+        try:
+            super().default(obj)
+        except TypeError:
+            if isinstance(obj, nb.core.registry.CPUDispatcher):
+                return obj.__name__
+            else:
+                serialized_object = {"name": obj.__class__.__name__}
+                serialized_object.update(obj.__dict__)
+                return serialized_object
 
 
 def determine_worker_split(tasks: List, max_workers: int):
