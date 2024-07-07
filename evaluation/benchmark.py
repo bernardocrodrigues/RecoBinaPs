@@ -144,6 +144,7 @@ class FallbackEncoder(JSONEncoder):
     Returns:
         str: The serialized JSON string representation of the object.
     """
+
     def default(self, obj):
         try:
             super().default(obj)
@@ -392,7 +393,14 @@ class BaseSearch(ABC):
         self.test_measures = test_measures
         self.train_measures = train_measures
         self.max_workers = max_workers
-        self.param_combinations = []
+        self.param_combinations = None
+        self.recommenders_measurements = None
+
+        self.recommenders_mean_measurements = None
+
+        self.raw = None
+        self.ordering = None
+        self.best = None
 
     def fit(self, folds):
 
@@ -409,6 +417,145 @@ class BaseSearch(ABC):
 
         return self.compute_results()
 
+    def compute_mean_measurements(self):
+        """
+        Compute the mean measurements for each recommender raw measurements.
+
+        If there are None values in the raw measurements, the mean value is set to None.
+
+        Example:
+        raw_measurements = [
+            {"fit_time": [1, 2, 3], "test_time": [1, 2, 3], "RMSE": [1, 2, 3]},
+            {"fit_time": [3, 4, 5], "test_time": [3, 4, 5], "RMSE": [3, 4, None]},
+        ]
+
+        mean_measurements = [
+            {"fit_time": 2, "test_time": 2, "RMSE": 2},
+            {"fit_time": 4, "test_time": 4, "RMSE": None},
+        ]
+
+        Returns:
+            list: A list of dictionaries containing the mean measurements for each recommender.
+        """
+
+        recommenders_mean_measurements = []
+
+        for recommender_measurements in self.recommenders_measurements:
+            recommender_mean_measurements = {}
+            for measure, measurements in recommender_measurements.items():
+                if None in measurements:
+                    recommender_mean_measurements[measure] = None
+                else:
+                    recommender_mean_measurements[measure] = np.mean(measurements)
+            recommenders_mean_measurements.append(recommender_mean_measurements)
+
+        return recommenders_mean_measurements
+
+    def get_raw_results(self):
+        """
+        Returns the raw results of the benchmark evaluation.
+
+        The raw results are a list of tuples, where each tuple contains the parameters used
+        for evaluation and a dictionary of measurements for each recommender. If a measurement
+        is a NumPy array, it is converted to a list before being included in the dictionary.
+
+        Returns:
+            list: A list of tuples containing the parameters and measurements for each recommender.
+        """
+        return [
+            (
+                params,
+                {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in measure.items()},
+            )
+            for params, measure in zip(self.param_combinations, self.recommenders_measurements)
+        ]
+
+    def get_ordering_results(self):
+        """
+        Returns the ordering results for each measure.
+
+        The ordering results are a dictionary where the keys are the measure names and the values
+        are lists of sorted solution IDs. The sorting is based on the measure values obtained from
+        the recommender mean measurements. Lists are always sorted in ascending order of utility.
+        Therefore, if a measure is better when lower, the list is reversed. In other words, the
+        last element of the list is always the best solution. If there are None values in any of the
+        measurements, the corresponding solution is excluded from the ordering but the numbering is
+        preserved according to the raw measurements.
+
+        Returns:
+            dict: A dictionary containing the ordering results for each measure.
+        """
+        ordering = {}
+
+        measures = self.train_measures + self.test_measures
+
+        for measure in measures:
+            measure_name = measure.get_name()
+
+            ids_from_valid_solutions = []
+            valid_solutions = []
+
+            for result_id, recommender_mean_measurements in enumerate(
+                self.recommenders_mean_measurements
+            ):
+
+                is_solution_valid = all(
+                    [
+                        mean_measure is not None
+                        for mean_measure in recommender_mean_measurements.values()
+                    ]
+                )
+                if is_solution_valid:
+                    ids_from_valid_solutions.append(result_id)
+                    valid_solutions.append(recommender_mean_measurements[measure_name])
+
+            sorted_solutions = np.argsort(valid_solutions)
+            sorted_ids = [ids_from_valid_solutions[i] for i in sorted_solutions]
+
+            if measure.is_better_higher():
+                ordering[measure_name] = sorted_ids
+            else:
+                ordering[measure_name] = sorted_ids[::-1]
+
+        return ordering
+
+    def get_best_results(self):
+        """
+        Returns a dictionary containing the best results for each measure.
+
+        Returns:
+        A dictionary containing the best results for each measure.
+        The dictionary contains the following information for each measure (key):
+        - parameters: The parameter combination associated with the best measurement.
+        - other_metrics: Other metrics associated with the best parameter combination.
+        - raw: Raw measurements for the best parameter combination.
+        - mean: Mean measurement for the best parameter combination.
+        - fit_time: Fit time for the best parameter combination.
+        - test_time: Test time for the best parameter combination.
+        """
+        best = {}
+
+        measures = self.train_measures + self.test_measures
+
+        for measure in measures:
+            measure_name = measure.get_name()
+
+            if measure.is_better_higher():
+                best_parameter_id = self.ordering[measure_name][-1]
+            else:
+                best_parameter_id = self.ordering[measure_name][0]
+
+            best[measure_name] = {
+                "parameters": self.param_combinations[best_parameter_id],
+                "other_metrics": self.recommenders_mean_measurements[best_parameter_id],
+                "raw": self.recommenders_measurements[best_parameter_id][measure_name].tolist(),
+                "mean": self.recommenders_mean_measurements[best_parameter_id][measure_name],
+                "fit_time": self.recommenders_mean_measurements[best_parameter_id]["fit_time"],
+                "test_time": self.recommenders_mean_measurements[best_parameter_id]["test_time"],
+            }
+
+        return best
+
     def compute_results(self):
         """
         Compute the results of the hyperparameter search.
@@ -416,56 +563,19 @@ class BaseSearch(ABC):
         Returns:
         Tuple[dict, dict, List[Tuple[dict, dict]]]
             The best parameters for each measure,
-            the ascending ordering of the recommenders for each measure,
+            the ascending ordering of the recommenders for each measure (invalid solutions are
+                excluded from the ordering but the numbering is preserved according to the raw
+                measurements),
             and the raw measurements for each recommender.
         """
 
-        measures = self.train_measures + self.test_measures
+        self.recommenders_mean_measurements = self.compute_mean_measurements()
 
-        recommenders_mean_measurements = [
-            {
-                measure: np.mean(measurements)
-                for measure, measurements in recommender_measurements.items()
-            }
-            for recommender_measurements in self.recommenders_measurements
-        ]
-        raw = [
-            (
-                params,
-                {k: v.tolist() if isinstance(v, np.ndarray) else v for k, v in measure.items()},
-            )
-            for params, measure in zip(self.param_combinations, self.recommenders_measurements)
-        ]
-        ordering = {}
-        best = {}
+        self.raw = self.get_raw_results()
+        self.ordering = self.get_ordering_results()
+        self.best = self.get_best_results()
 
-        for measure in measures:
-            measure_name = measure.get_name()
-
-            sorted_ids = np.argsort(
-                [
-                    recommender_mean_measurements[measure_name]
-                    for recommender_mean_measurements in recommenders_mean_measurements
-                ]
-            )
-
-            if measure.is_better_higher():
-                ordering[measure_name] = sorted_ids.tolist()
-                best_parameter_id = sorted_ids[-1]
-            else:
-                ordering[measure_name] = sorted_ids[::-1].tolist()
-                best_parameter_id = sorted_ids[0]
-
-            best[measure_name] = {
-                "parameters": self.param_combinations[best_parameter_id],
-                "other_metrics": recommenders_mean_measurements[best_parameter_id],
-                "raw": self.recommenders_measurements[best_parameter_id][measure_name].tolist(),
-                "mean": recommenders_mean_measurements[best_parameter_id][measure_name],
-                "fit_time": recommenders_mean_measurements[best_parameter_id]["fit_time"],
-                "test_time": recommenders_mean_measurements[best_parameter_id]["test_time"],
-            }
-
-        return best, ordering, raw
+        return self.best, self.ordering, self.raw
 
 
 class GridSearch(BaseSearch):
