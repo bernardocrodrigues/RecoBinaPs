@@ -12,6 +12,7 @@ import pytest
 from recommenders.common import (
     cosine_similarity,
     adjusted_cosine_similarity,
+    pearson_similarity,
     user_pattern_similarity,
     weight_frequency,
     get_similarity,
@@ -210,88 +211,88 @@ class TestCosineSimilarity:
         assert math.isclose(similarity, wolfram_result, rel_tol=1e-8)
 
 
-class TestAdjustedCosineSimilarity:
+class TestPearsonSimilarity:
 
     def test_similarity_no_nan_values_1(self):
         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert similarity == 1
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert similarity == 1
 
     def test_similarity_no_nan_values_2(self):
         u = np.array([1], dtype=np.float64)
         v = np.array([1], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert similarity == 0
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert similarity == 0
 
     def test_similarity_no_nan_values_3(self):
         u = np.array([1, 2], dtype=np.float64)
         v = np.array([1, 2], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert similarity == 1
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert similarity == 1
 
     def test_one_vector_has_more_items(self):
         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([1, 2, 3, 4, np.nan], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert similarity == 1
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert similarity == 1
 
         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([1, 2, 3, np.nan, np.nan], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert similarity == 1
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert similarity == 1
 
         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([1, 2, np.nan, np.nan, np.nan], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert similarity == 1
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert similarity == 1
 
         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([1, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert similarity == 0
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert similarity == 0
 
         u = np.array([4, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([1, 3, np.nan, np.nan, np.nan], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert similarity == -1
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert similarity == -1
 
         u = np.array([4, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([1, 3, 3, np.nan, np.nan], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert math.isclose(similarity, -0.8660254037844387, rel_tol=1e-9)
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert math.isclose(similarity, -0.8660254037844387, rel_tol=1e-9)
 
     def test_vector_only_has_nans(self):
         u = np.array([1, 2, 3, 4, 5], dtype=np.float64)
         v = np.array([np.nan, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert math.isnan(similarity)
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert math.isnan(similarity)
 
         u = np.array([np.nan, np.nan, np.nan, np.nan, np.nan], dtype=np.float64)
         v = np.array([1, 2, 3, 4, 5], dtype=np.float64)
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
         assert math.isnan(similarity)
-        similarity = adjusted_cosine_similarity.py_func(u, v)
+        similarity = pearson_similarity.py_func(u, v)
         assert math.isnan(similarity)
 
     @pytest.mark.parametrize("execution_number", range(1000))
@@ -304,10 +305,10 @@ class TestAdjustedCosineSimilarity:
         u_norm = u - np.mean(u)
         v_norm = v - np.mean(v)
 
-        similarity = adjusted_cosine_similarity(u, v)
+        similarity = pearson_similarity(u, v)
 
-        assert math.isclose(similarity, adjusted_cosine_similarity(u_norm, v_norm), rel_tol=1e-9)
-        assert math.isclose(similarity, adjusted_cosine_similarity.py_func(u, v), rel_tol=1e-9)
+        assert math.isclose(similarity, pearson_similarity(u_norm, v_norm), rel_tol=1e-9)
+        assert math.isclose(similarity, pearson_similarity.py_func(u, v), rel_tol=1e-9)
         assert math.isclose(similarity, cosine_similarity(u_norm, v_norm), rel_tol=1e-9)
 
 

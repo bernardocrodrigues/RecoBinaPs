@@ -66,12 +66,12 @@ def cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float
 
 
 @nb.njit(cache=True)
-def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
+def pearson_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
     """
     Computes the adjusted cosine similarity between two vectors u and v. The adjusted cosine
     similarity is defined as follows:
 
-    adjusted_cosine_similarity(u, v) = sum((u[i] - mean(u)) * (v[i] - mean(v))) /
+    pearson_similarity(u, v) = sum((u[i] - mean(u)) * (v[i] - mean(v))) /
                                        (sqrt(sum((u[i] - mean(u)) ** 2)) * sqrt(sum((v[i] - mean(v)) ** 2))),
                                        for all i in [0, n)
 
@@ -221,7 +221,7 @@ def get_similarity(
     j: int,
     dataset: np.ndarray,
     similarity_matrix: np.ndarray = None,
-    similarity_strategy: Callable = cosine_similarity,
+    similarity_strategy: Callable = pearson_similarity,
 ) -> float:
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
@@ -248,7 +248,7 @@ def get_similarity(
 
 
 @nb.njit(cache=True)
-def get_similarity_matrix(dataset: np.ndarray, similarity_strategy=cosine_similarity):
+def get_similarity_matrix(dataset: np.ndarray, similarity_strategy=pearson_similarity):
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
     computes the similarity matrix between all users (rows).
