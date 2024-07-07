@@ -1,11 +1,13 @@
 import time
 
 from abc import ABC, abstractmethod
+from json import JSONEncoder
 from typing import List, Tuple, Type
 from itertools import product
 from concurrent.futures import ProcessPoolExecutor, as_completed
 
 import numpy as np
+import numba as nb
 from surprise import AlgoBase, Trainset
 from pydantic import validate_call, ConfigDict
 
@@ -124,6 +126,18 @@ def generate_parameter_combinations(parameters_grid: dict) -> List[dict]:
     return named_args
 
 
+class FallbackEncoder(JSONEncoder):
+    def default(self, obj):
+        try:
+            super().default(obj)
+        except TypeError:
+            if isinstance(obj, nb.core.registry.CPUDispatcher):
+                return obj.__name__
+            else:
+                serialized_object = {"name": obj.__class__.__name__}
+                serialized_object.update(obj.__dict__)
+                return serialized_object
+
 
 def determine_worker_split(tasks: List, max_workers: int):
     """
@@ -201,7 +215,10 @@ def fit_and_score(
     train_measurements = {}
     for measure in train_measures:
         measure_name = measure.get_name()
-        train_measurements[measure_name] = measure.calculate(recommender_system)
+        try:
+            train_measurements[measure_name] = measure.calculate(recommender_system)
+        except ValueError:
+            train_measurements[measure_name] = None
 
     if verbose:
         testset = iterator_progress(testset)
@@ -214,7 +231,10 @@ def fit_and_score(
 
     for measure in test_measures:
         measure_name = measure.get_name()
-        test_measurements[measure_name] = measure.calculate(predictions)
+        try:
+            test_measurements[measure_name] = measure.calculate(predictions)
+        except ValueError:
+            test_measurements[measure_name] = None
 
     return test_measurements, train_measurements, fit_time, test_time
 
@@ -385,13 +405,23 @@ class BaseSearch(ABC):
 
         measures = self.train_measures + self.test_measures
 
-        recommenders_mean_measurements = [
-            {
-                measure: np.mean(measurements)
-                for measure, measurements in recommender_measurements.items()
-            }
-            for recommender_measurements in self.recommenders_measurements
-        ]
+        # recommenders_mean_measurements = [
+        #     {
+        #         measure: np.mean(measurements)
+        #         for measure, measurements in recommender_measurements.items()
+        #     }
+        #     for recommender_measurements in self.recommenders_measurements
+        # ]
+        # recommenders_mean_measurements = []
+        # for recommender_measurements in self.recommenders_measurements:
+        #     recommender_mean_measurements = {}
+        #     for measure, measurements in recommender_measurements.items():
+        #         if None in measurements:
+        #             recommender_mean_measurements[measure] = None
+        #         else:
+        #             recommender_mean_measurements[measure] = np.mean(measurements)
+        #         recommenders_mean_measurements.append(recommender_mean_measurements)
+
         raw = [
             (
                 params,
@@ -402,31 +432,31 @@ class BaseSearch(ABC):
         ordering = {}
         best = {}
 
-        for measure in measures:
-            measure_name = measure.get_name()
+        # for measure in measures:
+        #     measure_name = measure.get_name()
 
-            sorted_ids = np.argsort(
-                [
-                    recommender_mean_measurements[measure_name]
-                    for recommender_mean_measurements in recommenders_mean_measurements
-                ]
-            )
+        #     sorted_ids = np.argsort(
+        #         [
+        #             recommender_mean_measurements[measure_name]
+        #             for recommender_mean_measurements in recommenders_mean_measurements
+        #         ]
+        #     )
 
-            if measure.is_better_higher():
-                ordering[measure_name] = sorted_ids.tolist()
-                best_parameter_id = sorted_ids[-1]
-            else:
-                ordering[measure_name] = sorted_ids[::-1].tolist()
-                best_parameter_id = sorted_ids[0]
+        #     if measure.is_better_higher():
+        #         ordering[measure_name] = sorted_ids.tolist()
+        #         best_parameter_id = sorted_ids[-1]
+        #     else:
+        #         ordering[measure_name] = sorted_ids[::-1].tolist()
+        #         best_parameter_id = sorted_ids[0]
 
-            best[measure_name] = {
-                "parameters": self.param_combinations[best_parameter_id],
-                "other_metrics": recommenders_mean_measurements[best_parameter_id],
-                "raw": self.recommenders_measurements[best_parameter_id][measure_name].tolist(),
-                "mean": recommenders_mean_measurements[best_parameter_id][measure_name],
-                "fit_time": recommenders_mean_measurements[best_parameter_id]["fit_time"],
-                "test_time": recommenders_mean_measurements[best_parameter_id]["test_time"],
-            }
+        #     best[measure_name] = {
+        #         "parameters": self.param_combinations[best_parameter_id],
+        #         "other_metrics": recommenders_mean_measurements[best_parameter_id],
+        #         "raw": self.recommenders_measurements[best_parameter_id][measure_name].tolist(),
+        #         "mean": recommenders_mean_measurements[best_parameter_id][measure_name],
+        #         "fit_time": recommenders_mean_measurements[best_parameter_id]["fit_time"],
+        #         "test_time": recommenders_mean_measurements[best_parameter_id]["test_time"],
+        #     }
 
         return best, ordering, raw
 

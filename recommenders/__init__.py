@@ -4,7 +4,7 @@ import numpy as np
 
 from .common import (
     cosine_similarity,
-    adjusted_cosine_similarity,
+    pearson_similarity,
     user_pattern_similarity,
     weight_frequency,
     get_similarity,
@@ -32,8 +32,8 @@ def compile_numba():
     cosine_similarity(u_float, v_float, 1e-7)
     cosine_similarity(dataset_float[0], dataset_float[1])
 
-    adjusted_cosine_similarity(u_float, v_float)
-    adjusted_cosine_similarity(dataset_float[0], dataset_float[1])
+    pearson_similarity(u_float, v_float)
+    pearson_similarity(dataset_float[0], dataset_float[1])
 
     user_pattern_similarity(u_int, concept)
     user_pattern_similarity(dataset_int[0], concept)
@@ -69,4 +69,11 @@ def build_logger(name, level=logging.INFO):
 DEFAULT_LOGGER = build_logger("recommenders", logging.INFO)
 DEBUG_LOGGER = build_logger("recommenders debug", logging.DEBUG)
 
-compile_numba()
+
+from numba.core.errors import NumbaWarning
+import warnings
+
+
+with warnings.catch_warnings():
+    warnings.simplefilter('ignore', category=NumbaWarning)
+    # compile_numba()

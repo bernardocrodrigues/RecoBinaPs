@@ -66,12 +66,12 @@ def cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float
 
 
 @nb.njit(cache=True)
-def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
+def pearson_similarity(dataset: np.ndarray, v_id: int, u_id: int, eps: float = 1e-08) -> float:
     """
     Computes the adjusted cosine similarity between two vectors u and v. The adjusted cosine
     similarity is defined as follows:
 
-    adjusted_cosine_similarity(u, v) = sum((u[i] - mean(u)) * (v[i] - mean(v))) /
+    pearson_similarity(u, v) = sum((u[i] - mean(u)) * (v[i] - mean(v))) /
                                        (sqrt(sum((u[i] - mean(u)) ** 2)) * sqrt(sum((v[i] - mean(v)) ** 2))),
                                        for all i in [0, n)
 
@@ -94,6 +94,10 @@ def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08)
         AssertionError: If the vectors have different sizes.
         AssertionError: If the vectors are not of type np.float64.
     """
+
+    u = dataset[u_id]
+    v = dataset[v_id]
+
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
 
@@ -105,8 +109,8 @@ def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08)
     common_u = u[common_indices_in_uv]
     common_v = v[common_indices_in_uv]
 
-    mean_u = np.mean(common_u)
-    mean_v = np.mean(common_v)
+    mean_u = np.mean(not_null_u)
+    mean_v = np.mean(not_null_v)
 
     common_u = common_u - mean_u
     common_v = common_v - mean_v
@@ -117,6 +121,71 @@ def adjusted_cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08)
     vv = np.dot(common_v, common_v)
 
     denominator = max(np.sqrt(uu * vv), eps)
+
+    similarity = numerator / denominator
+
+    return similarity
+
+
+
+@nb.njit(cache=True)
+def mean_numba(a):
+
+    res = []
+    for i in range(a.shape[0]):
+        slice_nonan = a[i, :][~np.isnan(a[i, :])]
+        res.append(np.mean(slice_nonan))
+
+    return np.array(res)
+
+
+@nb.njit(cache=True)
+def adjusted_cosine_similarity(
+    dataset: np.ndarray, i_id: int, j_id: int, eps: float = 1e-08
+) -> float:
+    
+    i = dataset[i_id]
+    j = dataset[j_id]
+
+    not_null_i = np.nonzero(~np.isnan(i))[0]
+    not_null_j = np.nonzero(~np.isnan(j))[0]
+
+    common_indices_in_ij = np.intersect1d(not_null_i, not_null_j)
+
+    if common_indices_in_ij.size == 0:
+        return np.NaN
+    
+    # means = np.mean(dataset.T[common_indices_in_ij],axis=1)
+
+    # means = np.zeros(common_indices_in_ij.size, dtype=np.float64)
+    # for index, i  in enumerate(common_indices_in_ij):
+    #     means[index] = np.mean(dataset.T[i, :])
+
+    means = mean_numba(dataset.T[common_indices_in_ij])
+
+
+    common_i = i[common_indices_in_ij]
+    common_j = j[common_indices_in_ij]
+
+    # print('b')
+    # print(common_i, common_j)
+
+    # print('means')
+    # print(means)
+
+
+    common_i = common_i - means
+    common_j = common_j - means
+
+    # print('c')
+    # print(common_i, common_j)
+
+    numerator = np.dot(common_i, common_j)
+
+    ii = np.dot(common_i, common_i)
+    jj = np.dot(common_j, common_j)
+
+    denominator = max(np.sqrt(ii * jj), eps)
 
     similarity = numerator / denominator
 
@@ -221,7 +290,7 @@ def get_similarity(
     j: int,
     dataset: np.ndarray,
     similarity_matrix: np.ndarray = None,
-    similarity_strategy: Callable = cosine_similarity,
+    similarity_strategy: Callable = pearson_similarity,
 ) -> float:
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
@@ -238,7 +307,7 @@ def get_similarity(
     if i == j:
         similarity = 1.0
     else:
-        similarity = similarity_strategy(dataset[i], dataset[j])
+        similarity = similarity_strategy(dataset, i, j)
 
     if similarity_matrix is not None:
         similarity_matrix[i, j] = similarity
@@ -248,7 +317,7 @@ def get_similarity(
 
 
 @nb.njit(cache=True)
-def get_similarity_matrix(dataset: np.ndarray, similarity_strategy=cosine_similarity):
+def get_similarity_matrix(dataset: np.ndarray, similarity_strategy=pearson_similarity):
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
     computes the similarity matrix between all users (rows).

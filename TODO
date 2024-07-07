@@ -1,0 +1,106 @@
+Ações
+[X] Refatorar em pattern mining strategies
+[X] Retirar filtros
+[X] Remover user_binarization_threshold
+[X] Otimizar hiperparametros para precision ou recall
+[X] Commitar tudo
+[X] Implementar F1
+[X] Adjusted Cosine
+[X] Implementar BBCF
+[X] Weight frequency
+[X] Verificar testes recommenders common
+[X] QUIBIC2 (26)
+[X] Match performance (27)
+[X] Prediction Coverage
+[X] Item Coverage
+[X] nDCG
+[X] Variação: Add user to neighborhood (28)
+[X] Nova forma de gerar neighborhood: para cada item, colocar os k patterns mais proximos que contenham o item
+[X] Nova forma de gerar neighborhood: favorecer patterns que contenham mais itens
+[X] padronizar metodos que salvam resultados
+[X] Obter soluções não dominadas
+[X] Plot de resultados
+[X] Validar pareto
+
+[X] IB-BBCF (double_weigh_frequency)
+[X] UB-BBCF (double_weigh_frequency)
+
+[X] Refazer SVD, IBKNN, UBKNN
+
+[X] SVD++
+
+[X] Lidar com empty list
+[ ] Adjusted Cosine
+
+[ ] Rafazer todos resultados
+
+[ ] Symeonidis
+[ ] PAkNN
+[ ] plot stackado
+
+[ ] IB-BBCF (force user inclusion)
+[ ] UB-BBCF (force user inclusion)
+
+[ ] IB-BBCF (double_weigh_frequency + force user inclusion)
+[ ] UB-BBCF (double_weigh_frequency + force user inclusion)
+
+[ ] IB-BBCF + BinaPs
+[ ] UB-BBCF + BinaPs
+
+[ ] RandomGrid
+
+[ ] IB-BBCF + GreconD
+[ ] UB-BBCF + GreconD
+
+[ ] IB-PAkNN
+[ ] UB-PAkNN
+
+
+Melhorias
+[ ] melhorar estrategia de compilação numba (sem q afete a cobertura dos testes)
+[ ] Otimização GreconD
+[ ] Adicionar arquivo de config do sonar no repo
+[ ] Adicionar cobertura no Sonar
+[ ] Melhorar doc sobre iPy kernels. Esclarecer diferenças entre o kernel que usa o .json e o que usa o que ta dentro do container
+
+Testes
+[X] binary_dataset.py
+[X] dataset/common.py
+[X] get_k_top_neighbors
+[X] compute_neighborhood_cosine_similarity
+[X] BiAKNN
+[X] apply_bicluster_coverage_filter
+[X] apply_bicluster_relative_size_filter
+[X] evaluation.py
+[X] GreConDBiAKNNRecommender
+[X] BinaPsKNNRecommender
+[X] binaps_wrapper.py
+[ ] grecond
+[ ] submatrix_intersection_size
+[ ] erase_submatrix_values
+[ ] threads.py
+[ ] _get_matrices
+[ ] GreConDKNNRecommender
+[ ] create_concept
+[ ] concepts_are_equal
+[ ] get_cosine_similarity_matrix
+[ ] dataset/movie_lens.py
+[ ] plot.py
+[ ] KNNOverLatentSpaceRecommender
+[ ] Fazer todos notebooks passarem nos testes
+
+
+Testes não passando
+FAILED tests/recommenders/test_binaps_based_recommenders.py::TestBinaPsKNNRecommender::test_compute_biclusters_from_trainset_1 - ValueError: invalid literal for int() with base 10: 'b'
+FAILED tests/recommenders/test_binaps_based_recommenders.py::TestBinaPsKNNRecommender::test_compute_biclusters_from_trainset_2 - ValueError: invalid literal for int() with base 10: 'b'
+FAILED tests/recommenders/test_common_recommenders.py::TestCosineSimilarity::test_partial_similarity_with_nans - AssertionError: assert nan == 0
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::test_apply_filters_1 - AssertionError: assert None == 19
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::test_apply_filters_4 - AssertionError: assert None == 10
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::test_apply_filters_5 - AssertionError: assert None == 19
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::test_apply_filters_6 - AssertionError: assert None == 19
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::test_apply_filters_7 - AssertionError: assert None == 21
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::TestEstimate::test_empty_user_neighborhood_1 - surprise.prediction_algorithms.predictions.PredictionImpossible: Not enough neighbors.
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::TestEstimate::test_empty_user_neighborhood_2 - surprise.prediction_algorithms.predictions.PredictionImpossible: Not enough neighbors.
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::TestEstimate::test_empty_user_neighborhood_3 - surprise.prediction_algorithms.predictions.PredictionImpossible: Not enough neighbors.
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::TestEstimate::test_no_k_top_neighbors_1 - surprise.prediction_algorithms.predictions.PredictionImpossible: Not enough neighbors.
+FAILED tests/recommenders/test_knn_based_recommenders.py::TestBiAKNN::TestEstimate::test_no_k_top_neighbors_2 - surprise.prediction_algorithms.predictions.PredictionImpossible: Not enough neighbors.
