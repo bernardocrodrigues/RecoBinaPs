@@ -16,6 +16,8 @@ from .common import (
     merge_biclusters,
     get_similarity_matrix,
     weight_frequency,
+    adjusted_cosine_similarity,
+    pearson_similarity,
 )
 
 
@@ -38,6 +40,7 @@ class BBCF(AlgoBase):
         number_of_top_k_biclusters: Optional[int] = None,
         bicluster_similarity_strategy: callable = weight_frequency,
         knn_k: int = 5,
+        force_knn_similarity_strategy: callable = None,
         force_inclusion_of_user: bool = False,
         logger: logging.Logger = DEFAULT_LOGGER,
     ):
@@ -56,6 +59,7 @@ class BBCF(AlgoBase):
 
         # User-item neighborhood parameters
         self.number_of_top_k_biclusters = number_of_top_k_biclusters
+        self.force_knn_similarity_strategy = force_knn_similarity_strategy
         self.force_inclusion_of_user = force_inclusion_of_user
         self.bicluster_similarity_strategy = bicluster_similarity_strategy
 
@@ -182,11 +186,21 @@ class BBCF(AlgoBase):
             main_slice, secondary_slice = neighborhood.extent, neighborhood.intent
             dataset = self.dataset
             means = self.user_means
+            if self.force_knn_similarity_strategy:
+                similarity_strategy = self.force_knn_similarity_strategy
+            else:
+                similarity_strategy = pearson_similarity
+            similarity_strategy_means = self.user_means[main_slice]
         else:
             main_index, secondary_index = item, user
             main_slice, secondary_slice = neighborhood.intent, neighborhood.extent
             dataset = self.dataset.T
             means = self.item_means
+            if self.force_knn_similarity_strategy:
+                similarity_strategy = self.force_knn_similarity_strategy
+            else:
+                similarity_strategy = adjusted_cosine_similarity
+            similarity_strategy_means = self.user_means[secondary_slice]
 
         main_index_in_submatrix = np.nonzero(main_slice == main_index)[0][0]
         secondary_index_in_submatrix = np.nonzero(secondary_slice == secondary_index)[0][0]
@@ -195,7 +209,11 @@ class BBCF(AlgoBase):
 
         # Lazy computation of similarity matrix
         if user not in self.similarity_matrix:
-            self.similarity_matrix[user] = get_similarity_matrix(submatrix)
+            self.similarity_matrix[user] = get_similarity_matrix(
+                dataset=submatrix,
+                means=similarity_strategy_means,
+                similarity_strategy=similarity_strategy,
+            )
 
         similarity_matrix = self.similarity_matrix[user]
         neighborhood_similarity = similarity_matrix[main_index_in_submatrix]
