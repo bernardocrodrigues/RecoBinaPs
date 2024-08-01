@@ -72,9 +72,11 @@ class BBCF(AlgoBase):
         self.dataset = None
         self.neighborhood = {}
         self.similarity_matrix = {}
-        self.means = None
+
+        self.user_means = None
+        self.item_means = None
+
         self.biclusters = None
-        self.n = None
 
         self.trainset = None
 
@@ -149,22 +151,16 @@ class BBCF(AlgoBase):
 
     def _calculate_means(self):
         """
-        Calculate the mean ratings for each user or item.
-
-        If knn_type is "user", calculate the mean ratings for each user.
-        If knn_type is "item", calculate the mean ratings for each item.
+        Calculate the mean ratings for each user and item.
         """
-        if self.knn_type == "user":
-            self.n = self.trainset.n_users
-            ratings_map = self.trainset.ur.items()
-        else:
-            self.n = self.trainset.n_items
-            ratings_map = self.trainset.ir.items()
 
-        self.means = np.full((self.n), dtype=np.float64, fill_value=np.NAN)
+        self.user_means = np.full((self.trainset.n_users), dtype=np.float64, fill_value=np.NAN)
+        for ratings_id, ratings in self.trainset.ur.items():
+            self.user_means[ratings_id] = np.mean([r for (_, r) in ratings])
 
-        for ratings_id, ratings in ratings_map:
-            self.means[ratings_id] = np.mean([r for (_, r) in ratings])
+        self.item_means = np.full((self.trainset.n_items), dtype=np.float64, fill_value=np.NAN)
+        for ratings_id, ratings in self.trainset.ir.items():
+            self.item_means[ratings_id] = np.mean([r for (_, r) in ratings])
 
     def estimate(self, user: int, item: int):
 
@@ -185,10 +181,12 @@ class BBCF(AlgoBase):
             main_index, secondary_index = user, item
             main_slice, secondary_slice = neighborhood.extent, neighborhood.intent
             dataset = self.dataset
+            means = self.user_means
         else:
             main_index, secondary_index = item, user
             main_slice, secondary_slice = neighborhood.intent, neighborhood.extent
             dataset = self.dataset.T
+            means = self.item_means
 
         main_index_in_submatrix = np.nonzero(main_slice == main_index)[0][0]
         secondary_index_in_submatrix = np.nonzero(secondary_slice == secondary_index)[0][0]
@@ -204,7 +202,7 @@ class BBCF(AlgoBase):
 
         neighborhood_ratings = submatrix[:, secondary_index_in_submatrix]
 
-        neighborhood_means = self.means[main_slice]
+        neighborhood_means = means[main_slice]
 
         validity_mask = (
             (~np.isnan(neighborhood_ratings))
@@ -228,7 +226,7 @@ class BBCF(AlgoBase):
         top_k_neighbors_similarity = valid_neighborhood_similarity[top_k_neighbors_indices]
         top_k_means = valid_neighborhood_means[top_k_neighbors_indices]
 
-        prediction = self.means[main_index]
+        prediction = means[main_index]
         sum_similarities: float = 0.0
         sum_ratings: float = 0.0
 
