@@ -14,6 +14,9 @@ from pattern_mining.formal_concept_analysis import Concept as Bicluster
 
 
 @nb.njit()
+def cosine_similarity(
+    dataset: np.ndarray, u_id: int, v_id: int, means: np.ndarray, eps: float = 1e-08
+) -> float:
     """
     Computes the cosine similarity between two vectors u and v. The cosine similarity is defined
     as follows:
@@ -41,6 +44,10 @@ from pattern_mining.formal_concept_analysis import Concept as Bicluster
         AssertionError: If the vectors have different sizes.
         AssertionError: If the vectors are not of type np.float64.
     """
+
+    u = dataset[u_id]
+    v = dataset[v_id]
+
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
 
@@ -65,6 +72,15 @@ from pattern_mining.formal_concept_analysis import Concept as Bicluster
 
 
 @nb.njit()
+def pearson_similarity(
+    dataset: np.ndarray, u_id: int, v_id: int, means: np.ndarray, eps: float = 1e-08
+) -> float:
+
+    u = dataset[u_id]
+    v = dataset[v_id]
+    mean_u = means[u_id]
+    mean_v = means[v_id]
+
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
 
@@ -76,9 +92,6 @@ from pattern_mining.formal_concept_analysis import Concept as Bicluster
     common_u = u[common_indices_in_uv]
     common_v = v[common_indices_in_uv]
 
-    mean_u = np.mean(common_u)
-    mean_v = np.mean(common_v)
-
     common_u = common_u - mean_u
     common_v = common_v - mean_v
 
@@ -88,6 +101,40 @@ from pattern_mining.formal_concept_analysis import Concept as Bicluster
     vv = np.dot(common_v, common_v)
 
     denominator = max(np.sqrt(uu * vv), eps)
+
+    similarity = numerator / denominator
+
+    return similarity
+
+
+@nb.njit()
+def adjusted_cosine_similarity(
+    dataset: np.ndarray, i_id: int, j_id: int, means: np.ndarray, eps: float = 1e-08
+) -> float:
+
+    i = dataset[i_id]
+    j = dataset[j_id]
+
+    not_null_i = np.nonzero(~np.isnan(i))[0]
+    not_null_j = np.nonzero(~np.isnan(j))[0]
+
+    common_indices_in_ij = np.intersect1d(not_null_i, not_null_j)
+
+    if common_indices_in_ij.size == 0:
+        return np.NaN
+
+    common_i = i[common_indices_in_ij]
+    common_j = j[common_indices_in_ij]
+
+    common_i = common_i - means[common_indices_in_ij]
+    common_j = common_j - means[common_indices_in_ij]
+
+    numerator = np.dot(common_i, common_j)
+
+    ii = np.dot(common_i, common_i)
+    jj = np.dot(common_j, common_j)
+
+    denominator = max(np.sqrt(ii * jj), eps)
 
     similarity = numerator / denominator
 
@@ -131,7 +178,7 @@ def user_pattern_similarity(user: np.ndarray, pattern: Bicluster) -> float:
     return similarity
 
 
-@nb.njit(cache=True)
+@nb.njit()
 def weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
     """
     Calculates the similarity between a user and a pattern (bicluster) based on the number of items
@@ -163,7 +210,7 @@ def weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
     return number_of_users_in_pattern * user_pattern_similarity(user, pattern)
 
 
-@nb.njit(cache=True)
+@nb.njit()
 def double_weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
     """
     Calculates the similarity between a user and a pattern (bicluster) based on the number of items
@@ -191,6 +238,7 @@ def get_similarity(
     i: int,
     j: int,
     dataset: np.ndarray,
+    means: np.ndarray,
     similarity_matrix: np.ndarray = None,
     similarity_strategy: Callable = pearson_similarity,
 ) -> float:
@@ -209,7 +257,7 @@ def get_similarity(
     if i == j:
         similarity = 1.0
     else:
-        similarity = similarity_strategy(dataset[i], dataset[j])
+        similarity = similarity_strategy(dataset, i, j, means)
 
     if similarity_matrix is not None:
         similarity_matrix[i, j] = similarity
@@ -219,6 +267,9 @@ def get_similarity(
 
 
 @nb.njit()
+def get_similarity_matrix(
+    dataset: np.ndarray, means: np.ndarray, similarity_strategy=pearson_similarity
+):
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
     computes the similarity matrix between all users (rows).
@@ -232,7 +283,7 @@ def get_similarity(
     for i in range(dataset.shape[0]):
         for j in range(dataset.shape[0]):
             if j >= i:
-                get_similarity(i, j, dataset, similarity_matrix, similarity_strategy)
+                get_similarity(i, j, dataset, means, similarity_matrix, similarity_strategy)
 
     return similarity_matrix
 
