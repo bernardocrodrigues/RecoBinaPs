@@ -23,10 +23,10 @@ Code in this repository is composed of Python modules, notebooks, scripts and ot
 
 - **demos**: Jupyter notebooks used to demonstrate the usage of the modules and concepts.
 - **experiments**: Jupyter notebooks used to generate the results of the experiments.
+- **plots**: Jupyter notebooks used to generate plots for the thesis.
 
 ### Scripts and Misc
 
-- **ci**: Continuous integration scripts.
 - **environment**: Docker environment for running anything in this repository.
 - **scripts**: Support scripts for other tasks.
 - **tests**: Unit tests.
