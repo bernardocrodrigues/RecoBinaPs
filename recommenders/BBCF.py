@@ -237,7 +237,9 @@ class BBCF(AlgoBase):
         ):
             sum_similarities += similarity
             sum_ratings += similarity * (rating - item_mean)
-
-        prediction += sum_ratings / sum_similarities
+        try:
+            prediction += sum_ratings / sum_similarities
+        except ZeroDivisionError as e:
+            raise PredictionImpossible("Sum of similarities is zero.") from e
 
         return prediction, {}
