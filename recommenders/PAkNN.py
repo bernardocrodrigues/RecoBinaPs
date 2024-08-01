@@ -313,7 +313,8 @@ class PAkNN(AlgoBase):
         self.dataset = None
         self.neighborhood = {}
         self.similarity_matrix = None
-        self.means = None
+        self.user_means = None
+        self.item_means = None
         self.biclusters = None
         self.n = None
 
@@ -342,9 +343,9 @@ class PAkNN(AlgoBase):
         self._calculate_means()
 
         if self.knn_type == "user":
-            self.similarity_matrix = get_similarity_matrix(self.dataset)
+            self.similarity_matrix = get_similarity_matrix(self.dataset, self.user_means)
         else:
-            self.similarity_matrix = get_similarity_matrix(self.dataset.T)
+            self.similarity_matrix = get_similarity_matrix(self.dataset.T, self.item_means)
 
     def _generate_neighborhood(self) -> None:
         """
@@ -367,7 +368,10 @@ class PAkNN(AlgoBase):
             merged_bicluster = create_concept([], [])
             if self.number_of_top_k_biclusters:
                 top_k_biclusters = get_top_k_biclusters_for_user(
-                    self.biclusters, user_as_tidset, self.number_of_top_k_biclusters, weight_frequency
+                    self.biclusters,
+                    user_as_tidset,
+                    self.number_of_top_k_biclusters,
+                    weight_frequency,
                 )
                 if top_k_biclusters:
                     merged_bicluster = merge_biclusters(top_k_biclusters)
@@ -386,16 +390,13 @@ class PAkNN(AlgoBase):
         If knn_type is "user", calculate the mean ratings for each user.
         If knn_type is "item", calculate the mean ratings for each item.
         """
-        if self.knn_type == "user":
-            self.n = self.trainset.n_users
-            ratings_map = self.trainset.ur.items()
-        else:
-            self.n = self.trainset.n_items
-            ratings_map = self.trainset.ir.items()
+        self.user_means = np.full((self.trainset.n_users), dtype=np.float64, fill_value=np.NAN)
+        for ratings_id, ratings in self.trainset.ur.items():
+            self.user_means[ratings_id] = np.mean([r for (_, r) in ratings])
 
-        self.means = np.full((self.n), dtype=np.float64, fill_value=np.NAN)
-        for ratings_id, ratings in ratings_map:
-            self.means[ratings_id] = np.mean([r for (_, r) in ratings])
+        self.item_means = np.full((self.trainset.n_items), dtype=np.float64, fill_value=np.NAN)
+        for ratings_id, ratings in self.trainset.ir.items():
+            self.item_means[ratings_id] = np.mean([r for (_, r) in ratings])
 
     def estimate(self, user: int, item: int):
         if not (self.trainset.knows_user(user) and self.trainset.knows_item(item)):
@@ -404,9 +405,11 @@ class PAkNN(AlgoBase):
         if self.knn_type == "user":
             main_index, secondary_index = user, item
             dataset = self.dataset
+            means = self.user_means
         else:
             main_index, secondary_index = item, user
             dataset = self.dataset.T
+            means = self.item_means
 
         user_neighborhood = self.neighborhood[user]
         user_neighborhood = np.setdiff1d(user_neighborhood, main_index)
@@ -414,14 +417,13 @@ class PAkNN(AlgoBase):
         if user_neighborhood.size == 0:
             raise PredictionImpossible("Not enough neighbors.")
 
-
         k_top_neighbors_ratings, k_top_neighbors_similarity, k_top_means = get_k_top_neighbors(
             main_index,
             secondary_index,
             dataset,
             user_neighborhood,
             self.similarity_matrix,
-            self.means,
+            means,
             self.knn_k,
         )
 
@@ -429,7 +431,7 @@ class PAkNN(AlgoBase):
             raise PredictionImpossible("Not enough neighbors.")
 
         prediction = calculate_weighted_rating(
-            self.means[main_index],
+            means[main_index],
             k_top_neighbors_ratings,
             k_top_neighbors_similarity,
             k_top_means,
