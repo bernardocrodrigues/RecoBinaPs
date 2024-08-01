@@ -13,8 +13,7 @@ import numba as nb
 from pattern_mining.formal_concept_analysis import Concept as Bicluster
 
 
-@nb.njit(cache=True)
-def cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
+@nb.njit()
     """
     Computes the cosine similarity between two vectors u and v. The cosine similarity is defined
     as follows:
@@ -65,35 +64,7 @@ def cosine_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float
     return similarity
 
 
-@nb.njit(cache=True)
-def pearson_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> float:
-    """
-    Computes the adjusted cosine similarity between two vectors u and v. The adjusted cosine
-    similarity is defined as follows:
-
-    pearson_similarity(u, v) = sum((u[i] - mean(u)) * (v[i] - mean(v))) /
-                                       (sqrt(sum((u[i] - mean(u)) ** 2)) * sqrt(sum((v[i] - mean(v)) ** 2))),
-                                       for all i in [0, n)
-
-        where u and v are two vectors and n is the size of the vectors.
-
-    Unlike scipy.spatial.distance.cosine, this function handles NaN values in the vectors. If a
-    NaN value is found in the vectors, that coordinate is ignored in the calculation of the
-    similarity. If all coordinates are NaN, the similarity is NaN. In addition, this function
-    returns the similarity instead of the dissimilarity.
-
-    Args:
-        u (np.ndarray): The first vector.
-        v (np.ndarray): The second vector.
-
-    Returns:
-        float: The adjusted cosine similarity between u and v.
-
-    Raises:
-        AssertionError: If the vectors are not 1D numpy arrays.
-        AssertionError: If the vectors have different sizes.
-        AssertionError: If the vectors are not of type np.float64.
-    """
+@nb.njit()
     not_null_u = np.nonzero(~np.isnan(u))[0]
     not_null_v = np.nonzero(~np.isnan(v))[0]
 
@@ -123,7 +94,7 @@ def pearson_similarity(u: np.ndarray, v: np.ndarray, eps: float = 1e-08) -> floa
     return similarity
 
 
-@nb.njit(cache=True)
+@nb.njit()
 def user_pattern_similarity(user: np.ndarray, pattern: Bicluster) -> float:
     """
     Calculates the similarity between a user and a pattern (bicluster) based on the number of items
@@ -215,7 +186,7 @@ def double_weight_frequency(user: np.ndarray, pattern: Bicluster) -> float:
     )
 
 
-@nb.njit(cache=True)
+@nb.njit()
 def get_similarity(
     i: int,
     j: int,
@@ -247,8 +218,7 @@ def get_similarity(
     return similarity
 
 
-@nb.njit(cache=True)
-def get_similarity_matrix(dataset: np.ndarray, similarity_strategy=pearson_similarity):
+@nb.njit()
     """
     Given a np.ndarray and some method that calculates some distance between two vector,
     computes the similarity matrix between all users (rows).
@@ -267,7 +237,7 @@ def get_similarity_matrix(dataset: np.ndarray, similarity_strategy=pearson_simil
     return similarity_matrix
 
 
-@nb.njit(cache=True)
+@nb.njit()
 def get_top_k_biclusters_for_user(
     biclusters: List[Bicluster],
     user_as_tidset: np.ndarray,
@@ -307,7 +277,7 @@ def get_top_k_biclusters_for_user(
     return top_k_patterns
 
 
-@nb.njit(cache=True)
+@nb.njit()
 def get_indices_above_threshold(subset: np.ndarray, binarization_threshold: float) -> np.ndarray:
     """
     Gets the indices of the elements in a subset that are above a given threshold. If this subset
@@ -329,7 +299,7 @@ def get_indices_above_threshold(subset: np.ndarray, binarization_threshold: floa
     return indices_above_threshold
 
 
-@nb.njit(cache=True)
+@nb.njit()
 def merge_biclusters(
     biclusters: List[Bicluster],
 ) -> Bicluster:
