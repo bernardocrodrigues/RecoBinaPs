@@ -600,3 +600,35 @@ class GridSearch(BaseSearch):
         self.param_combinations = [
             dict(zip(self.param_grid, v)) for v in product(*self.param_grid.values())
         ]
+
+class RandomizedSearch(BaseSearch):
+
+    def __init__(
+        self,
+        recommender_class: Type[AlgoBase],
+        param_grid: dict,
+        test_measures: List[TestMeasureStrategy] = [],
+        train_measures: List[TrainMeasureStrategy] = [],
+        max_workers=1,
+        seed=42,
+        iterations=10,
+    ):
+
+        super().__init__(
+            recommender_class=recommender_class,
+            param_grid=param_grid,
+            test_measures=test_measures,
+            train_measures=train_measures,
+            max_workers=max_workers,
+        )
+
+        self.iterations = iterations
+        self.seed = seed
+
+        rng = np.random.default_rng(self.seed)
+
+        complete_param_grid = [
+            dict(zip(self.param_grid, v)) for v in product(*self.param_grid.values())
+        ]
+
+        self.param_combinations = rng.choice(complete_param_grid, self.iterations, replace=False)
