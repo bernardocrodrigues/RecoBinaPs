@@ -98,7 +98,7 @@ def calculate_weighted_rating(
 
     assert isinstance(neighbors_similarities, np.ndarray)
     assert neighbors_similarities.dtype == np.float64
-    assert all(0 < similarity <= 1 for similarity in neighbors_similarities)
+    assert all(-1 <= similarity <= 1 for similarity in neighbors_similarities)
 
     assert isinstance(neighbors_means, np.ndarray)
     assert neighbors_means.dtype == np.float64
