@@ -37,7 +37,7 @@ def print_progress(tasks: List) -> None:
         time_left_minutes = estimated_time_left // 60
         time_left_seconds = estimated_time_left % 60
 
-        estimated_completion_time = start_time + estimated_time_left
+        estimated_completion_time = now + estimated_time_left
         estimated_completion_time -= 3 * 3600  # account for timezone
 
         print(
