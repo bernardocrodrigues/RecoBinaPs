@@ -44,7 +44,7 @@ def print_progress(tasks: List) -> None:
             f"Completed {i}/{total} | "
             f"Avg. time/task: {int(average_minutes)}m {average_seconds:.1f}s | "
             f"Time left: {int(time_left_minutes)}m {time_left_seconds:.1f}s | "
-            f"Estimated completion time: {time.strftime('%H:%M:%S', time.localtime(estimated_completion_time))}",
+            f"Estimated completion time: {time.strftime('%H:%M:%S', time.localtime(estimated_completion_time))}     ",
             flush=True,
             end="\r",
         )
