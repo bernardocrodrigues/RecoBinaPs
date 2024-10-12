@@ -5,8 +5,7 @@
 [![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=recommender-systems&metric=vulnerabilities)](https://sonarcloud.io/summary/new_code?id=recommender-systems)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=recommender-systems&metric=coverage)](https://sonarcloud.io/summary/new_code?id=recommender-systems)
 
-Supporting code of my ongoing Master's thesis, titled "Improving Recommender Systems through 
-Pattern Mining".
+Supporting code for my Master's thesis, entitled "Comparing local neighborhood-based collaborative filtering variants: a tradeoff between prediction performance and coverage".
 
 ## Code Organization
 
